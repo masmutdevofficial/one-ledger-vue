@@ -6,7 +6,7 @@
         class="absolute top-4 left-5 text-sm font-bold text-black hover:underline flex items-center"
       >
         <!-- Ganti Icon: bisa emoji panah ⬅️ -->
-        <span style="font-size: 24px; margin-right: 2px">⬅️</span>
+        <Icon icon="tabler:arrow-narrow-left" style="font-size: 24px; margin-right: 2px" />
       </RouterLink>
 
       <div class="mx-6 mt-20">
@@ -49,6 +49,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { Icon } from '@iconify/vue'
 
 const email = ref('')
 const loading = ref(false)

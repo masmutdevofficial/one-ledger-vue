@@ -29,14 +29,14 @@
           @click="showReferral = !showReferral"
         >
           <span>Referral Code (Optional)</span>
-          <span
+          <Icon
+            icon="tabler:chevron-down"
             :class="[
               'transition-transform duration-200 inline-block',
               showReferral ? 'rotate-180' : '',
             ]"
             style="font-size: 16px"
-            >▼</span
-          >
+          />
         </button>
         <input
           v-if="showReferral"
@@ -90,6 +90,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { Icon } from '@iconify/vue'
 
 const showReferral = ref(false)
 const email = ref('')

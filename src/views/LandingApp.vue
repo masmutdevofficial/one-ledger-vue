@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import DashboardSliderCrypto from '@/components/landing/DashboardSliderCrypto.vue'
+import { Icon } from '@iconify/vue'
 </script>
 
 <template>
@@ -63,7 +64,7 @@ import DashboardSliderCrypto from '@/components/landing/DashboardSliderCrypto.vu
       <div class="flex items-center justify-between mb-3">
         <span class="text-gray-700 text-sm font-normal">Rewards Hub</span>
         <!-- Icon diganti emoji panah sementara -->
-        <span class="text-gray-400 text-sm">➡️</span>
+        <Icon icon="tabler:arrow-narrow-right" style="font-size: 24px; margin-right: 2px" />
       </div>
 
       <!-- CTA Button -->

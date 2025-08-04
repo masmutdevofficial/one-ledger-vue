@@ -26,12 +26,12 @@
               class="w-full border border-gray-300 rounded-md py-2 px-3 pr-10 text-sm placeholder-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
             <!-- Ganti Icon sesuai kebutuhan, di sini pakai emoji saja -->
-            <span
+            <Icon
+              :icon="showPassword ? 'tabler:eye-off' : 'tabler:eye'"
               class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 w-5 h-5 cursor-pointer"
-              @click="showPassword = !showPassword"
               style="font-size: 20px"
-              >{{ showPassword ? '🙈' : '👁️' }}</span
-            >
+              @click="showPassword = !showPassword"
+            />
           </div>
           <RouterLink to="/forgot-password" class="text-sm font-bold text-gray-700 hover:underline">
             Forgot Password?
@@ -54,6 +54,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert' // perhatikan path stores!
+import { Icon } from '@iconify/vue'
 
 const modal = useApiAlertStore()
 const route = useRoute()

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { Icon } from '@iconify/vue'
 
 // Halaman publik
 const publicPages = [
@@ -60,19 +61,16 @@ onMounted(async () => {
               class="absolute right-3 top-1/2 -translate-y-1/2 text-black text-lg"
               type="submit"
             >
-              <!-- Icon diganti emoji atau pasang komponen icon Vue -->
-              🔍
+              <Icon icon="tabler:search" class="text-xl" />
             </button>
           </div>
         </form>
         <nav class="flex space-x-5 text-black text-xl">
           <RouterLink to="/notification" aria-label="Notifications" class="focus:outline-none">
-            <!-- Icon bell -->
-            🔔
+            <Icon icon="tabler:bell" class="text-2xl" />
           </RouterLink>
           <RouterLink to="/support" aria-label="Support" class="focus:outline-none">
-            <!-- Icon headset -->
-            🎧
+            <Icon icon="tabler:headset" class="text-2xl" />
           </RouterLink>
         </nav>
       </header>
@@ -112,28 +110,23 @@ onMounted(async () => {
           >
             <div class="flex justify-around items-center py-2">
               <RouterLink to="/" class="flex flex-col items-center text-blue-600">
-                <!-- Icon hexagon -->
-                🛑
+                <Icon icon="tabler:hexagons" class="text-2xl" />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>
               <RouterLink to="/market" class="flex flex-col items-center text-gray-400">
-                <!-- Icon chart -->
-                📈
+                <Icon icon="tabler:chart-line" class="text-2xl" />
                 <span class="text-xs mt-1">Market</span>
               </RouterLink>
               <RouterLink to="/trade" class="flex flex-col items-center text-gray-400">
-                <!-- Icon arrows -->
-                🔄
+                <Icon icon="tabler:arrows-left-right" class="text-2xl" />
                 <span class="text-xs mt-1">Trade</span>
               </RouterLink>
               <RouterLink to="/history" class="flex flex-col items-center text-gray-400">
-                <!-- Icon history -->
-                🕑
+                <Icon icon="tabler:history" class="text-2xl" />
                 <span class="text-xs mt-1 text-center">Order History</span>
               </RouterLink>
               <RouterLink to="/account" class="flex flex-col items-center text-gray-400">
-                <!-- Icon wallet -->
-                👛
+                <Icon icon="tabler:wallet" class="text-2xl" />
                 <span class="text-xs mt-1">Assets</span>
               </RouterLink>
             </div>

@@ -19,7 +19,7 @@
               @click="showPassword = !showPassword"
               style="font-size: 18px"
             >
-              {{ showPassword ? '🙈' : '👁️' }}
+              <Icon :icon="showPassword ? 'tabler:eye-off' : 'tabler:eye'" />
             </button>
           </div>
 
@@ -37,7 +37,7 @@
               @click="showConfirmPassword = !showConfirmPassword"
               style="font-size: 18px"
             >
-              {{ showConfirmPassword ? '🙈' : '👁️' }}
+              <Icon :icon="showConfirmPassword ? 'tabler:eye-off' : 'tabler:eye'" />
             </button>
           </div>
 
@@ -64,6 +64,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { Icon } from '@iconify/vue'
 
 const router = useRouter()
 const route = useRoute()

@@ -6,7 +6,7 @@
         class="absolute top-4 left-5 text-sm font-bold text-black hover:underline flex items-center"
       >
         <!-- Icon panah kiri -->
-        <span style="font-size: 24px">⬅️</span>
+        <Icon icon="tabler:arrow-narrow-left" style="font-size: 24px; margin-right: 2px" />
       </RouterLink>
 
       <div class="mx-6 mt-20">
@@ -68,6 +68,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
 const modal = useApiAlertStore()
+import { Icon } from '@iconify/vue'
 
 const timer = ref(60)
 let interval: number | null = null
