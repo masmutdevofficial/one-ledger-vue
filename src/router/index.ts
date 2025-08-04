@@ -85,7 +85,7 @@ router.beforeEach(async (to, from, next) => {
   if (token) {
     try {
       // Validasi token ke server
-      const res = await fetch('http://localhost:8000/api/auth-token', {
+      const res = await fetch('https://ledger.masmutdev.id/api/auth-token', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

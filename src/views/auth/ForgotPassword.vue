@@ -63,7 +63,7 @@ async function submitEmail() {
 
   loading.value = true
   try {
-    const res = await fetch('http://localhost:8000/api/forgot-password', {
+    const res = await fetch('https://ledger.masmutdev.id/api/forgot-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

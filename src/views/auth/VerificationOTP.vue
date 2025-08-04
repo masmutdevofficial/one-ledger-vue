@@ -111,7 +111,7 @@ async function submitCode() {
   }
   loading.value = true
   try {
-    const res = await fetch('http://localhost:8000/api/verify-otp', {
+    const res = await fetch('https://ledger.masmutdev.id/api/verify-otp', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

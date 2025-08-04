@@ -118,7 +118,7 @@ const handleRegister = async () => {
 
   loading.value = true
   try {
-    const res = await fetch('http://localhost:8000/api/register', {
+    const res = await fetch('https://ledger.masmutdev.id/api/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

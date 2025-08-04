@@ -85,7 +85,7 @@ async function checkToken() {
   }
 
   try {
-    const res = await fetch('http://localhost:8000/api/validate-reset-token', {
+    const res = await fetch('https://ledger.masmutdev.id/api/validate-reset-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ async function submitPassword() {
 
   loading.value = true
   try {
-    const res = await fetch('http://localhost:8000/api/reset-password', {
+    const res = await fetch('https://ledger.masmutdev.id/api/reset-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
