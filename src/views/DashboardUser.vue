@@ -212,7 +212,7 @@ const komisi = ref<number | null>(null)
 onMounted(async () => {
   try {
     const token = localStorage.getItem('token')
-    const res = await fetch('http://127.0.0.1:8000/api/saldo', {
+    const res = await fetch('https://ledger.masmutdev.id/api/saldo', {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/json',
@@ -262,7 +262,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await fetch('http://localhost:8000/api/news', {
+    const res = await fetch('https://ledger.masmutdev.id/api/news', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,

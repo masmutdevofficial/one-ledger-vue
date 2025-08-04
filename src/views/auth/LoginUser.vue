@@ -73,7 +73,7 @@ const loading = ref(false)
 async function login() {
   loading.value = true
   try {
-    const res = await fetch('http://localhost:8000/api/login', {
+    const res = await fetch('https://ledger.masmutdev.id/api/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
