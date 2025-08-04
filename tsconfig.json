@@ -1,4 +1,11 @@
 {
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+    // ...tambahkan setting lain sesuai kebutuhan project
+  },
   "files": [],
   "references": [
     {
