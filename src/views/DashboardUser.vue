@@ -81,7 +81,7 @@
         <div class="space-y-4">
           <div
             class="grid grid-cols-[1fr_1fr_1fr] items-center"
-            v-for="item in marketData"
+            v-for="item in filteredMarketData"
             :key="item.name"
           >
             <div class="flex items-center space-x-1 font-semibold text-[14px] text-black">
@@ -103,9 +103,17 @@
             </div>
             <div>
               <button
-                class="bg-green-500 text-white text-[12px] font-semibold rounded-md px-3 py-1 ml-auto block"
+                :class="[
+                  'text-white text-[12px] font-semibold rounded-md px-3 py-1 ml-auto block',
+                  item.change > 0
+                    ? 'bg-green-500'
+                    : item.change < 0
+                      ? 'bg-red-500'
+                      : 'bg-slate-500',
+                ]"
               >
-                +{{ item.change }}%
+                {{ item.change > 0 ? '+' : item.change < 0 ? '-' : ''
+                }}{{ Math.abs(item.change).toFixed(2) }}%
               </button>
             </div>
           </div>
@@ -179,9 +187,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import SliderDashboard from '@/components/dashboard/SliderDashboard.vue'
+import { ref, onMounted, computed } from 'vue'
+import { useCoinWebSocket } from '@/composables/useCoinWebSocket'
+import { watch } from 'vue'
+
+interface MarketItem {
+  name: string
+  price: number
+  change: number
+  icon?: string
+}
 
 interface SaldoResponse {
   status: string
@@ -288,13 +305,36 @@ onMounted(async () => {
   }
 })
 
-const marketData = [
-  { name: 'BNB', price: '660,95', change: '0,93', icon: '/img/fire.png' },
-  { name: 'BTC', price: '109.164,81', change: '2,16', icon: '/img/fire.png' },
-  { name: 'ETH', price: '2.590,16', change: '6,03', icon: '/img/fire.png' },
-  { name: 'SOL', price: '154,93', change: '4,03', icon: '' },
-  { name: 'XRP', price: '2,2678', change: '3,76', icon: '' },
-]
+// Daftar koin yang mau ditampilkan
+const displayedCoins = ['BNB', 'BTC', 'ETH', 'SOL', 'XRP']
+
+// Buat marketData sebagai array
+const marketData = ref<MarketItem[]>([])
+
+// Loop untuk tiap koin, konekkan WebSocket masing-masing
+displayedCoins.forEach((coin) => {
+  // Pairnya harus usdt, dan lowercase (ex: btcusdt/1min)
+  const { marketData: singleMarket } = useCoinWebSocket(`${coin.toLowerCase()}usdt`, '1day')
+
+  // Watch perubahan dan update marketData utama
+  watch(singleMarket, (val) => {
+    if (!val) return
+    const idx = marketData.value.findIndex((item) => item.name === coin)
+    if (idx >= 0) {
+      marketData.value[idx] = val
+    } else {
+      marketData.value.push(val)
+    }
+  })
+})
+
+// Market data yang sudah difilter dan urut sesuai displayedCoins
+const filteredMarketData = computed(
+  () =>
+    displayedCoins
+      .map((coin) => marketData.value.find((item) => item.name === coin))
+      .filter(Boolean) as MarketItem[],
+)
 </script>
 
 <style scoped>
