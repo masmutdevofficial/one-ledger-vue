@@ -154,7 +154,7 @@ const updateUsername = async () => {
     modal.open('Error', 'Server error')
   } finally {
     loading.value = false
-    showModal.value = false 
+    showModal.value = false
   }
 }
 

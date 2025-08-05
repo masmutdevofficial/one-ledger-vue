@@ -55,6 +55,14 @@ const routes = [
         component: () => import('@/views/AddFunds.vue'),
       },
       {
+        path: 'send',
+        component: () => import('@/views/SendUSDT.vue'),
+      },
+      {
+        path: 'transfer',
+        component: () => import('@/views/TransferUSDT.vue'),
+      },
+      {
         path: 'market',
         component: () => import('@/views/DashboardUser.vue'),
       },
