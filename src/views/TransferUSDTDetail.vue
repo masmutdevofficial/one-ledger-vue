@@ -64,62 +64,92 @@
       aria-label="Continue"
       class="w-full bg-[#3CBDBD] text-white text-base font-normal py-3 rounded-lg"
       type="button"
-      @click="handleContinue"
+      @click="openConfirm"
       :disabled="loading"
     >
       <span v-if="loading">Sending...</span>
       <span v-else>Continue</span>
     </button>
   </div>
+  <TransferConfirmModal
+    :show="showConfirm"
+    :email="email"
+    :amount="amount"
+    :balance="balance"
+    :loading="confirming"
+    @close="showConfirm = false"
+    @confirm="handleContinue"
+  />
 </template>
+
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import TransferConfirmModal from '@/components/transfer/TransferConfirmModal.vue'
 
 const router = useRouter()
 const route = useRoute()
 const modal = useApiAlertStore()
 
-const amount = ref<string>('') // Input user
-const note = ref<string>('') // Optional
+const amount = ref('')
+const note = ref('')
 const loading = ref(false)
+const showConfirm = ref(false)
+const confirming = ref(false)
 
-onMounted(() => {
-  const email = route.query.email
+// --- Email dari query param
+const email = (route.query.email as string) || ''
+
+// Ambil saldo user dari API saat halaman dibuka
+const balance = ref(0)
+onMounted(async () => {
   if (!email) {
     modal.open('Error', 'No recipient email provided.')
-    // Listen to modal closed, lalu redirect
     const stop = modal.$onAction(({ name }) => {
       if (name === 'close') {
         router.replace('/transfer')
         stop()
       }
     })
+    return
   }
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return
+    const res = await fetch('https://ledger.masmutdev.id/api/get-saldo', {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    const data = await res.json()
+    if (res.ok && data.status === 'success') balance.value = Number(data.saldo)
+  } catch {}
 })
 
-// Tombol back
 function goBack() {
   router.back()
 }
 
-async function handleContinue() {
-  const email = route.query.email
-  if (!email) return // redundant guard
-
+// Open modal konfirmasi transfer
+function openConfirm() {
   if (!amount.value || isNaN(+amount.value) || +amount.value <= 0) {
     modal.open('Error', 'Please enter a valid amount.')
     return
   }
+  showConfirm.value = true
+}
 
-  loading.value = true
+// Handle transfer
+async function handleContinue() {
+  confirming.value = true
   try {
     const token = localStorage.getItem('token')
     if (!token) {
       modal.open('Unauthorized', 'Token not found.')
-      loading.value = false
+      confirming.value = false
       return
     }
     const res = await fetch('https://ledger.masmutdev.id/api/save-transfer', {
@@ -138,9 +168,10 @@ async function handleContinue() {
     const data = await res.json()
     if (!res.ok || data.status !== 'success') {
       modal.open('Failed', data.message || 'Transfer failed')
-      loading.value = false
+      confirming.value = false
       return
     }
+    showConfirm.value = false
     modal.open('Success', data.message || 'Transfer completed')
     setTimeout(() => {
       router.replace('/transfer')
@@ -148,7 +179,7 @@ async function handleContinue() {
   } catch {
     modal.open('Error', 'Server error')
   } finally {
-    loading.value = false
+    confirming.value = false
   }
 }
 </script>
