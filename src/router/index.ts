@@ -63,6 +63,10 @@ const routes = [
         component: () => import('@/views/TransferUSDT.vue'),
       },
       {
+        path: 'transfer-detail',
+        component: () => import('@/views/TransferUSDTDetail.vue'),
+      },
+      {
         path: 'market',
         component: () => import('@/views/DashboardUser.vue'),
       },
@@ -109,6 +113,13 @@ router.beforeEach(async (to, from, next) => {
         },
       })
       const data = await res.json()
+
+      // Jika token tidak valid (session expired)
+      if (data.message === 'Unauthenticated.') {
+        localStorage.removeItem('token')
+        // Redirect ke login dengan pesan session habis
+        return next('/login?reason=unauthorized')
+      }
 
       // Jika token valid dan akses halaman public, redirect ke dashboard
       if (token && data.valid && publicPages.includes(to.path) && to.path !== '/') {
