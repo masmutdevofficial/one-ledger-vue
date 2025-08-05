@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+  <div v-if="show" class="fixed inset-0 z-100 flex items-center justify-center bg-black/30">
     <div class="bg-black/70 p-8 rounded-xl text-center text-white max-w-xs mx-auto shadow-lg">
       <h2 class="text-lg font-bold mb-2">{{ title }}</h2>
       <p class="mb-4">{{ message }}</p>

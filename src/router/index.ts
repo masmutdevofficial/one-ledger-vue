@@ -39,12 +39,20 @@ const routes = [
     component: MainLayout,
     children: [
       {
-        path: '', // /
+        path: '',
         component: () => import('@/views/LandingApp.vue'),
       },
       {
-        path: 'dashboard', // /
+        path: 'account',
+        component: () => import('@/views/AccountMenu.vue'),
+      },
+      {
+        path: 'dashboard',
         component: () => import('@/views/DashboardUser.vue'),
+      },
+      {
+        path: 'add-funds',
+        component: () => import('@/views/AddFunds.vue'),
       },
       {
         path: 'market',

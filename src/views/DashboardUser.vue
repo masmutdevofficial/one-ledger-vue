@@ -5,8 +5,8 @@
       <!-- Header -->
       <div class="flex items-center space-x-1 text-gray-700 text-sm font-normal mb-1">
         <span>Est. Total Value</span>
-        <!-- Icon 👁️ -->
-        <span style="font-size: 18px">👁️</span>
+        <!-- Icon 👁️ ganti tabler:eye -->
+        <Icon icon="tabler:eye" class="w-4 h-4" />
       </div>
 
       <!-- Total Value -->
@@ -15,8 +15,8 @@
           saldo !== null ? saldo.toLocaleString('id-ID', { minimumFractionDigits: 2 }) : '...'
         }}</span>
         <span class="text-base font-normal">USDT</span>
-        <!-- Icon ▼ -->
-        <span class="text-base" style="font-size: 16px">▼</span>
+        <!-- Icon ▼ ganti tabler:chevron-down -->
+        <Icon icon="tabler:chevron-down" class="text-base w-4 h-4" />
       </div>
 
       <!-- USD Equivalent -->
@@ -30,15 +30,15 @@
       <div class="text-xs flex items-center text-black mb-4">
         Today's PNL
         <span class="text-[#3ABBA3] font-semibold"> +0,00938701 USDT (+0,84%) </span>
-        <!-- Icon ➡️ -->
-        <span class="ml-1 text-gray-400" style="font-size: 15px">➡️</span>
+        <!-- Icon ➡️ ganti tabler:chevron-right -->
+        <Icon icon="tabler:chevron-right" class="ml-1 text-gray-400 w-4 h-4" />
       </div>
 
       <!-- Action Buttons -->
       <div class="flex space-x-3">
         <RouterLink
           to="/add-funds"
-          class="bg-[#7FD7D5] text-white rounded-md px-6 py-2 text-base font-normal"
+          class="bg-teal-400 active:bg-teal-500 text-white rounded-md px-6 py-2 text-base font-normal transition-colors"
         >
           Add Funds
         </RouterLink>
@@ -77,8 +77,20 @@
           <div class="text-right">24h chg%</div>
         </div>
 
+        <!-- Tampilkan loading jika belum siap -->
+        <div
+          v-if="!isMarketReady"
+          class="flex flex-col items-center justify-center py-8 text-gray-500"
+        >
+          <!-- Spinner -->
+          <div
+            class="w-6 h-6 mb-2 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"
+          ></div>
+          <div>Loading market data...</div>
+        </div>
+
         <!-- Table Rows -->
-        <div class="space-y-4">
+        <div v-else class="space-y-4">
           <div
             class="grid grid-cols-[1fr_1fr_1fr] items-center"
             v-for="item in filteredMarketData"
@@ -192,6 +204,7 @@ import SliderDashboard from '@/components/dashboard/SliderDashboard.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useCoinWebSocket } from '@/composables/useCoinWebSocket'
 import { watch } from 'vue'
+import { Icon } from '@iconify/vue'
 
 interface MarketItem {
   name: string
@@ -307,6 +320,8 @@ onMounted(async () => {
 
 // Daftar koin yang mau ditampilkan
 const displayedCoins = ['BNB', 'BTC', 'ETH', 'SOL', 'XRP']
+const isMarketReady = ref(false)
+const expectedCount = displayedCoins.length
 
 // Buat marketData sebagai array
 const marketData = ref<MarketItem[]>([])
@@ -319,11 +334,17 @@ displayedCoins.forEach((coin) => {
   // Watch perubahan dan update marketData utama
   watch(singleMarket, (val) => {
     if (!val) return
+
     const idx = marketData.value.findIndex((item) => item.name === coin)
     if (idx >= 0) {
       marketData.value[idx] = val
     } else {
       marketData.value.push(val)
+    }
+
+    // Cek apakah semua coin sudah ada
+    if (marketData.value.length === expectedCount && !isMarketReady.value) {
+      isMarketReady.value = true
     }
   })
 })
