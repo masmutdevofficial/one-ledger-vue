@@ -77,22 +77,10 @@
           <div class="text-right">24h chg%</div>
         </div>
 
-        <!-- Tampilkan loading jika belum siap -->
-        <div
-          v-if="!isMarketReady"
-          class="flex flex-col items-center justify-center py-8 text-gray-500"
-        >
-          <!-- Spinner -->
-          <div
-            class="w-6 h-6 mb-2 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"
-          ></div>
-          <div>Loading market data...</div>
-        </div>
-
-        <!-- Table Rows -->
-        <div v-else class="space-y-4">
-          <div
-            class="grid grid-cols-[1fr_1fr_1fr] items-center"
+        <div class="space-y-4">
+          <RouterLink
+            :to="`/trade?symbol=${item.name.toLowerCase()}usdt`"
+            class="grid grid-cols-[1fr_1fr_1fr] items-center hover:bg-gray-50 transition-colors duration-150 rounded-lg px-2 py-1"
             v-for="item in filteredMarketData"
             :key="item.name"
           >
@@ -128,7 +116,7 @@
                 }}{{ Math.abs(item.change).toFixed(2) }}%
               </button>
             </div>
-          </div>
+          </RouterLink>
         </div>
 
         <!-- View More -->
@@ -202,8 +190,6 @@
 import { useApiAlertStore } from '@/stores/apiAlert'
 import SliderDashboard from '@/components/dashboard/SliderDashboard.vue'
 import { ref, onMounted, computed } from 'vue'
-import { useCoinWebSocket } from '@/composables/useCoinWebSocket'
-import { watch } from 'vue'
 import { Icon } from '@iconify/vue'
 
 interface MarketItem {
@@ -216,11 +202,11 @@ interface MarketItem {
 interface SaldoResponse {
   status: string
   saldo: number
-  komisi: number
+  koin: number
 }
 
 const saldo = ref<number | null>(null)
-const komisi = ref<number | null>(null)
+const koin = ref<number | null>(null)
 
 onMounted(async () => {
   try {
@@ -236,7 +222,7 @@ onMounted(async () => {
 
     if (res.ok && data.status === 'success') {
       saldo.value = data.saldo
-      komisi.value = data.komisi
+      koin.value = data.koin
     } else {
       console.error('Gagal ambil saldo:', data)
     }
@@ -317,39 +303,93 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-// Daftar koin yang mau ditampilkan
 const displayedCoins = ['BNB', 'BTC', 'ETH', 'SOL', 'XRP']
-const isMarketReady = ref(false)
-const expectedCount = displayedCoins.length
-
-// Buat marketData sebagai array
 const marketData = ref<MarketItem[]>([])
 
-// Loop untuk tiap koin, konekkan WebSocket masing-masing
-displayedCoins.forEach((coin) => {
-  // Pairnya harus usdt, dan lowercase (ex: btcusdt/1min)
-  const { marketData: singleMarket } = useCoinWebSocket(`${coin.toLowerCase()}usdt`, '1day')
+// Map simbol jika perlu mapping ke nama Huobi
+const symbolMap: Record<string, string> = {
+  BNB: 'bnb',
+  BTC: 'btc',
+  ETH: 'eth',
+  SOL: 'sol',
+  XRP: 'xrp',
+}
 
-  // Watch perubahan dan update marketData utama
-  watch(singleMarket, (val) => {
-    if (!val) return
+// Ambil data awal dari API Huobi
+async function fetchInitialMarketData() {
+  const promises = displayedCoins.map(async (coin) => {
+    const symbol = symbolMap[coin] + 'usdt'
 
-    const idx = marketData.value.findIndex((item) => item.name === coin)
-    if (idx >= 0) {
-      marketData.value[idx] = val
-    } else {
-      marketData.value.push(val)
-    }
+    try {
+      const mergedRes = await fetch(`https://api.huobi.pro/market/detail/merged?symbol=${symbol}`)
+      const mergedData = await mergedRes.json()
+      const price = mergedData?.tick?.close || 0
 
-    // Cek apakah semua coin sudah ada
-    if (marketData.value.length === expectedCount && !isMarketReady.value) {
-      isMarketReady.value = true
+      const klineRes = await fetch(
+        `https://api.huobi.pro/market/history/kline?period=1day&size=2&symbol=${symbol}`,
+      )
+      const klineData = await klineRes.json()
+      const kline = klineData?.data?.[1]
+      const open = kline?.open || 0
+
+      if (price && open) {
+        marketData.value.push({
+          name: coin,
+          price: price,
+          change: ((price - open) / open) * 100,
+        })
+      }
+    } catch (err) {
+      console.warn(`API fallback failed for ${coin}`, err)
     }
   })
+
+  await Promise.all(promises)
+}
+
+// WebSocket integrasi
+function connectWebSocket(coin: string) {
+  const symbol = symbolMap[coin] + 'usdt'
+  const url = `wss://ledgersocketone.online/${symbol}/1day`
+  const ws = new WebSocket(url)
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      const tick = data?.tick
+      if (!tick) return
+
+      const open = tick.open
+      const close = tick.close
+
+      const index = marketData.value.findIndex((item) => item.name === coin)
+      const updated: MarketItem = {
+        name: coin,
+        price: close,
+        change: ((close - open) / open) * 100,
+      }
+
+      if (index >= 0) {
+        marketData.value[index] = updated
+      } else {
+        marketData.value.push(updated)
+      }
+    } catch (err) {
+      console.error(`WS parse error for ${coin}`, err)
+    }
+  }
+
+  ws.onerror = () => console.error(`[WS] Error on ${coin}`)
+  // ws.onclose = () => console.warn(`[WS] Closed for ${coin}`)
+}
+
+// Inisialisasi
+onMounted(() => {
+  fetchInitialMarketData()
+  displayedCoins.forEach((coin) => connectWebSocket(coin))
 })
 
-// Market data yang sudah difilter dan urut sesuai displayedCoins
+// Urutkan sesuai displayedCoins
 const filteredMarketData = computed(
   () =>
     displayedCoins

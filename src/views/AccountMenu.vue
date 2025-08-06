@@ -65,11 +65,11 @@
 
       <!-- Grid Menu -->
       <div class="grid grid-cols-4 gap-y-6 gap-x-4">
-        <RouterLink
+        <div
           v-for="(item, index) in menus"
           :key="index"
-          :to="item.link"
-          class="flex flex-col items-center text-center"
+          class="flex flex-col items-center text-center cursor-pointer"
+          @click="handleMenuClick(item)"
         >
           <div
             class="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center mb-2"
@@ -77,24 +77,78 @@
             <img :src="item.img" :alt="item.title" class="w-8 h-8" width="40" height="40" />
           </div>
           <p class="text-[10px] font-semibold text-black">{{ item.title }}</p>
-        </RouterLink>
+        </div>
+      </div>
+    </div>
+    <!-- Modal Confirm Logout -->
+    <div
+      v-if="showLogoutModal"
+      class="fixed inset-0 bg-black/30 z-[100] flex items-center justify-center"
+    >
+      <div class="bg-white p-6 rounded-xl w-[90vw] max-w-xs mx-auto shadow-lg text-center relative">
+        <button
+          class="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+          @click="showLogoutModal = false"
+        >
+          <Icon icon="tabler:x" class="w-5 h-5" />
+        </button>
+        <h2 class="font-semibold text-black text-base mb-4">Confirm Logout</h2>
+        <p class="text-sm text-gray-600 mb-5">Are you sure you want to logout?</p>
+        <div class="flex space-x-3">
+          <button
+            class="flex-1 py-2 rounded-md bg-gray-200 text-gray-700 font-semibold"
+            @click="showLogoutModal = false"
+          >
+            Cancel
+          </button>
+          <button
+            class="flex-1 py-2 rounded-md bg-red-500 text-white font-semibold hover:bg-red-600"
+            @click="logout"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+interface MenuItem {
+  title: string
+  link: string
+  img: string
+  isLogout?: boolean
+}
+
+const handleMenuClick = (item: MenuItem) => {
+  if (item.isLogout) {
+    showLogoutModal.value = true
+  } else {
+    router.push(item.link)
+  }
+}
 
 const showModal = ref(false)
+const showLogoutModal = ref(false)
 const usernameInput = ref('')
 const loading = ref(false)
 
 const username = ref('-')
 const modal = useApiAlertStore()
+
+const logout = () => {
+  localStorage.removeItem('token')
+  showLogoutModal.value = false
+  router.replace('/login')
+}
 
 // Ambil username awal saat komponen mount
 onMounted(async () => {
@@ -158,7 +212,7 @@ const updateUsername = async () => {
   }
 }
 
-const menus = [
+const menus: MenuItem[] = [
   {
     title: 'Language',
     link: '/language',
@@ -211,8 +265,9 @@ const menus = [
   },
   {
     title: 'Logout',
-    link: '/logout',
+    link: '',
     img: '/img/menu/logout.png',
+    isLogout: true,
   },
 ]
 </script>
