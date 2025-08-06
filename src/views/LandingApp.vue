@@ -1,9 +1,3 @@
-<script setup lang="ts">
-import { RouterLink } from 'vue-router'
-import DashboardSliderCrypto from '@/components/landing/DashboardSliderCrypto.vue'
-import { Icon } from '@iconify/vue'
-</script>
-
 <template>
   <div class="w-full h-screen bg-[#eaf3ec] rounded-lg text-center relative p-4">
     <!-- Ilustrasi Koin -->
@@ -25,13 +19,13 @@ import { Icon } from '@iconify/vue'
 
     <!-- Countdown -->
     <div class="mt-3 flex justify-center space-x-2 text-xs text-gray-700 font-semibold">
-      <div class="bg-white rounded-md px-2 py-1 shadow-sm">13</div>
+      <div class="bg-white rounded-md px-2 py-1 shadow-sm">{{ days }}</div>
       <div class="pt-1">d</div>
-      <div class="bg-white rounded-md px-2 py-1 shadow-sm">23</div>
+      <div class="bg-white rounded-md px-2 py-1 shadow-sm">{{ hours }}</div>
       <div class="pt-1">h</div>
-      <div class="bg-white rounded-md px-2 py-1 shadow-sm">59</div>
+      <div class="bg-white rounded-md px-2 py-1 shadow-sm">{{ minutes }}</div>
       <div class="pt-1">m</div>
-      <div class="bg-white rounded-md px-2 py-1 shadow-sm">21</div>
+      <div class="bg-white rounded-md px-2 py-1 shadow-sm">{{ seconds }}</div>
       <div class="pt-1">s</div>
     </div>
 
@@ -79,3 +73,57 @@ import { Icon } from '@iconify/vue'
     </div>
   </div>
 </template>
+<script lang="ts" setup>
+import { RouterLink } from 'vue-router'
+import DashboardSliderCrypto from '@/components/landing/DashboardSliderCrypto.vue'
+import { Icon } from '@iconify/vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const days = ref(0)
+const hours = ref(0)
+const minutes = ref(0)
+const seconds = ref(0)
+
+const COUNTDOWN_KEY = 'landingCountdown'
+const COUNTDOWN_DURATION = 3 * 24 * 60 * 60 * 1000 // 3 hari
+let interval: number
+
+function convert(ms: number) {
+  const d = Math.floor(ms / (1000 * 60 * 60 * 24))
+  const h = Math.floor((ms / (1000 * 60 * 60)) % 24)
+  const m = Math.floor((ms / (1000 * 60)) % 60)
+  const s = Math.floor((ms / 1000) % 60)
+  return { d, h, m, s }
+}
+
+function startCountdown(endTime: number) {
+  interval = window.setInterval(() => {
+    const now = Date.now()
+    let diff = endTime - now
+
+    if (diff <= 0) {
+      endTime = now + COUNTDOWN_DURATION
+      localStorage.setItem(COUNTDOWN_KEY, endTime.toString())
+      diff = COUNTDOWN_DURATION
+    }
+
+    const { d, h, m, s } = convert(diff)
+    days.value = d
+    hours.value = h
+    minutes.value = m
+    seconds.value = s
+  }, 1000)
+}
+
+onMounted(() => {
+  const saved = localStorage.getItem(COUNTDOWN_KEY)
+  const endTime = saved ? parseInt(saved) : Date.now() + COUNTDOWN_DURATION
+  localStorage.setItem(COUNTDOWN_KEY, endTime.toString())
+
+  startCountdown(endTime)
+})
+
+onUnmounted(() => {
+  clearInterval(interval)
+})
+</script>

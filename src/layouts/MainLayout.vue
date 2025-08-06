@@ -109,7 +109,7 @@ onMounted(async () => {
             class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 shadow-md z-50"
           >
             <div class="flex justify-around items-center py-2">
-              <RouterLink to="/" class="flex flex-col items-center text-blue-600">
+              <RouterLink to="/dashboard" class="flex flex-col items-center text-blue-600">
                 <Icon icon="tabler:hexagons" class="text-2xl" />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>

@@ -64,11 +64,11 @@ const routes = [
       },
       {
         path: 'market',
-        component: () => import('@/views/DashboardUser.vue'),
+        component: () => import('@/views/MarketAll.vue'),
       },
       {
         path: 'trade',
-        component: () => import('@/views/DashboardUser.vue'),
+        component: () => import('@/views/MarketCoin.vue'),
       },
       {
         path: 'history',
