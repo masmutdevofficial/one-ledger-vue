@@ -110,6 +110,12 @@
         </div>
       </div>
     </div>
+    <LanguageSelector
+      :show="showLanguageSelector"
+      :selectedLang="selectedLang"
+      @close="showLanguageSelector = false"
+      @update="updateLanguage"
+    />
   </div>
 </template>
 
@@ -118,6 +124,7 @@ import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import { useRouter } from 'vue-router'
+import LanguageSelector from '@/components/menu/LanguageSelector.vue'
 
 const router = useRouter()
 
@@ -128,12 +135,22 @@ interface MenuItem {
   isLogout?: boolean
 }
 
+const showLanguageSelector = ref(false)
+const selectedLang = ref(localStorage.getItem('language') || 'en')
+
 const handleMenuClick = (item: MenuItem) => {
   if (item.isLogout) {
     showLogoutModal.value = true
+  } else if (item.title === 'Language') {
+    showLanguageSelector.value = true
   } else {
     router.push(item.link)
   }
+}
+
+function updateLanguage(lang: string) {
+  selectedLang.value = lang
+  // Optional: reload i18n / update UI if needed
 }
 
 const showModal = ref(false)
