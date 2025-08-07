@@ -252,7 +252,7 @@ const menus: MenuItem[] = [
   },
   {
     title: 'Hub Reward',
-    link: '/reward',
+    link: '/hub-rewards',
     img: '/img/menu/hub-reward.png',
   },
   {

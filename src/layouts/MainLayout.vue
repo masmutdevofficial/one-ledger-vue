@@ -43,7 +43,9 @@ onMounted(async () => {
   <div class="min-h-screen flex justify-center bg-black text-gray-900">
     <div class="w-full max-w-md bg-white min-h-screen flex flex-col relative">
       <!-- Header -->
-      <header class="bg-[#f0f7fc] w-full max-w-4xl shadow-sm flex items-center px-6 py-4 space-x-8">
+      <header
+        class="bg-[#f0f7fc] fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 shadow-sm flex items-center px-6 py-4 space-x-8"
+      >
         <!-- Logo -->
         <RouterLink to="/account" aria-label="Account">
           <img alt="Logo with four hexagons" class="w-8 h-9" src="/img/logo.png" />
@@ -76,7 +78,7 @@ onMounted(async () => {
       </header>
 
       <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto relative">
+      <main class="flex-1 overflow-y-auto relative mt-20">
         <!-- Loader -->
         <div
           v-if="isLoading && !isPublicPage"

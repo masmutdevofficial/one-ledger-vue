@@ -79,15 +79,43 @@ const routes = [
         component: () => import('@/views/DashboardUser.vue'),
       },
       {
+        path: 'futures',
+        component: () => import('@/views/FuturesCopy.vue'),
+      },
+      {
         path: 'account',
         component: () => import('@/views/DashboardUser.vue'),
       },
+      {
+        path: 'smart-arbitrage',
+        component: () => import('@/views/menu/SmartArbitrage.vue'),
+      },
+      {
+        path: 'hub-rewards',
+        component: () => import('@/views/menu/HubReward.vue'),
+      },
+      {
+        path: 'launchpool',
+        component: () => import('@/views/menu/LaunchPool.vue'),
+      },
+      {
+        path: 'p2p',
+        component: () => import('@/views/menu/P2P.vue'),
+      },
+      {
+        path: 'security',
+        component: () => import('@/views/menu/SecurityPassword.vue'),
+      },
+      {
+        path: 'megadrop',
+        component: () => import('@/views/menu/MegaDrop.vue'),
+      },
+      // 404 Not Found
+      {
+        path: '/:catchAll(.*)',
+        component: () => import('@/views/NotFound.vue'),
+      },
     ],
-  },
-  // 404 Not Found
-  {
-    path: '/:catchAll(.*)',
-    component: () => import('@/views/NotFound.vue'),
   },
 ]
 const router = createRouter({

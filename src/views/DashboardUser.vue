@@ -67,7 +67,9 @@
         <!-- Tabs -->
         <div class="flex space-x-6 text-[13px] font-semibold text-[#6b7280]">
           <button class="text-black font-bold">Crypto</button>
-          <button>Futures</button>
+          <router-link to="/futures">
+            <button>Futures</button>
+          </router-link>
         </div>
 
         <!-- Table Header -->

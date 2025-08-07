@@ -276,12 +276,14 @@
       <!-- CTA -->
       <p class="text-center text-gray-400 text-xs mb-3">Let Top Traders Trade for You</p>
       <div class="flex justify-center mb-40">
-        <button
-          type="button"
-          class="border border-gray-300 rounded-md px-4 py-1 text-sm text-gray-900 hover:bg-gray-100"
-        >
-          Copy Trading
-        </button>
+        <router-link to="/futures">
+          <button
+            type="button"
+            class="border border-gray-300 rounded-md px-4 py-1 text-sm text-gray-900 hover:bg-gray-100"
+          >
+            Copy Trading
+          </button>
+        </router-link>
       </div>
     </div>
   </div>
