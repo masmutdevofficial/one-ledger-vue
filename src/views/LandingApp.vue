@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-screen bg-[#eaf3ec] rounded-lg text-center relative p-4">
+  <div class="w-full h-screen bg-[#eaf3ec] rounded-lg text-center relative p-4 mb-20">
     <!-- Ilustrasi Koin -->
     <div class="flex justify-center">
       <img

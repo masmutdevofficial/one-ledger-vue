@@ -115,6 +115,10 @@ const routes = [
         component: () => import('@/views/menu/MegaDrop.vue'),
       },
       {
+        path: 'news/:slug',
+        component: () => import('@/views/DetailNews.vue'),
+      },
+      {
         path: 'futures/:username',
         component: () => import('@/views/DetailFutures.vue'),
       },
