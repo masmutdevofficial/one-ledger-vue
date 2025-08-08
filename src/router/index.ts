@@ -114,6 +114,10 @@ const routes = [
         path: 'megadrop',
         component: () => import('@/views/menu/MegaDrop.vue'),
       },
+      {
+        path: 'futures/:username',
+        component: () => import('@/views/DetailFutures.vue'),
+      },
       // 404 Not Found
       {
         path: '/:catchAll(.*)',

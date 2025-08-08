@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4">
+  <div class="px-4 mb-20">
     <h2 class="font-semibold text-base mb-2 select-none">Futures Copy</h2>
     <div class="text-sm font-semibold mb-4 select-none">Public</div>
     <!-- Filter bar -->
@@ -62,6 +62,7 @@
             v-if="item.button === 'Copy'"
             class="bg-teal-300 text-white text-sm rounded-lg px-4 py-1 shadow-[0_0_8px_rgba(0,0,0,0.1)] select-none"
             type="button"
+            @click="goToFutures(item.username)"
           >
             Copy
           </button>
@@ -88,13 +89,26 @@
           </div>
           <div class="font-bold text-sm select-none">{{ item.aum }}</div>
         </div>
-        <div class="flex justify-between text-xs text-gray-400 select-none">
-          <span>30D MDD</span>
-          <span :class="item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none'">
-            {{ item.mddValue }}
-          </span>
-          <span>Sharpe Ratio</span>
-          <span>{{ item.sharpe }}</span>
+        <div class="flex items-start space-x-3">
+          <!-- Kiri: Gambar -->
+          <MiniAreaChart :series="item.chartSeries" :categories="item.chartCategories" />
+          <!-- Kanan: Info -->
+          <div class="flex-1">
+            <div class="flex items-start justify-between text-xs text-gray-400 select-none">
+              <div class="flex flex-col justify-center text-xs text-gray-400 select-none ml-22">
+                <span>30D MDD</span>
+                <span
+                  :class="item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none'"
+                >
+                  {{ item.mddValue }}
+                </span>
+              </div>
+              <div class="flex flex-col justify-center text-xs text-gray-400 select-none">
+                <span>Sharpe Ratio</span>
+                <span>{{ item.sharpe }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </li>
     </ul>
@@ -102,7 +116,15 @@
 </template>
 
 <script setup lang="ts">
+import MiniAreaChart from '@/components/futures/MiniAreaChart.vue'
 import { Icon } from '@iconify/vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+function goToFutures(username: string) {
+  router.push(`/futures/${username}`)
+}
 
 interface CopyTrader {
   id: number
@@ -120,6 +142,8 @@ interface CopyTrader {
   aum: string
   mddValue: string
   sharpe: string
+  chartSeries: number[]
+  chartCategories?: string[]
 }
 
 const copyTraders: CopyTrader[] = [
@@ -139,6 +163,8 @@ const copyTraders: CopyTrader[] = [
     aum: '5,191,333.58',
     mddValue: '10.26%',
     sharpe: '2.44',
+    chartSeries: [10, 20, 15, 25, 20, 35, 28],
+    chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   },
   {
     id: 2,
@@ -154,6 +180,8 @@ const copyTraders: CopyTrader[] = [
     aum: '871,742.98',
     mddValue: '9.40%',
     sharpe: '2.69',
+    chartSeries: [22, 18, 19, 23, 25, 30, 24],
+    chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   },
   {
     id: 3,
@@ -169,6 +197,8 @@ const copyTraders: CopyTrader[] = [
     aum: '114,069.95',
     mddValue: '11.71%',
     sharpe: '--',
+    chartSeries: [13, 13, 16, 19, 18, 15, 14],
+    chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   },
   {
     id: 4,
@@ -186,6 +216,8 @@ const copyTraders: CopyTrader[] = [
     aum: '1,729,893.82',
     mddValue: '5.39%',
     sharpe: '3.14',
+    chartSeries: [19, 15, 17, 21, 24, 22, 30],
+    chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   },
 ]
 </script>

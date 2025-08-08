@@ -108,6 +108,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useApiAlertStore } from '@/stores/apiAlert'
+
+const modal = useApiAlertStore()
 
 // STATE
 const newPassword = ref('')
@@ -135,8 +138,38 @@ function validationClass(valid: boolean) {
   return valid ? 'text-green-600' : 'text-red-500'
 }
 
-function handleSubmit() {
-  // Kirim ke backend atau logic submit lain
-  // Hanya akan dipanggil jika sudah valid
+async function handleSubmit() {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    modal.open('Unauthorized', 'Token tidak ditemukan.')
+    return
+  }
+
+  try {
+    const res = await fetch('https://ledger.masmutdev.id/api/change-password', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        new_password: newPassword.value,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      modal.open('Error', data.message || 'Gagal mengganti password.')
+      return
+    }
+
+    modal.open('Success', data.message || 'Password berhasil diganti.')
+    newPassword.value = ''
+    confirmPassword.value = ''
+  } catch {
+    modal.open('Network Error', 'Terjadi kesalahan jaringan.')
+  }
 }
 </script>
