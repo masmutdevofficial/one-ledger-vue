@@ -34,7 +34,16 @@
       </div>
     </div>
     <div class="max-w-md mx-4 mt-1">
-      <span class="text-teal-600 text-sm font-semibold">+2,37%</span>
+      <span
+        class="text-sm font-semibold"
+        :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+      >
+        {{
+          percentChange !== null
+            ? (percentChange > 0 ? '+' : '') + percentChange.toFixed(2) + '%'
+            : '-'
+        }}
+      </span>
     </div>
 
     <div class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-4">
@@ -43,58 +52,68 @@
         <!-- SELL LIST -->
         <div class="flex justify-between text-gray-400 text-xs pb-1">
           <span>Price (USDT)</span>
-          <span>Amount (BTC)</span>
+          <span>Amount ({{ baseAsset }})</span>
         </div>
-        <div class="space-y-1">
-          <div class="flex justify-between">
-            <p class="text-pink-400 text-sm text-right">108.846,99</p>
-            <p class="text-black text-sm text-left">0,34346</p>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-pink-400 text-sm text-right">108.846,98</p>
-            <p class="text-black text-sm text-left">0,00010</p>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-pink-400 text-sm text-right">108.846,97</p>
-            <p class="text-black text-sm text-left">0,11880</p>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-pink-400 text-sm text-right">108.846,96</p>
-            <p class="text-black text-sm text-left">0,00010</p>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-pink-400 text-sm text-right">108.846,14</p>
-            <p class="text-black text-sm text-left">8,19817</p>
+
+        <!-- ASKS (SELL, merah) -->
+        <div class="space-y-1" v-if="depthData">
+          <div
+            v-for="ask in top5Asks"
+            :key="ask[0]"
+            class="relative flex justify-between overflow-hidden rounded"
+            style="height: 28px"
+          >
+            <!-- BG bar -->
+            <div
+              class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+              :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+            ></div>
+            <!-- Data -->
+            <p class="text-pink-400 text-sm text-right z-10 px-2 w-1/2">
+              {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+            </p>
+            <p class="text-black text-sm text-left z-10 px-2 w-1/2">
+              {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+            </p>
           </div>
         </div>
 
-        <!-- CURRENT PRICE -->
-        <div class="text-center my-3">
-          <p class="text-[#2DBE87] font-semibold text-[28px]">108.846,14</p>
-          <p class="text-[#7F7F7F] text-[14px]">≈ $108.846,14</p>
+        <!-- CURRENT PRICE (Bid Teratas, jika ada) -->
+        <div class="text-center my-3" v-if="depthData">
+          <p class="text-[#2DBE87] font-semibold text-[28px]">
+            {{
+              depthData.tick.bids[0]?.[0]?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ??
+              '-'
+            }}
+          </p>
+          <p class="text-[#7F7F7F] text-[14px]">
+            ≈ ${{
+              depthData.tick.bids[0]?.[0]?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ??
+              '-'
+            }}
+          </p>
         </div>
 
-        <!-- BUY LIST -->
-        <div class="space-y-1">
-          <div class="flex justify-between">
-            <p class="text-[#2DBE87]">108.846,13</p>
-            <p class="text-black">0,56438</p>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-[#2DBE87]">108.846,12</p>
-            <p class="text-black">0,00087</p>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-[#2DBE87]">108.845,65</p>
-            <p class="text-black">0,00006</p>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-[#2DBE87]">108.845,29</p>
-            <p class="text-black">0,01015</p>
-          </div>
-          <div class="flex justify-between">
-            <p class="text-[#2DBE87]">108.844,83</p>
-            <p class="text-black">0,00010</p>
+        <!-- BIDS (BUY, hijau) -->
+        <div class="space-y-1" v-if="depthData">
+          <div
+            v-for="bid in top5Bids"
+            :key="bid[0]"
+            class="relative flex justify-between overflow-hidden rounded"
+            style="height: 28px"
+          >
+            <!-- BG bar -->
+            <div
+              class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+              :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+            ></div>
+            <!-- Data -->
+            <p class="text-[#2DBE87] text-sm text-right z-10 px-2 w-1/2">
+              {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+            </p>
+            <p class="text-black text-sm text-left z-10 px-2 w-1/2">
+              {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+            </p>
           </div>
         </div>
       </div>
@@ -180,7 +199,11 @@
           <div class="flex justify-between text-gray-400 italic">
             <span>Avbl</span>
             <span class="text-gray-900 normal-case not-italic flex items-center gap-1">
-              0,0022919 USDT
+              <template v-if="saldoLoading">...</template>
+              <template v-else-if="saldoError">-</template>
+              <template v-else>
+                {{ saldo?.toLocaleString('en-US', { maximumFractionDigits: 8 }) }} USDT
+              </template>
               <Icon icon="tabler:plus" class="text-yellow-400 text-[10px]" />
             </span>
           </div>
@@ -290,8 +313,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+interface DepthTick {
+  asks: [number, number][]
+  bids: [number, number][]
+}
+interface DepthData {
+  ch: string
+  ts: number
+  tick: DepthTick
+}
+
+// Kline (persen perubahan harga, opsional jika backend support)
+interface KlineTick {
+  open: number
+  close: number
+}
+interface KlineData {
+  ch: string
+  ts: number
+  tick: KlineTick
+}
 
 const activeTab = ref<'buy' | 'sell'>('buy')
 const amountPercent = ref(0)
@@ -321,8 +366,176 @@ const tradingPairs = [
   'PEPE/USDT',
 ]
 
+const route = useRoute()
+const router = useRouter()
+
+// Ambil symbol dari query param, default btcusdt
+const symbol = computed(() => {
+  const s = (route.query.symbol as string) || 'btcusdt'
+  return s.toLowerCase()
+})
+
+const ws = ref<WebSocket | null>(null)
+const depthData = ref<DepthData | null>(null)
+
+// State untuk Kline data (misal data terakhir)
+interface KlineTick {
+  open: number
+  close: number
+}
+interface KlineData {
+  ch: string
+  ts: number
+  tick: KlineTick
+}
+
+const klineWS = ref<WebSocket | null>(null)
+const klineData = ref<KlineData | null>(null)
+
+async function fetchInitialKline(pairSymbol: string) {
+  try {
+    // pairSymbol: 'btcusdt'
+    const res = await fetch(
+      `https://api.huobi.pro/market/history/kline?symbol=${pairSymbol}&period=1day&size=1`,
+    )
+    if (!res.ok) throw new Error('Failed to fetch initial kline')
+    const data = await res.json()
+    if (data && data.status === 'ok' && data.data && data.data.length > 0) {
+      // Format hasil REST mirip hasil WebSocket
+      // Huobi REST: [{ id, open, close, low, high, vol, ... }]
+      klineData.value = {
+        ch: '', // tidak penting
+        ts: Date.now(),
+        tick: {
+          open: data.data[0].open,
+          close: data.data[0].close,
+        },
+      }
+    }
+  } catch {
+    // Tidak ada kline awal, biarkan null
+  }
+}
+
+// Fungsi koneksi ke websocket kline
+function connectKlineWS(pairSymbol: string) {
+  klineWS.value?.close()
+  klineData.value = null
+
+  // Ambil data awal kline via REST API
+  fetchInitialKline(pairSymbol)
+
+  klineWS.value = new WebSocket(`wss://ledgersocketone.online/${pairSymbol}/1day`)
+  klineWS.value.onmessage = (e: MessageEvent) => {
+    try {
+      const data = JSON.parse(e.data)
+      if (data && data.tick && data.ch?.includes('kline')) {
+        klineData.value = data
+      }
+    } catch {}
+  }
+}
+
+// Komputasi percentChange
+const percentChange = computed(() => {
+  if (!klineData.value) return null
+  const open = klineData.value.tick.open
+  const close = klineData.value.tick.close
+  if (!open) return null
+  return ((close - open) / open) * 100
+})
+
+function connectWS(pairSymbol: string) {
+  ws.value?.close()
+  depthData.value = null
+  ws.value = new WebSocket(`wss://ledgersocketone.online/${pairSymbol}/depth`)
+  ws.value.onmessage = (e: MessageEvent) => {
+    try {
+      const data = JSON.parse(e.data)
+      if (data && data.tick && data.ch?.includes('depth')) {
+        depthData.value = data
+      }
+    } catch {}
+  }
+}
+
+// Dropdown → update URL query (tanpa reload)
 function selectPair(pair: string) {
   selectedPair.value = pair
   dropdownOpen.value = false
+  const symbolParam = pair.replace('/', '').toLowerCase()
+  router.replace({ query: { ...route.query, symbol: symbolParam } })
 }
+
+// Komputasi base asset (BTC dari BTC/USDT)
+const baseAsset = computed(() => selectedPair.value.split('/')[0])
+
+// Top 5 orderbook
+const top5Asks = computed(() =>
+  depthData.value ? depthData.value.tick.asks.slice(-5).reverse() : [],
+)
+const top5Bids = computed(() => (depthData.value ? depthData.value.tick.bids.slice(0, 5) : []))
+
+const maxAskAmount = computed(() =>
+  top5Asks.value.length ? Math.max(...top5Asks.value.map((a) => a[1])) : 1,
+)
+const maxBidAmount = computed(() =>
+  top5Bids.value.length ? Math.max(...top5Bids.value.map((b) => b[1])) : 1,
+)
+
+// Saldo (API)
+const saldo = ref<number | null>(null)
+const saldoLoading = ref(true)
+const saldoError = ref(false)
+async function getSaldo() {
+  saldoLoading.value = true
+  saldoError.value = false
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('No token')
+    const res = await fetch('https://ledger.masmutdev.id/api/saldo', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    })
+    if (!res.ok) throw new Error('Failed to fetch saldo')
+    const data = await res.json()
+    saldo.value = data.saldo ?? 0
+  } catch {
+    saldoError.value = true
+    saldo.value = null
+  } finally {
+    saldoLoading.value = false
+  }
+}
+
+// Sync selectedPair dari URL
+onMounted(() => {
+  const urlSymbol = route.query.symbol as string
+  if (urlSymbol) {
+    const formatted = urlSymbol.toUpperCase().replace('USDT', '/USDT')
+    if (tradingPairs.includes(formatted)) {
+      selectedPair.value = formatted
+    }
+  }
+  connectWS(symbol.value)
+  connectKlineWS(symbol.value)
+  getSaldo()
+})
+
+onUnmounted(() => {
+  ws.value?.close()
+  klineWS.value?.close()
+})
+
+// Jika symbol berubah (misal: pilih pair atau url manual), sync & reconnect
+watch(symbol, (newSymbol) => {
+  const formatted = newSymbol.toUpperCase().replace('USDT', '/USDT')
+  if (tradingPairs.includes(formatted)) {
+    selectedPair.value = formatted
+  }
+  connectWS(newSymbol)
+  connectKlineWS(newSymbol) // kalau pakai kline juga
+})
 </script>

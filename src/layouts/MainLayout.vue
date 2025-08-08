@@ -37,6 +37,10 @@ onMounted(async () => {
   }
   isLoading.value = false
 })
+
+function isActive(path: string): boolean {
+  return route.path.startsWith(path)
+}
 </script>
 
 <template>
@@ -111,23 +115,43 @@ onMounted(async () => {
             class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 shadow-md z-50"
           >
             <div class="flex justify-around items-center py-2">
-              <RouterLink to="/dashboard" class="flex flex-col items-center text-blue-600">
+              <RouterLink
+                to="/dashboard"
+                class="flex flex-col items-center"
+                :class="isActive('/dashboard') ? 'text-blue-600' : 'text-gray-400'"
+              >
                 <Icon icon="tabler:hexagons" class="text-2xl" />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>
-              <RouterLink to="/market" class="flex flex-col items-center text-gray-400">
+              <RouterLink
+                to="/market"
+                class="flex flex-col items-center"
+                :class="isActive('/market') ? 'text-blue-600' : 'text-gray-400'"
+              >
                 <Icon icon="tabler:chart-line" class="text-2xl" />
                 <span class="text-xs mt-1">Market</span>
               </RouterLink>
-              <RouterLink to="/trade" class="flex flex-col items-center text-gray-400">
+              <RouterLink
+                to="/trade"
+                class="flex flex-col items-center"
+                :class="isActive('/trade') ? 'text-blue-600' : 'text-gray-400'"
+              >
                 <Icon icon="tabler:arrows-left-right" class="text-2xl" />
                 <span class="text-xs mt-1">Trade</span>
               </RouterLink>
-              <RouterLink to="/history" class="flex flex-col items-center text-gray-400">
+              <RouterLink
+                to="/history"
+                class="flex flex-col items-center"
+                :class="isActive('/history') ? 'text-blue-600' : 'text-gray-400'"
+              >
                 <Icon icon="tabler:history" class="text-2xl" />
                 <span class="text-xs mt-1 text-center">Order History</span>
               </RouterLink>
-              <RouterLink to="/account" class="flex flex-col items-center text-gray-400">
+              <RouterLink
+                to="/assets"
+                class="flex flex-col items-center"
+                :class="isActive('/account') ? 'text-blue-600' : 'text-gray-400'"
+              >
                 <Icon icon="tabler:wallet" class="text-2xl" />
                 <span class="text-xs mt-1">Assets</span>
               </RouterLink>

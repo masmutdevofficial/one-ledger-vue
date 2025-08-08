@@ -76,7 +76,11 @@ const routes = [
       },
       {
         path: 'history',
-        component: () => import('@/views/DashboardUser.vue'),
+        component: () => import('@/views/OrderHistory.vue'),
+      },
+      {
+        path: 'assets',
+        component: () => import('@/views/AssetsData.vue'),
       },
       {
         path: 'futures',
