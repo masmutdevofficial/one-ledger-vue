@@ -65,6 +65,7 @@
       <RouterLink
         to="/login"
         class="block w-full bg-black text-white font-semibold text-base rounded-full py-3 mb-4 text-center"
+        @click="goFullscreen"
       >
         Sign Up / Log In
       </RouterLink>
@@ -87,6 +88,11 @@ const seconds = ref(0)
 const COUNTDOWN_KEY = 'landingCountdown'
 const COUNTDOWN_DURATION = 3 * 24 * 60 * 60 * 1000 // 3 hari
 let interval: number
+
+function goFullscreen() {
+  const el = document.documentElement
+  if (el.requestFullscreen) el.requestFullscreen()
+}
 
 function convert(ms: number) {
   const d = Math.floor(ms / (1000 * 60 * 60 * 24))
