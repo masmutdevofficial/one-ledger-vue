@@ -174,7 +174,7 @@
         >
           <label for="totalUsdt" class="cursor-text">Total</label>
 
-          <div class="relative z-50 text-gray-900 font-bold flex items-center space-x-1 right-14">
+          <div class="relative z-50 text-gray-900 font-bold flex items-center space-x-1 right-10">
             <input
               id="totalAmount"
               type="number"
@@ -189,7 +189,6 @@
               :placeholder="activeTab === 'buy' ? '0.00' : '0.00000000'"
             />
             <span>{{ availableUnit }}</span>
-            <Icon icon="tabler:chevron-down" class="text-gray-600" />
           </div>
         </div>
 
