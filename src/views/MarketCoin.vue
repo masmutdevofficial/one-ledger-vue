@@ -160,23 +160,35 @@
           type="text"
           disabled
           placeholder="Market Price"
+          :value="
+            depthData?.tick?.bids?.[0]?.[0]?.toLocaleString('en-US', {
+              maximumFractionDigits: 2,
+            }) ?? '-'
+          "
           class="w-full bg-gray-200 text-gray-400 text-sm font-normal rounded px-3 py-2 cursor-not-allowed"
         />
 
-        <!-- TOTAL: tampilkan nilai USDT sesuai persen x saldo -->
+        <!-- TOTAL: bisa ketik manual, sinkron dengan slider -->
         <div
           class="flex justify-between items-center bg-gray-100 rounded px-3 py-2 text-sm text-gray-500 font-normal mt-3"
         >
-          <span>Total</span>
-          <div class="text-gray-900 font-bold flex items-center space-x-1">
-            <span>
-              <template v-if="saldoLoading">--</template>
-              <template v-else-if="saldoError">--</template>
-              <template v-else>
-                {{ totalUSDT.toLocaleString('en-US', { maximumFractionDigits: 8 }) }}
-              </template>
-            </span>
-            <span>USDT</span>
+          <label for="totalUsdt" class="cursor-text">Total</label>
+
+          <div class="relative z-50 text-gray-900 font-bold flex items-center space-x-1 right-14">
+            <input
+              id="totalAmount"
+              type="number"
+              inputmode="decimal"
+              :step="activeTab === 'buy' ? 0.01 : 0.00000001"
+              min="0"
+              :max="available"
+              class="bg-transparent text-right outline-none w-36"
+              :disabled="availableLoading || availableError"
+              v-model="totalAmountInput"
+              @input="onTotalManualInputStr"
+              :placeholder="activeTab === 'buy' ? '0.00' : '0.00000000'"
+            />
+            <span>{{ availableUnit }}</span>
             <Icon icon="tabler:chevron-down" class="text-gray-600" />
           </div>
         </div>
@@ -219,10 +231,11 @@
           <div class="flex justify-between text-gray-400 italic">
             <span>Avbl</span>
             <span class="text-gray-900 normal-case not-italic flex items-center gap-1">
-              <template v-if="saldoLoading">...</template>
-              <template v-else-if="saldoError">-</template>
+              <template v-if="availableLoading">...</template>
+              <template v-else-if="availableError">-</template>
               <template v-else>
-                {{ saldo?.toLocaleString('en-US', { maximumFractionDigits: 8 }) }} USDT
+                {{ available.toLocaleString('en-US', { maximumFractionDigits: 8 }) }}
+                {{ availableUnit }}
               </template>
               <Icon icon="tabler:plus" class="text-yellow-400 text-[10px]" />
             </span>
@@ -243,16 +256,17 @@
             'cursor-pointer w-full text-white text-sm font-medium py-2 rounded mt-3',
             activeTab === 'buy' ? 'bg-teal-600' : 'bg-red-600',
           ]"
+          @click.prevent="submitOrder"
         >
           {{ (activeTab === 'buy' ? 'Buy ' : 'Sell ') + baseAsset }}
         </button>
       </div>
     </div>
 
-    <div class="max-w-md mx-auto border border-gray-200 rounded-md p-5">
+    <div class="max-w-md mx-auto border border-gray-200 rounded-md p-5 mb-20">
       <!-- Header -->
       <div class="flex justify-between items-center mb-3">
-        <h2 class="text-sm font-semibold text-gray-900">Open Orders (0)</h2>
+        <h2 class="text-sm font-semibold text-gray-900">Open Orders ({{ openOrders.length }})</h2>
         <button aria-label="Open orders icon" class="text-gray-500 hover:text-gray-700">
           <Icon icon="tabler:file-description" class="text-lg" />
         </button>
@@ -260,73 +274,82 @@
 
       <div class="border-b border-yellow-400 w-10 mb-5"></div>
 
-      <!-- Current pair info -->
-      <div class="flex justify-between items-center text-gray-400 text-xs mb-3">
-        <span>Current pair assets</span>
-        <button aria-label="Settings" class="hover:text-gray-600">
-          <Icon icon="tabler:settings" class="text-sm" />
-        </button>
+      <div v-if="openOrders.length === 0" class="text-center text-gray-400 text-sm py-3">
+        Tidak ada open orders
       </div>
 
-      <!-- BTC info -->
-      <div class="flex justify-between items-center mb-3">
-        <!-- Logo + Label -->
-        <div class="flex items-center space-x-2">
-          <div class="flex items-center space-x-1">
-            <img
-              src="https://storage.googleapis.com/a1aa/image/2ee22ff5-4f92-4caf-225e-c87410dc52b2.jpg"
-              alt="Bitcoin logo"
-              class="w-5 h-5"
-            />
-            <span class="font-semibold text-gray-900 text-base">BTC</span>
+      <div v-else class="space-y-6">
+        <div v-for="o in openOrders" :key="o.id" class="border border-gray-100 rounded-md p-4">
+          <!-- Pair -->
+          <div class="flex justify-between items-center mb-3">
+            <div class="flex items-center space-x-2">
+              <div class="flex items-center space-x-1">
+                <img
+                  src="https://storage.googleapis.com/a1aa/image/2ee22ff5-4f92-4caf-225e-c87410dc52b2.jpg"
+                  alt="Coin logo"
+                  class="w-5 h-5"
+                />
+                <span class="font-semibold text-gray-900 text-base">{{ o.symbol }}/USDT</span>
+              </div>
+            </div>
+            <button aria-label="Share" class="text-gray-400 hover:text-gray-600">
+              <Icon icon="tabler:share-3" />
+            </button>
           </div>
-          <span class="text-gray-400 text-sm">Bitcoin</span>
-        </div>
 
-        <!-- Share Icon -->
-        <button aria-label="Share" class="text-gray-400 hover:text-gray-600">
-          <Icon icon="tabler:share-3" />
-        </button>
-      </div>
+          <!-- PnL -->
+          <div class="flex justify-between text-xs text-gray-500 mb-1">
+            <span>Daily PnL</span>
+            <span>PnL%</span>
+          </div>
+          <div class="flex justify-between mb-5">
+            <span
+              :class="Number(o.daily_pnl) >= 0 ? 'text-teal-500' : 'text-red-500'"
+              class="font-semibold text-sm"
+            >
+              {{ Number(o.daily_pnl).toFixed(8) }}
+            </span>
+            <span
+              :class="
+                o.pnl.startsWith('+') || !o.pnl.startsWith('-') ? 'text-teal-500' : 'text-red-500'
+              "
+              class="font-semibold text-sm"
+            >
+              {{ o.pnl }}
+            </span>
+          </div>
 
-      <!-- PnL Info -->
-      <div class="flex justify-between text-xs text-gray-500 mb-1">
-        <span>Daily PnL</span>
-        <span>PnL%</span>
-      </div>
-      <div class="flex justify-between mb-5">
-        <span class="text-teal-500 font-semibold text-sm">+$0,00016922</span>
-        <span class="text-teal-500 font-semibold text-sm">+0,24%</span>
-      </div>
+          <!-- Balances & Last Price -->
+          <div class="flex justify-between items-center text-center mb-1">
+            <div class="flex flex-col">
+              <!-- USDT yang dibelanjakan / diterima -->
+              <span class="font-semibold text-gray-900 text-sm">
+                {{ Number(o.balances).toFixed(2) }}
+              </span>
 
-      <!-- Stats Summary -->
-      <div class="flex justify-between text-center mb-5">
-        <div class="flex flex-col">
-          <span class="font-semibold text-gray-900 text-sm">0.00</span>
-          <span class="text-gray-400 text-xs">$0,06983393</span>
-          <span class="text-gray-500 text-xs mt-1">Balances</span>
-        </div>
-        <div class="flex flex-col">
-          <span class="font-semibold text-gray-900 text-sm">$81.546,54</span>
-          <span class="text-gray-500 text-xs mt-1">Avg. Cost</span>
-        </div>
-        <div class="flex flex-col">
-          <span class="font-semibold text-gray-900 text-sm">109.166,20</span>
-          <span class="text-gray-500 text-xs mt-1">Last Price (USDC)</span>
-        </div>
-      </div>
+              <!-- Baris kedua:
+         - BUY (status_position=1): tampilkan sisa USDT (detail_balances)
+         - SELL (lainnya): tampilkan jumlah coin = balances / last_prices -->
+              <span class="text-gray-400 text-xs">
+                <template v-if="o.jenis === 'BUY'">
+                  {{ Number(o.detail_balances).toFixed(2) }} USDT
+                </template>
+                <template v-else>
+                  {{ (Number(o.balances) / Number(o.last_prices)).toFixed(8) }} {{ o.symbol }}
+                </template>
+              </span>
 
-      <!-- CTA -->
-      <p class="text-center text-gray-400 text-xs mb-3">Let Top Traders Trade for You</p>
-      <div class="flex justify-center mb-40">
-        <router-link to="/futures">
-          <button
-            type="button"
-            class="border border-gray-300 rounded-md px-4 py-1 text-sm text-gray-900 hover:bg-gray-100"
-          >
-            Copy Trading
-          </button>
-        </router-link>
+              <span class="text-gray-500 text-xs mt-1">Balances</span>
+            </div>
+
+            <div class="flex flex-col">
+              <span class="font-semibold text-gray-900 text-sm">
+                {{ Number(o.last_prices).toLocaleString('en-US') }}
+              </span>
+              <span class="text-gray-500 text-xs mt-1">Last Price</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -339,6 +362,8 @@
 import { Icon } from '@iconify/vue' // (dipakai di template)
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useApiAlertStore } from '@/stores/apiAlert'
+const modal = useApiAlertStore()
 
 /** Orderbook depth tick */
 interface DepthTick {
@@ -513,40 +538,16 @@ const percentChange = computed(() => {
 /* ──────────────────────────────────────────────────────────────────────────────
  * SALDO + SLIDER (SNAP 0/25/50/75/100)
  * ────────────────────────────────────────────────────────────────────────────*/
+
 const amountPercent = ref<number>(0) // nilai final (snap)
 const rawPercent = ref<number>(0) // nilai saat drag (halus)
 const isDragging = ref<boolean>(false)
 
-const saldo = ref<number | null>(null)
-const saldoLoading = ref(true)
-const saldoError = ref(false)
+const saldo = ref<number | null>(null) // saldo USDT (untuk BUY)
+const coinTotal = ref<number | null>(null) // total coin (untuk SELL)
 
-async function getSaldo() {
-  saldoLoading.value = true
-  saldoError.value = false
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) throw new Error('No token')
-    const res = await fetch('https://ledger.masmutdev.id/api/saldo', {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-    })
-    if (!res.ok) throw new Error('Failed to fetch saldo')
-    const data = await res.json()
-    const s = Number(data?.saldo ?? 0)
-    saldo.value = Number.isFinite(s) ? s : 0
-    if ((saldo.value ?? 0) <= 0) {
-      amountPercent.value = 0
-      rawPercent.value = 0
-    }
-  } catch {
-    saldoError.value = true
-    saldo.value = null
-    amountPercent.value = 0
-    rawPercent.value = 0
-  } finally {
-    saldoLoading.value = false
-  }
-}
+const availableLoading = ref(true)
+const availableError = ref(false)
 
 const marks = [0, 25, 50, 75, 100]
 function snapToNearestMark(v: number) {
@@ -562,8 +563,13 @@ function snapToNearestMark(v: number) {
   return nearest
 }
 
+const available = computed<number>(() =>
+  activeTab.value === 'buy' ? (saldo.value ?? 0) : (coinTotal.value ?? 0),
+)
+const availableUnit = computed(() => (activeTab.value === 'buy' ? 'USDT' : baseAsset.value))
+
 const canSlide = computed<boolean>(
-  () => !saldoLoading.value && !saldoError.value && (saldo.value ?? 0) > 0,
+  () => !availableLoading.value && !availableError.value && available.value > 0,
 )
 
 /** Track gradient: pakai raw saat drag, pakai amount saat tidak drag */
@@ -578,29 +584,150 @@ const sliderStyle = computed(() => {
   return { background: `linear-gradient(to right, #22c55e ${p}%, #e5e7eb ${p}%)` }
 })
 
+// nilai numerik untuk perhitungan
+const totalAmount = ref<number>(0)
+// nilai string untuk input (biar bisa kosong/0 saat ketik)
+const totalAmountInput = ref<string>('')
+
+function roundTo(v: number, dp = 8): number {
+  if (!Number.isFinite(v)) return 0
+  return Number.parseFloat(v.toFixed(dp))
+}
+
+// sinkron persen dari total
+function syncPercentFromTotal() {
+  const a = available.value
+  const v = totalAmount.value
+  const pct = a > 0 ? (v / a) * 100 : 0
+  rawPercent.value = pct
+  amountPercent.value = pct
+}
+
 function onInput(v: number) {
   if (!canSlide.value) return
-  rawPercent.value = v // tidak snap saat drag
+  rawPercent.value = v
+  const s = available.value
+  totalAmount.value = roundTo((s * v) / 100, 8)
+  totalAmountInput.value =
+    activeTab.value === 'buy' ? totalAmount.value.toFixed(2) : totalAmount.value.toFixed(8)
 }
+
 function commitSnap() {
   if (!canSlide.value) return
   amountPercent.value = snapToNearestMark(rawPercent.value)
   rawPercent.value = amountPercent.value
+  const s = available.value
+  totalAmount.value = roundTo((s * amountPercent.value) / 100, 8)
+  totalAmountInput.value =
+    activeTab.value === 'buy' ? totalAmount.value.toFixed(2) : totalAmount.value.toFixed(8)
 }
+
 function setPercent(p: number) {
   if (!canSlide.value) return
   amountPercent.value = p
   rawPercent.value = p
+  const s = available.value
+  totalAmount.value = roundTo((s * p) / 100, 8)
+  totalAmountInput.value =
+    activeTab.value === 'buy' ? totalAmount.value.toFixed(2) : totalAmount.value.toFixed(8)
 }
+
 function handlePointerUp() {
   isDragging.value = false
   commitSnap()
 }
 
-const totalUSDT = computed<number>(() => {
-  const s = saldo.value ?? 0
-  return (s * amountPercent.value) / 100
+// input manual (string) → parse & clamp
+function onTotalManualInputStr() {
+  const a = available.value
+  const rawAny = totalAmountInput.value as unknown
+  const raw = (typeof rawAny === 'string' ? rawAny : String(rawAny ?? '')).trim()
+
+  // kosong → biarin input kosong, tapi state numeric = 0
+  if (raw === '') {
+    totalAmount.value = 0
+    // jangan ubah totalAmountInput di sini (biar tetap kosong)
+    syncPercentFromTotal()
+    return
+  }
+
+  // parse angka (antisipasi koma)
+  let v = Number(raw.replace(',', ''))
+  if (!Number.isFinite(v)) return
+
+  // clamp ke [0, available]
+  if (v < 0) v = 0
+  if (a > 0 && v > a) v = a
+
+  // pembulatan sesuai tab
+  v = roundTo(v, activeTab.value === 'buy' ? 2 : 8)
+  totalAmount.value = v
+
+  // sinkronkan kembali input dalam bentuk string terformat
+  totalAmountInput.value = activeTab.value === 'buy' ? v.toFixed(2) : v.toFixed(8)
+
+  syncPercentFromTotal()
+}
+// reset saat pindah BUY/SELL
+watch(activeTab, () => {
+  totalAmount.value = 0
+  totalAmountInput.value = ''
+  rawPercent.value = 0
+  amountPercent.value = 0
+  getAvailable()
 })
+
+// ambil available (USDT/coin)
+async function getAvailable() {
+  availableLoading.value = true
+  availableError.value = false
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('No token')
+
+    if (activeTab.value === 'buy') {
+      const res = await fetch('https://ledger.masmutdev.id/api/saldo', {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      const s = Number(data?.saldo ?? 0)
+      saldo.value = Number.isFinite(s) ? s : 0
+      coinTotal.value = null
+    } else {
+      const res = await fetch(`https://ledger.masmutdev.id/api/crypto-total/${baseAsset.value}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      const t = Number(data?.total_amount ?? 0)
+      coinTotal.value = Number.isFinite(t) ? t : 0
+    }
+
+    const a = available.value
+    if (a <= 0) {
+      totalAmount.value = 0
+      totalAmountInput.value = ''
+      rawPercent.value = 0
+      amountPercent.value = 0
+    } else {
+      if (totalAmount.value > a) totalAmount.value = a
+      totalAmountInput.value =
+        activeTab.value === 'buy' ? totalAmount.value.toFixed(2) : totalAmount.value.toFixed(8)
+      syncPercentFromTotal()
+    }
+  } catch {
+    availableError.value = true
+    saldo.value = activeTab.value === 'buy' ? null : saldo.value
+    coinTotal.value = activeTab.value === 'sell' ? null : coinTotal.value
+    amountPercent.value = 0
+    rawPercent.value = 0
+    totalAmount.value = 0
+    totalAmountInput.value = ''
+  } finally {
+    availableLoading.value = false
+  }
+}
 
 /* ──────────────────────────────────────────────────────────────────────────────
  * SYNC DARI URL + RECONNECT WS
@@ -622,7 +749,7 @@ onMounted(() => {
   reconnectFor(selectedPair.value)
 
   // Ambil saldo
-  getSaldo()
+  getAvailable()
 })
 
 watch(
@@ -656,4 +783,200 @@ onUnmounted(() => {
   ws.value?.close()
   klineWS.value?.close()
 })
+
+const submitting = ref(false)
+const submitError = ref<string | null>(null)
+const API_BASE = 'https://ledger.masmutdev.id/api' // sesuaikan
+
+function nowIsoUtc() {
+  return new Date().toISOString()
+}
+
+interface OpenOrder {
+  id: number
+  id_users: number
+  symbol: string
+  daily_pnl: string
+  pnl: string
+  last_prices: string
+  balances: number
+  jenis: string
+  detail_balances: string
+  status_position: number
+  time_order: string
+  timestamp: string
+  created_at?: string
+  updated_at?: string
+}
+
+async function readErrorMessage(res: Response): Promise<string> {
+  // coba JSON
+  try {
+    const data = await res.clone().json()
+    if (typeof data?.message === 'string' && data.message) return data.message
+    // Laravel validation: { errors: { field: ["msg"] } }
+    if (data?.errors && typeof data.errors === 'object') {
+      const firstKey = Object.keys(data.errors)[0]
+      const firstMsg = Array.isArray(data.errors[firstKey]) ? data.errors[firstKey][0] : null
+      if (firstMsg) return String(firstMsg)
+    }
+  } catch {}
+  // fallback: text
+  try {
+    const t = await res.clone().text()
+    if (t) return t
+  } catch {}
+  return `Request failed (${res.status})`
+}
+
+function bestBid(): number {
+  const bids = depthData.value?.tick?.bids
+  // bid terbaik biasanya di index 0
+  return Array.isArray(bids) && bids.length ? Number(bids[0][0]) : 0
+}
+
+function bestAsk(): number {
+  const asks = depthData.value?.tick?.asks
+  // banyak feed menaruh ask terbaik di elemen terakhir
+  return Array.isArray(asks) && asks.length ? Number(asks[asks.length - 1][0]) : 0
+}
+
+async function submitOrder() {
+  if (submitting.value) return
+  submitError.value = null
+
+  const token = localStorage.getItem('token')
+  if (!token) {
+    const msg = 'Token tidak ada.'
+    submitError.value = msg
+    modal.open('Failed', msg)
+    return
+  }
+
+  const pct = Number(percentChange.value ?? 0)
+  const amt = Number(totalAmount.value || 0)
+
+  // pakai harga pasar yang tepat:
+  // BUY → ambil ask teratas; SELL → ambil bid teratas
+
+  const price = activeTab.value === 'buy' ? bestAsk() : bestBid()
+
+  const dailyPnl = ((amt * pct) / 100).toFixed(8)
+
+  // VALIDASI sisi UI biar gak kirim 0
+  if (activeTab.value === 'buy' && amt < 10) {
+    modal.open('Failed', 'Minimum purchase amount is 10 USDT.')
+    return
+  }
+  if (activeTab.value === 'sell' && amt < 0.00000001) {
+    modal.open('Failed', 'Minimum sell amount is 0.00000001.')
+    return
+  }
+
+  const endpoint =
+    activeTab.value === 'buy'
+      ? `${API_BASE}/save-transactions-crypto-buy`
+      : `${API_BASE}/save-transactions-crypto-sell`
+
+  // Payload berbeda:
+  const payload =
+    activeTab.value === 'buy'
+      ? {
+          symbol: baseAsset.value,
+          daily_pnl: dailyPnl,
+          pnl: `${pct.toFixed(2)}%`,
+          last_prices: String(price),
+          balances: Number(amt.toFixed(2)), // USDT dipakai (>= 10)
+          status_position: 1,
+          time_order: nowIsoUtc(),
+        }
+      : {
+          symbol: baseAsset.value,
+          daily_pnl: dailyPnl,
+          pnl: `${pct.toFixed(2)}%`,
+          last_prices: String(price),
+          amount_coin: Number(amt.toFixed(8)), // JUMLAH COIN dijual (>= 1e-8)
+          status_position: 2, // biasanya Close saat sell
+          time_order: nowIsoUtc(),
+        }
+
+  submitting.value = true
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      const msg = await readErrorMessage(res)
+      modal.open('Failed', msg)
+      throw new Error(msg)
+    }
+
+    const data: { success: boolean; message: string; id: number } = await res.json()
+
+    amountPercent.value = 0
+    rawPercent.value = 0
+    totalAmount.value = 0
+    totalAmountInput.value = ''
+
+    modal.open(
+      'Success',
+      `${activeTab.value === 'buy' ? 'Buy' : 'Sell'} order placed successfully with ID #${data.id}.`,
+      () => window.location.reload(),
+    )
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Failed kirim order.'
+    submitError.value = msg
+    modal.open('Failed', msg)
+  } finally {
+    submitting.value = false
+  }
+}
+
+const openOrders = ref<OpenOrder[]>([])
+const loadingOrders = ref(true)
+const errorOrders = ref(false)
+
+async function getOpenOrders() {
+  loadingOrders.value = true
+  errorOrders.value = false
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Token tidak ada.')
+
+    const res = await fetch('https://ledger.masmutdev.id/api/open-orders-crypto', {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!res.ok) throw new Error('Failed ambil data open orders.')
+
+    const data = await res.json()
+    openOrders.value = Array.isArray(data) ? data : []
+  } catch {
+    errorOrders.value = true
+    openOrders.value = []
+  } finally {
+    loadingOrders.value = false
+  }
+}
+
+onMounted(() => {
+  reconnectFor(selectedPair.value)
+  getAvailable()
+  getOpenOrders()
+})
+watch(activeTab, () => getAvailable())
+watch(
+  () => route.query.pairSymbol,
+  () => getAvailable(),
+)
 </script>
