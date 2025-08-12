@@ -340,7 +340,14 @@
 
               <span class="text-gray-500 text-xs mt-1">Balances</span>
             </div>
-
+            <div class="flex flex-col">
+              <button
+                class="cursor-pointer bg-red-500 px-2 w-full text-white text-sm font-medium py-2 rounded mt-3"
+                @click="closeOrder(o.id)"
+              >
+                Close Order
+              </button>
+            </div>
             <div class="flex flex-col">
               <span class="font-semibold text-gray-900 text-sm">
                 {{ Number(o.last_prices).toLocaleString('en-US') }}
@@ -965,6 +972,38 @@ async function getOpenOrders() {
     openOrders.value = []
   } finally {
     loadingOrders.value = false
+  }
+}
+
+async function closeOrder(id: number) {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    modal.open('Failed', 'Unauthorized.')
+    return
+  }
+
+  if (!confirm('Are you sure close order this item ?')) return
+
+  try {
+    const res = await fetch(`${API_BASE}/update-status-position/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status_position: 2 }), // 2 = Close
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data?.message || 'Failed Closed Order.')
+
+    modal.open('Success', 'Order closed.', () => {
+      // refresh list open orders
+      getOpenOrders()
+    })
+  } catch (err) {
+    modal.open('Failed', err instanceof Error ? err.message : 'Unknown Error.')
   }
 }
 
