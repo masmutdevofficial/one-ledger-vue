@@ -884,6 +884,17 @@ async function submitOrder() {
       ? `${API_BASE}/save-transactions-crypto-buy`
       : `${API_BASE}/save-transactions-crypto-sell`
 
+  const PRICE_FMT_PAYLOAD = new Intl.NumberFormat('en-US', {
+    useGrouping: true,
+    maximumFractionDigits: 0,
+  })
+
+  // potong desimal biar konsisten (119848.01 -> "119,848")
+  function formatLastPriceForPayload(price: number): string {
+    if (!Number.isFinite(price)) return '0'
+    return PRICE_FMT_PAYLOAD.format(Math.trunc(price))
+  }
+
   // Payload berbeda:
   const payload =
     activeTab.value === 'buy'
@@ -891,8 +902,8 @@ async function submitOrder() {
           symbol: baseAsset.value,
           daily_pnl: dailyPnl,
           pnl: `${pct.toFixed(2)}%`,
-          last_prices: String(price),
-          balances: Number(amt.toFixed(2)), // USDT dipakai (>= 10)
+          last_prices: formatLastPriceForPayload(price),
+          balances_buy: Number(amt.toFixed(2)), // USDT dipakai (>= 10)
           status_position: 1,
           time_order: nowIsoUtc(),
         }
@@ -900,8 +911,8 @@ async function submitOrder() {
           symbol: baseAsset.value,
           daily_pnl: dailyPnl,
           pnl: `${pct.toFixed(2)}%`,
-          last_prices: String(price),
-          amount_coin: Number(amt.toFixed(8)), // JUMLAH COIN dijual (>= 1e-8)
+          last_prices: formatLastPriceForPayload(price),
+          balances_sell: Number(amt.toFixed(8)), // JUMLAH COIN dijual (>= 1e-8)
           status_position: 2, // biasanya Close saat sell
           time_order: nowIsoUtc(),
         }
