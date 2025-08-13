@@ -59,7 +59,12 @@
     <div class="mb-20">
       <div v-if="loadingAssets" class="text-sm text-gray-500 px-5 py-3">Loading assets…</div>
       <div v-else-if="errorAssets" class="text-sm text-red-500 px-5 py-3">{{ errorAssets }}</div>
+      <div v-else-if="assets.length === 0" class="text-sm text-gray-500 px-5 py-3">
+        No Data Available
+      </div>
+
       <section
+        v-else
         v-for="a in assets"
         :key="a.symbol"
         class="space-y-4 w-full bg-[#f0f7fc] rounded-2xl p-5 drop-shadow-md"
