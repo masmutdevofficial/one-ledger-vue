@@ -67,7 +67,7 @@
         v-else
         v-for="a in assets"
         :key="a.symbol"
-        class="space-y-4 w-full bg-[#f0f7fc] rounded-2xl p-5 drop-shadow-md"
+        class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md"
       >
         <div class="flex justify-between items-center">
           <p class="text-gray-500 text-sm font-normal">Current pair assets</p>
