@@ -263,99 +263,18 @@
     </div>
 
     <div class="max-w-md mx-auto border border-gray-200 rounded-md p-5 mb-20">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-3">
-        <h2 class="text-sm font-semibold text-gray-900">Open Orders ({{ openOrders.length }})</h2>
-        <button aria-label="Open orders icon" class="text-gray-500 hover:text-gray-700">
-          <Icon icon="tabler:file-description" class="text-lg" />
-        </button>
-      </div>
-
-      <div class="border-b border-yellow-400 w-10 mb-5"></div>
-
-      <div v-if="openOrders.length === 0" class="text-center text-gray-400 text-sm py-3">
-        Tidak ada open orders
-      </div>
-
-      <div v-else class="space-y-6">
-        <div v-for="o in openOrders" :key="o.id" class="border border-gray-100 rounded-md p-4">
-          <!-- Pair -->
-          <div class="flex justify-between items-center mb-3">
-            <div class="flex items-center space-x-2">
-              <div class="flex items-center space-x-1">
-                <img
-                  src="https://storage.googleapis.com/a1aa/image/2ee22ff5-4f92-4caf-225e-c87410dc52b2.jpg"
-                  alt="Coin logo"
-                  class="w-5 h-5"
-                />
-                <span class="font-semibold text-gray-900 text-base">{{ o.symbol }}/USDT</span>
-              </div>
-            </div>
-            <button aria-label="Share" class="text-gray-400 hover:text-gray-600">
-              <Icon icon="tabler:share-3" />
-            </button>
-          </div>
-
-          <!-- PnL -->
-          <div class="flex justify-between text-xs text-gray-500 mb-1">
-            <span>Daily PnL</span>
-            <span>PnL%</span>
-          </div>
-          <div class="flex justify-between mb-5">
-            <span
-              :class="Number(o.daily_pnl) >= 0 ? 'text-teal-500' : 'text-red-500'"
-              class="font-semibold text-sm"
-            >
-              {{ Number(o.daily_pnl).toFixed(8) }}
-            </span>
-            <span
-              :class="
-                o.pnl.startsWith('+') || !o.pnl.startsWith('-') ? 'text-teal-500' : 'text-red-500'
-              "
-              class="font-semibold text-sm"
-            >
-              {{ o.pnl }}
-            </span>
-          </div>
-
-          <!-- Balances & Last Price -->
-          <div class="flex justify-between items-center text-center mb-1">
-            <div class="flex flex-col">
-              <!-- USDT yang dibelanjakan / diterima -->
-              <span class="font-semibold text-gray-900 text-sm">
-                {{ Number(o.balances).toFixed(2) }}
-              </span>
-
-              <!-- Baris kedua:
-         - BUY (status_position=1): tampilkan sisa USDT (detail_balances)
-         - SELL (lainnya): tampilkan jumlah coin = balances / last_prices -->
-              <span class="text-gray-400 text-xs">
-                <template v-if="o.jenis === 'BUY'">
-                  {{ Number(o.detail_balances).toFixed(2) }} USDT
-                </template>
-                <template v-else>
-                  {{ (Number(o.balances) / Number(o.last_prices)).toFixed(8) }} {{ o.symbol }}
-                </template>
-              </span>
-
-              <span class="text-gray-500 text-xs mt-1">Balances</span>
-            </div>
-            <div class="flex flex-col">
-              <button
-                class="cursor-pointer bg-red-500 px-2 w-full text-white text-sm font-medium py-2 rounded mt-3"
-                @click="closeOrder(o.id)"
-              >
-                Close Order
-              </button>
-            </div>
-            <div class="flex flex-col">
-              <span class="font-semibold text-gray-900 text-sm">
-                {{ Number(o.last_prices).toLocaleString('en-US') }}
-              </span>
-              <span class="text-gray-500 text-xs mt-1">Last Price</span>
-            </div>
-          </div>
-        </div>
+      <div class="text-center">
+        <p class="text-gray-400 text-sm font-normal mb-2" style="font-family: 'Inter', sans-serif">
+          Let Top Traders Trade for You
+        </p>
+        <RouterLink
+          to="/futures"
+          role="button"
+          class="inline-flex items-center justify-center text-gray-700 text-xs font-normal border border-gray-300 rounded px-4 py-1.5 hover:bg-gray-100 transition"
+          style="font-family: 'Inter', sans-serif"
+        >
+          Copy Trading
+        </RouterLink>
       </div>
     </div>
   </div>
@@ -983,38 +902,6 @@ async function getOpenOrders() {
     openOrders.value = []
   } finally {
     loadingOrders.value = false
-  }
-}
-
-async function closeOrder(id: number) {
-  const token = localStorage.getItem('token')
-  if (!token) {
-    modal.open('Failed', 'Unauthorized.')
-    return
-  }
-
-  if (!confirm('Are you sure close order this item ?')) return
-
-  try {
-    const res = await fetch(`${API_BASE}/update-status-position/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status_position: 2 }), // 2 = Close
-    })
-
-    const data = await res.json()
-    if (!res.ok) throw new Error(data?.message || 'Failed Closed Order.')
-
-    modal.open('Success', 'Order closed.', () => {
-      // refresh list open orders
-      getOpenOrders()
-    })
-  } catch (err) {
-    modal.open('Failed', err instanceof Error ? err.message : 'Unknown Error.')
   }
 }
 

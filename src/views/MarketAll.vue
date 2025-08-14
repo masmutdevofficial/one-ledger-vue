@@ -56,33 +56,54 @@ interface Crypto {
   change: number
 }
 
+// type Crypto harus sudah ada:
+// type Crypto = { symbol: string; leverage: string; volume: string; price: string | number; change: number }
+
 const cryptoList = ref<Crypto[]>([
+  { symbol: 'BTC', leverage: '10x', volume: '-', price: '-', change: 0 },
+  { symbol: 'ETH', leverage: '10x', volume: '-', price: '-', change: 0 },
+  { symbol: 'BNB', leverage: '10x', volume: '-', price: '-', change: 0 },
+  { symbol: 'SOL', leverage: '10x', volume: '-', price: '-', change: 0 },
+  { symbol: 'LTC', leverage: '10x', volume: '-', price: '-', change: 0 },
+  { symbol: 'LINK', leverage: '5x', volume: '-', price: '-', change: 0 },
+  { symbol: 'TON', leverage: '5x', volume: '-', price: '-', change: 0 },
+  { symbol: 'SUI', leverage: '5x', volume: '-', price: '-', change: 0 },
+  { symbol: 'XRP', leverage: '5x', volume: '-', price: '-', change: 0 },
+  { symbol: 'QTUM', leverage: '5x', volume: '-', price: '-', change: 0 },
   { symbol: 'THETA', leverage: '5x', volume: '-', price: '-', change: 0 },
-  { symbol: 'RAD', leverage: '5x', volume: '-', price: '-', change: 0 },
   { symbol: 'ADA', leverage: '10x', volume: '-', price: '-', change: 0 },
+  { symbol: 'RAD', leverage: '5x', volume: '-', price: '-', change: 0 },
   { symbol: 'BAND', leverage: '5x', volume: '-', price: '-', change: 0 },
-  { symbol: 'DOT', leverage: '10x', volume: '-', price: '-', change: 0 },
   { symbol: 'ALGO', leverage: '5x', volume: '-', price: '-', change: 0 },
+  { symbol: 'POL', leverage: '5x', volume: '-', price: '-', change: 0 },
   { symbol: 'DOGE', leverage: '5x', volume: '-', price: '-', change: 0 },
   { symbol: 'LUNA', leverage: '5x', volume: '-', price: '-', change: 0 },
   { symbol: 'GALA', leverage: '5x', volume: '-', price: '-', change: 0 },
-  { symbol: 'TRX', leverage: '10x', volume: '-', price: '-', change: 0 },
   { symbol: 'PEPE', leverage: '5x', volume: '-', price: '-', change: 0 },
 ])
 
-// Beberapa koin perlu pemetaan karena berbeda dengan Huobi
+// Mapping ke simbol Huobi (lowercase). DOT/TRX dihapus.
 const symbolMap: Record<string, string> = {
-  DOT: 'pol',
-  LUNA: 'luna',
-  ALGO: 'algo',
+  BTC: 'btc',
+  ETH: 'eth',
+  BNB: 'bnb',
+  SOL: 'sol',
+  LTC: 'ltc',
+  LINK: 'link',
+  TON: 'ton',
+  SUI: 'sui',
+  XRP: 'xrp',
+  QTUM: 'qtum',
+  THETA: 'theta',
   ADA: 'ada',
   RAD: 'rad',
   BAND: 'band',
+  ALGO: 'algo',
+  POL: 'pol',
   DOGE: 'doge',
-  THETA: 'theta',
+  LUNA: 'luna',
   GALA: 'gala',
   PEPE: 'pepe',
-  TRX: 'trx',
 }
 
 async function fetchInitialData() {

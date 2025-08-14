@@ -48,7 +48,7 @@ function isActive(path: string): boolean {
     <div class="w-full max-w-md bg-white min-h-screen flex flex-col relative">
       <!-- Header -->
       <header
-        class="bg-[#f0f7fc] fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 shadow-sm flex items-center px-6 py-4 space-x-8"
+        class="bg-white fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 shadow-sm flex items-center px-6 py-4 space-x-8"
       >
         <!-- Logo -->
         <RouterLink to="/account" aria-label="Account">
@@ -56,7 +56,7 @@ function isActive(path: string): boolean {
         </RouterLink>
         <!-- ... search & nav ... -->
         <form class="flex-1">
-          <div class="relative w-full max-w-lg mx-auto">
+          <div class="relative w-[80%]">
             <input
               class="w-full border-[1px] border-black rounded-full py-2 pl-6 pr-10 text-black text-base focus:outline-none"
               placeholder="Search"
@@ -120,7 +120,7 @@ function isActive(path: string): boolean {
                 class="flex flex-col items-center"
                 :class="isActive('/dashboard') ? 'text-blue-600' : 'text-gray-400'"
               >
-                <Icon icon="tabler:hexagons" class="text-2xl" />
+                <img alt="Logo with four hexagons" class="w-5 h-6" src="/img/logo.png" />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>
               <RouterLink

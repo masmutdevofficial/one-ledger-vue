@@ -32,16 +32,16 @@ const routes = [
     path: '/verification',
     component: () => import('@/views/auth/VerificationOTP.vue'),
   },
+  {
+    path: '',
+    component: () => import('@/views/LandingApp.vue'),
+  },
 
   // Untuk halaman lain yang harus pakai layout
   {
     path: '/',
     component: MainLayout,
     children: [
-      {
-        path: '',
-        component: () => import('@/views/LandingApp.vue'),
-      },
       {
         path: 'account',
         component: () => import('@/views/AccountMenu.vue'),
