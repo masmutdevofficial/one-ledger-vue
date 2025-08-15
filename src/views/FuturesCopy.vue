@@ -119,13 +119,34 @@
 import MiniAreaChart from '@/components/futures/MiniAreaChart.vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
 
 const router = useRouter()
 
-function goToFutures(username: string) {
-  router.push(`/futures/${username}`)
+/** ==== API Row (dari /api/data-lable-p2p) ==== */
+type ApiRow = {
+  id: number
+  name: string
+  slug: string
+  avatar_url?: string | null
+  is_featured: boolean | 0 | 1
+  copies_used: number
+  copies_limit: number
+
+  text_pnl_30d?: string | null
+  text_roi_30d_pct?: string | null
+  text_mdd_30d_pct?: string | null
+  text_aum?: string | null
+  text_sharpe_ratio?: string | null
+
+  pnl_30d: number
+  roi_30d_pct: number
+  mdd_30d_pct: number
+  aum: number
+  sharpe_ratio: number
 }
 
+/** ==== UI type (tampilan TIDAK diubah) ==== */
 interface CopyTrader {
   id: number
   username: string
@@ -144,80 +165,88 @@ interface CopyTrader {
   sharpe: string
   chartSeries: number[]
   chartCategories?: string[]
+
+  // simpan slug untuk navigasi (dipakai di goToFutures)
+  slug?: string
 }
 
-const copyTraders: CopyTrader[] = [
-  {
-    id: 1,
-    username: 'KNOTMAIN',
-    avatar: 'https://storage.googleapis.com/a1aa/image/6ecfb30d-6fe9-4892-1ece-ea51a478d56c.jpg',
-    avatarAlt: 'Profile avatar of KNOTMAIN with colorful abstract background',
-    badge: 'crown',
-    followerLabel1: '999',
-    followerLabel2: '/1000',
-    showClock: true,
-    button: 'Copy',
-    pnl: '+84,569.48',
-    pnlClass: 'text-green-500',
-    roi: '12.92%',
-    aum: '5,191,333.58',
-    mddValue: '10.26%',
-    sharpe: '2.44',
+const copyTraders = ref<CopyTrader[]>([])
+
+/** ==== Helpers ==== */
+function fmt2(n: number) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+function toPct(n: number) {
+  return `${n.toFixed(2)}%`
+}
+function toSignedMoney(n: number) {
+  const sign = n >= 0 ? '+' : ''
+  return `${sign}${fmt2(n)}`
+}
+function slugify(s: string) {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+function mapRow(r: ApiRow): CopyTrader {
+  const isFull = r.copies_limit > 0 && r.copies_used >= r.copies_limit
+  return {
+    id: r.id,
+    username: r.name,
+    slug: r.slug,
+    avatar: r.avatar_url || 'https://placehold.co/64x64/ddd/666?text=?',
+    avatarAlt: `Profile avatar of ${r.name}`,
+    badge: r.is_featured ? 'crown' : undefined,
+    followerLabel1: String(r.copies_used),
+    followerLabel2: `/${r.copies_limit}`,
+    showClock: !!r.is_featured,
+
+    button: isFull ? 'Full' : 'Copy',
+    pnl: toSignedMoney(r.pnl_30d),
+    pnlClass: r.pnl_30d >= 0 ? 'text-green-500' : 'text-red-500',
+    roi: toPct(r.roi_30d_pct),
+    aum: fmt2(r.aum),
+    mddValue: toPct(r.mdd_30d_pct),
+    sharpe: String(r.sharpe_ratio),
+
+    // sparkline dummy (UI tetap)
     chartSeries: [10, 20, 15, 25, 20, 35, 28],
     chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  },
-  {
-    id: 2,
-    username: '静态平衡',
-    avatar: 'https://storage.googleapis.com/a1aa/image/a354fb7f-c018-413c-d1b5-a87c946093f5.jpg',
-    avatarAlt: 'Profile avatar of 静态平衡 with blue and white abstract background',
-    followerLabel1: '200',
-    followerLabel2: '/200',
-    button: 'Full',
-    pnl: '+75,647.33',
-    pnlClass: 'text-teal-600',
-    roi: '9.93%',
-    aum: '871,742.98',
-    mddValue: '9.40%',
-    sharpe: '2.69',
-    chartSeries: [22, 18, 19, 23, 25, 30, 24],
-    chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  },
-  {
-    id: 3,
-    username: '江南西道',
-    avatar: 'https://storage.googleapis.com/a1aa/image/5d38c912-b3a4-4cf8-5626-87a582b06834.jpg',
-    avatarAlt: 'Profile avatar of 江南西道 with dark orange and black abstract background',
-    followerLabel1: '205',
-    followerLabel2: '/400',
-    button: 'Copy',
-    pnl: '+44,151.02',
-    pnlClass: 'text-teal-600',
-    roi: '60.19%',
-    aum: '114,069.95',
-    mddValue: '11.71%',
-    sharpe: '--',
-    chartSeries: [13, 13, 16, 19, 18, 15, 14],
-    chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  },
-  {
-    id: 4,
-    username: 'Cryptoxn',
-    avatar: 'https://storage.googleapis.com/a1aa/image/7aaee1f0-269a-4c41-1c1c-d989a675425b.jpg',
-    avatarAlt: 'Profile avatar of Cryptoxn with yellow and brown abstract background',
-    badge: 'graduation-cap',
-    followerLabel1: '526',
-    followerLabel2: '/700',
-    showClock: true,
-    button: 'Copy',
-    pnl: '+33,879.47',
-    pnlClass: 'text-teal-600',
-    roi: '22.83%',
-    aum: '1,729,893.82',
-    mddValue: '5.39%',
-    sharpe: '3.14',
-    chartSeries: [19, 15, 17, 21, 24, 22, 30],
-    chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  },
-]
+  }
+}
+
+/** ==== Fetch data dari API ==== */
+onMounted(async () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token || !token.trim()) {
+      console.warn('No token found') // atau redirect: router.replace('/login?reason=unauthorized')
+      copyTraders.value = []
+      return
+    }
+
+    const res = await fetch('https://ledger.masmutdev.id/api/data-lable-p2p', {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!res.ok) throw new Error(String(res.status))
+    const data: ApiRow[] = await res.json()
+    copyTraders.value = Array.isArray(data) ? data.map(mapRow) : []
+  } catch {
+    copyTraders.value = [] // biarkan kosong kalau gagal, tampilan tetap
+  }
+})
+
+/** ==== Navigasi: pakai slug tanpa mengubah template ==== */
+function goToFutures(username: string) {
+  const item = copyTraders.value.find((i) => i.username === username)
+  const slug = item?.slug || slugify(username)
+  router.push(`/futures/${slug}`)
+}
 </script>

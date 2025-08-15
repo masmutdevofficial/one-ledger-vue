@@ -44,6 +44,11 @@ function isActive(path: string): boolean {
 
 const noHeaderPaths = ['/account'] // bisa ditambah: '/account/settings', dll
 const hideHeader = computed(() => noHeaderPaths.some((p) => route.path.startsWith(p)))
+
+const teal600Filter = {
+  filter:
+    'brightness(0) saturate(100%) invert(33%) sepia(86%) saturate(373%) hue-rotate(130deg) brightness(92%) contrast(90%)',
+}
 </script>
 
 <template>
@@ -93,7 +98,7 @@ const hideHeader = computed(() => noHeaderPaths.some((p) => route.path.startsWit
           class="absolute inset-0 flex flex-col items-center justify-center bg-white z-50"
         >
           <svg
-            class="animate-spin h-8 w-8 text-blue-600 mb-4"
+            class="animate-spin h-8 w-8 text-teal-600 mb-4"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -122,7 +127,7 @@ const hideHeader = computed(() => noHeaderPaths.some((p) => route.path.startsWit
               <RouterLink
                 to="/dashboard"
                 class="flex flex-col items-center"
-                :class="isActive('/dashboard') ? 'text-blue-600' : 'text-gray-400'"
+                :class="isActive('/dashboard') ? 'text-teal-600' : 'text-gray-400'"
               >
                 <img alt="Logo with four hexagons" class="w-5 h-6" src="/img/logo.png" />
                 <span class="text-xs mt-1 font-semibold">Home</span>
@@ -130,23 +135,33 @@ const hideHeader = computed(() => noHeaderPaths.some((p) => route.path.startsWit
               <RouterLink
                 to="/market"
                 class="flex flex-col items-center"
-                :class="isActive('/market') ? 'text-blue-600' : 'text-gray-400'"
+                :class="isActive('/market') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <Icon icon="tabler:chart-line" class="text-2xl" />
+                <img
+                  alt="Market"
+                  src="/img/markets-icon.png"
+                  class="w-6 h-6 filter"
+                  :style="isActive('/market') ? teal600Filter : null"
+                />
                 <span class="text-xs mt-1">Market</span>
               </RouterLink>
               <RouterLink
                 to="/trade"
                 class="flex flex-col items-center"
-                :class="isActive('/trade') ? 'text-blue-600' : 'text-gray-400'"
+                :class="isActive('/trade') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <Icon icon="tabler:arrows-left-right" class="text-2xl" />
+                <img
+                  alt="Market"
+                  src="/img/trade-icon.png"
+                  class="w-7 h-6 filter"
+                  :style="isActive('/trade') ? teal600Filter : null"
+                />
                 <span class="text-xs mt-1">Trade</span>
               </RouterLink>
               <RouterLink
                 to="/history"
                 class="flex flex-col items-center"
-                :class="isActive('/history') ? 'text-blue-600' : 'text-gray-400'"
+                :class="isActive('/history') ? 'text-teal-600' : 'text-gray-400'"
               >
                 <Icon icon="tabler:history" class="text-2xl" />
                 <span class="text-xs mt-1 text-center">Order History</span>
@@ -154,7 +169,7 @@ const hideHeader = computed(() => noHeaderPaths.some((p) => route.path.startsWit
               <RouterLink
                 to="/assets"
                 class="flex flex-col items-center"
-                :class="isActive('/account') ? 'text-blue-600' : 'text-gray-400'"
+                :class="isActive('/assets') ? 'text-teal-600' : 'text-gray-400'"
               >
                 <Icon icon="tabler:wallet" class="text-2xl" />
                 <span class="text-xs mt-1">Assets</span>
