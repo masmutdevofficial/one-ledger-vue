@@ -854,17 +854,15 @@ async function submitOrder() {
       throw new Error(msg)
     }
 
-    const data: { success: boolean; message: string; id: number } = await res.json()
+    // const data: { success: boolean; message: string; id: number } = await res.json()
 
     amountPercent.value = 0
     rawPercent.value = 0
     totalAmount.value = 0
     totalAmountInput.value = ''
 
-    modal.open(
-      'Success',
-      `${activeTab.value === 'buy' ? 'Buy' : 'Sell'} order placed successfully with ID #${data.id}.`,
-      () => window.location.reload(),
+    modal.open(`${activeTab.value === 'buy' ? 'Buy' : 'Sell'} Succesfull`, ` Order Created.`, () =>
+      window.location.reload(),
     )
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Failed kirim order.'

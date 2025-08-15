@@ -31,22 +31,32 @@
     <!-- Trade items -->
     <div v-for="trade in trades" :key="trade.id" class="mb-6">
       <div class="flex items-center space-x-2 mb-1">
-        <div
-          class="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold select-none"
-        >
-          {{ trade.avatarText }}
+        <div class="w-6 h-6">
+          <img
+            v-if="trade.avatarUrl && !trade.avatarBroken"
+            :src="trade.avatarUrl"
+            alt="Avatar"
+            class="w-6 h-6 rounded-full object-cover"
+            @error="trade.avatarBroken = true"
+          />
+          <div
+            v-else
+            class="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold select-none"
+          >
+            {{ trade.avatarText }}
+          </div>
         </div>
+
         <span class="text-sm font-semibold text-gray-900">
           {{ trade.username }}
         </span>
+
         <img
           v-for="(emoji, idx) in trade.emojis"
           :key="idx"
           :alt="emoji.alt"
           class="w-3.5 h-3.5"
-          height="14"
           :src="emoji.src"
-          width="14"
         />
       </div>
       <div class="text-xs text-gray-500 mb-1">
@@ -100,20 +110,29 @@
         Verification
       </div>
     </div>
-    <div class="text-center text-xs text-gray-400 select-none">No more data</div>
+
+    <div v-if="loading" class="text-center text-xs text-gray-400 select-none">Loading…</div>
+    <div v-else-if="errorMsg" class="text-center text-xs text-red-500 select-none">
+      {{ errorMsg }}
+    </div>
+    <div v-else-if="!trades.length" class="text-center text-xs text-gray-400 select-none">
+      No Data Available
+    </div>
+    <div v-else class="text-center text-xs text-gray-400 select-none">No more data</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { ref, onMounted } from 'vue'
 
-type Emoji = { src: string; alt: string }
+// type Emoji = { src: string; alt: string }
 
 type Trade = {
   id: number
   avatarText: string
   username: string
-  emojis: Emoji[]
+  emojis: { src: string; alt: string }[]
   trades: number
   successRate: string
   completionRate: string
@@ -123,86 +142,114 @@ type Trade = {
   available: string
   time: string
   verified?: boolean
+
+  // NEW
+  avatarUrl?: string | null
+  avatarBroken?: boolean
 }
 
-const trades: Trade[] = [
-  {
-    id: 1,
-    avatarText: 'L',
-    username: 'LucasFastpay',
-    emojis: [
-      {
-        src: 'https://storage.googleapis.com/a1aa/image/ef459f7a-0780-4494-7d6f-54e40e376a28.jpg',
-        alt: 'Fire emoji',
+// ==== UI state
+const trades = ref<Trade[]>([])
+const loading = ref(true)
+const errorMsg = ref<string | null>(null)
+
+// ==== helpers format lokal ID
+const nfId = (min = 0, max = 0) =>
+  new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max })
+
+function formatPct(n: number) {
+  if (!Number.isFinite(n)) return '0,00%'
+  return nfId(2, 2).format(n) + '%'
+}
+function formatRupiah(n: number) {
+  if (!Number.isFinite(n)) return 'Rp 0'
+  return 'Rp ' + nfId(0, 0).format(n)
+}
+function formatFiatRange(min: number, max: number, fiat = 'IDR') {
+  return `${nfId(0, 0).format(min)} - ${nfId(0, 0).format(max)} ${fiat}`
+}
+function formatUsdt(n: number) {
+  // tampil 2 desimal agar ringkas, bisa diubah ke 4/6 kalau mau
+  return `${nfId(2, 2).format(n)} USDT`
+}
+function initialFrom(name: string) {
+  const c = (name || '').trim().charAt(0)
+  return c ? c.toUpperCase() : '?'
+}
+
+// contoh ikon gambar kecil (emoji) utk petir (fast)
+const EMOJI_LIGHTNING =
+  'https://storage.googleapis.com/a1aa/image/bdf2b390-7b1a-47de-ae86-662743046566.jpg'
+
+type ApiRow = {
+  id: number
+  advertiser_name: string
+  avatar_url?: string | null
+  trades_count: number
+  completion_rate_pct: number
+  is_fast: boolean
+  side: 'buy' | 'sell'
+  asset_symbol: string // USDT
+  fiat_currency: string // IDR
+  price_fiat: number
+  limit_min_fiat: number
+  limit_max_fiat: number
+  available_asset: number
+  payment_window_minutes: number
+  is_verified: boolean
+  status: 'active' | 'inactive'
+  payment_methods?: { id: number; code: string; name: string; is_instant: boolean }[]
+}
+
+function mapRow(r: ApiRow): Trade {
+  const pays = r.payment_methods?.map((m) => `${m.name}${m.is_instant ? ' ⚡' : ''}`) ?? []
+  return {
+    id: r.id,
+    avatarText: initialFrom(r.advertiser_name),
+    username: r.advertiser_name,
+    emojis: r.is_fast ? [{ src: EMOJI_LIGHTNING, alt: 'Lightning emoji' }] : [],
+    trades: r.trades_count,
+    successRate: formatPct(r.completion_rate_pct),
+    completionRate: formatPct(r.completion_rate_pct),
+    price: formatRupiah(r.price_fiat),
+    payment: pays.length ? pays : 'Bank Transfer',
+    limit: formatFiatRange(r.limit_min_fiat, r.limit_max_fiat, r.fiat_currency || 'IDR'),
+    available: formatUsdt(r.available_asset),
+    time: `${r.payment_window_minutes} min`,
+    verified: !!r.is_verified,
+
+    // NEW
+    avatarUrl: r.avatar_url || null,
+    avatarBroken: false,
+  }
+}
+
+async function fetchOffers() {
+  loading.value = true
+  errorMsg.value = null
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Unauthorized')
+
+    // kalau API satu domain, cukup '/api/p2p-offers'
+    const res = await fetch('https://ledger.masmutdev.id/api/p2p-offers', {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-    ],
-    trades: 1366,
-    successRate: '99,00%',
-    completionRate: '98,20%',
-    price: 'Rp 16.280',
-    payment: 'Yap! (BNI)',
-    limit: '3.000.000 - 10.000.000 IDR',
-    available: '6.348,05 USDT',
-    time: '15 min',
-  },
-  {
-    id: 2,
-    avatarText: 'N',
-    username: 'Nap_Rut_Nhanh_Gon',
-    emojis: [
-      {
-        src: 'https://storage.googleapis.com/a1aa/image/ef459f7a-0780-4494-7d6f-54e40e376a28.jpg',
-        alt: 'Fire emoji',
-      },
-    ],
-    trades: 2749,
-    successRate: '100,00%',
-    completionRate: '75,86%',
-    price: 'Rp 16.280',
-    payment: 'Bank Transfer ⚡',
-    limit: '8.000.001 - 20.000.000 IDR',
-    available: '3.380,27 USDT',
-    time: '30 min',
-  },
-  {
-    id: 3,
-    avatarText: 'P',
-    username: 'PANTHER_Z',
-    emojis: [
-      {
-        src: 'https://storage.googleapis.com/a1aa/image/bdf2b390-7b1a-47de-ae86-662743046566.jpg',
-        alt: 'Lightning emoji',
-      },
-    ],
-    trades: 850,
-    successRate: '100,00%',
-    completionRate: '100,00%',
-    price: 'Rp 16.281',
-    payment: ['Bank Transfer ⚡', 'Mandiri Pay ⚡'],
-    limit: '10.000.000 - 62.338.830 IDR',
-    available: '3.828,93 USDT',
-    time: '15 min',
-    verified: true,
-  },
-  {
-    id: 4,
-    avatarText: 'I',
-    username: 'INPUTCHANGER星FAST',
-    emojis: [
-      {
-        src: 'https://storage.googleapis.com/a1aa/image/ef459f7a-0780-4494-7d6f-54e40e376a28.jpg',
-        alt: 'Fire emoji',
-      },
-    ],
-    trades: 3616,
-    successRate: '100,00%',
-    completionRate: '99,66%',
-    price: 'Rp 16.281',
-    payment: ['Permata Me ⚡', 'Bank Transfer ⚡'],
-    limit: '5.000.000 - 51.516.631 IDR',
-    available: '3.164,21 USDT',
-    time: '15 min',
-    verified: true,
-  },
-]
+    })
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`)
+    }
+    const data: ApiRow[] = await res.json()
+    trades.value = Array.isArray(data) ? data.map(mapRow) : []
+  } catch (e) {
+    errorMsg.value = e instanceof Error ? e.message : 'Gagal memuat data.'
+    trades.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchOffers)
 </script>

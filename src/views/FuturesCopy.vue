@@ -2,6 +2,7 @@
   <div class="px-4 mb-20">
     <h2 class="font-semibold text-base mb-2 select-none">Futures Copy</h2>
     <div class="text-sm font-semibold mb-4 select-none">Public</div>
+
     <!-- Filter bar -->
     <div class="flex items-center space-x-4 text-xs text-gray-400 mb-4 select-none">
       <div class="flex items-center space-x-1 cursor-pointer">
@@ -17,6 +18,7 @@
         <span class="underline text-gray-400">Smart Filter</span>
       </label>
     </div>
+
     <!-- List items -->
     <ul class="space-y-6">
       <li
@@ -75,37 +77,43 @@
             Full
           </button>
         </div>
+
+        <!-- Label bar: pakai label dari API -->
         <div class="flex justify-between text-xs text-gray-400 select-none">
-          <span>30D PnL</span>
-          <span>30D ROI</span>
-          <span>AUM</span>
+          <span>{{ item.labelPnl }}</span>
+          <span>{{ item.labelRoi }}</span>
+          <span>{{ item.labelAum }}</span>
         </div>
+
         <div class="flex justify-between items-center">
           <div :class="item.pnlClass + ' font-semibold text-lg select-none'">
             {{ item.pnl }}
           </div>
-          <div class="text-teal-600 font-semibold text-sm select-none">
+          <div class="text-teal-600 font-semibold text-sm select-none ml-4">
             {{ item.roi }}
           </div>
           <div class="font-bold text-sm select-none">{{ item.aum }}</div>
         </div>
+
         <div class="flex items-start space-x-3">
           <!-- Kiri: Gambar -->
           <MiniAreaChart :series="item.chartSeries" :categories="item.chartCategories" />
           <!-- Kanan: Info -->
           <div class="flex-1">
             <div class="flex items-start justify-between text-xs text-gray-400 select-none">
-              <div class="flex flex-col justify-center text-xs text-gray-400 select-none ml-22">
-                <span>30D MDD</span>
+              <div class="flex flex-col justify-center text-xs text-gray-400 select-none ml-23">
+                <span>{{ item.labelMdd }}</span>
                 <span
-                  :class="item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none'"
+                  :class="
+                    item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none ml-1.5'
+                  "
                 >
                   {{ item.mddValue }}
                 </span>
               </div>
               <div class="flex flex-col justify-center text-xs text-gray-400 select-none">
-                <span>Sharpe Ratio</span>
-                <span>{{ item.sharpe }}</span>
+                <span>{{ item.labelSharpe }}</span>
+                <span class="text-gray-900">{{ item.sharpe }}</span>
               </div>
             </div>
           </div>
@@ -123,7 +131,7 @@ import { ref, onMounted } from 'vue'
 
 const router = useRouter()
 
-/** ==== API Row (dari /api/data-lable-p2p) ==== */
+/** ==== API Row ==== */
 type ApiRow = {
   id: number
   name: string
@@ -146,7 +154,7 @@ type ApiRow = {
   sharpe_ratio: number
 }
 
-/** ==== UI type (tampilan TIDAK diubah) ==== */
+/** ==== UI type ==== */
 interface CopyTrader {
   id: number
   username: string
@@ -166,7 +174,13 @@ interface CopyTrader {
   chartSeries: number[]
   chartCategories?: string[]
 
-  // simpan slug untuk navigasi (dipakai di goToFutures)
+  // labels dari API
+  labelPnl: string
+  labelRoi: string
+  labelAum: string
+  labelMdd: string
+  labelSharpe: string
+
   slug?: string
 }
 
@@ -190,6 +204,7 @@ function slugify(s: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
 }
+const lbl = (v: string | null | undefined, fallback: string) => (v && v.trim() ? v : fallback)
 
 function mapRow(r: ApiRow): CopyTrader {
   const isFull = r.copies_limit > 0 && r.copies_used >= r.copies_limit
@@ -212,6 +227,13 @@ function mapRow(r: ApiRow): CopyTrader {
     mddValue: toPct(r.mdd_30d_pct),
     sharpe: String(r.sharpe_ratio),
 
+    // labels dinamis (fallback kalau kosong)
+    labelPnl: lbl(r.text_pnl_30d, '30D PnL'),
+    labelRoi: lbl(r.text_roi_30d_pct, '30D ROI'),
+    labelAum: lbl(r.text_aum, 'AUM'),
+    labelMdd: lbl(r.text_mdd_30d_pct, '30D MDD'),
+    labelSharpe: lbl(r.text_sharpe_ratio, 'Sharpe Ratio'),
+
     // sparkline dummy (UI tetap)
     chartSeries: [10, 20, 15, 25, 20, 35, 28],
     chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
@@ -223,12 +245,11 @@ onMounted(async () => {
   try {
     const token = localStorage.getItem('token')
     if (!token || !token.trim()) {
-      console.warn('No token found') // atau redirect: router.replace('/login?reason=unauthorized')
       copyTraders.value = []
       return
     }
 
-    const res = await fetch('https://ledger.masmutdev.id/api/data-lable-p2p', {
+    const res = await fetch('https://ledger.masmutdev.id/api/data-lable-copy-trading', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
@@ -239,11 +260,11 @@ onMounted(async () => {
     const data: ApiRow[] = await res.json()
     copyTraders.value = Array.isArray(data) ? data.map(mapRow) : []
   } catch {
-    copyTraders.value = [] // biarkan kosong kalau gagal, tampilan tetap
+    copyTraders.value = []
   }
 })
 
-/** ==== Navigasi: pakai slug tanpa mengubah template ==== */
+/** ==== Navigasi ==== */
 function goToFutures(username: string) {
   const item = copyTraders.value.find((i) => i.username === username)
   const slug = item?.slug || slugify(username)

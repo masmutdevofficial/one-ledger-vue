@@ -129,9 +129,10 @@ const teal600Filter = {
                 class="flex flex-col items-center"
                 :class="isActive('/dashboard') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <img alt="Logo with four hexagons" class="w-5 h-6" src="/img/logo.png" />
+                <img alt="Home" src="/img/logo.png" class="w-6 h-6 object-contain" />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>
+
               <RouterLink
                 to="/market"
                 class="flex flex-col items-center"
@@ -140,38 +141,41 @@ const teal600Filter = {
                 <img
                   alt="Market"
                   src="/img/markets-icon.png"
-                  class="w-6 h-6 filter"
+                  class="w-6 h-6 object-contain filter"
                   :style="isActive('/market') ? teal600Filter : null"
                 />
                 <span class="text-xs mt-1">Market</span>
               </RouterLink>
+
               <RouterLink
                 to="/trade"
                 class="flex flex-col items-center"
                 :class="isActive('/trade') ? 'text-teal-600' : 'text-gray-400'"
               >
                 <img
-                  alt="Market"
+                  alt="Trade"
                   src="/img/trade-icon.png"
-                  class="w-7 h-6 filter"
+                  class="w-6 h-6 object-contain filter"
                   :style="isActive('/trade') ? teal600Filter : null"
                 />
                 <span class="text-xs mt-1">Trade</span>
               </RouterLink>
+
               <RouterLink
                 to="/history"
                 class="flex flex-col items-center"
                 :class="isActive('/history') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <Icon icon="tabler:history" class="text-2xl" />
+                <Icon icon="tabler:history" class="w-6 h-6" />
                 <span class="text-xs mt-1 text-center">Order History</span>
               </RouterLink>
+
               <RouterLink
                 to="/assets"
                 class="flex flex-col items-center"
                 :class="isActive('/assets') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <Icon icon="tabler:wallet" class="text-2xl" />
+                <Icon icon="tabler:wallet" class="w-6 h-6" />
                 <span class="text-xs mt-1">Assets</span>
               </RouterLink>
             </div>
