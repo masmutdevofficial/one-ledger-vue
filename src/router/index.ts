@@ -76,7 +76,7 @@ const routes = [
       },
       {
         path: 'trade',
-        component: () => import('@/views/MarketCoin.vue'),
+        component: () => import('@/views/NewMarketCoin.vue'),
       },
       {
         path: 'history',

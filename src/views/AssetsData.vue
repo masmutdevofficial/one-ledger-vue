@@ -1,40 +1,44 @@
 <template>
   <div>
-    <!-- Section: Total Value Summary -->
+    <!-- ===== Summary ===== -->
     <section class="bg-white mb-6 px-4 mt-5">
-      <!-- Header -->
       <div class="flex items-center space-x-1 text-gray-700 text-sm font-normal mb-1">
         <span>Est. Total Value</span>
-        <!-- Icon 👁️ ganti tabler:eye -->
         <Icon icon="tabler:eye" class="w-4 h-4" />
       </div>
 
-      <!-- Total Value -->
       <div class="flex items-baseline space-x-1 font-semibold text-3xl text-black mb-1">
-        <span>{{
-          saldo !== null ? saldo.toLocaleString('id-ID', { minimumFractionDigits: 2 }) : '...'
-        }}</span>
+        <span>
+          {{
+            totalValue !== null
+              ? totalValue.toLocaleString('id-ID', { minimumFractionDigits: 2 })
+              : '...'
+          }}
+        </span>
         <span class="text-base font-normal">USDT</span>
-        <!-- Icon ▼ ganti tabler:chevron-down -->
         <Icon icon="tabler:chevron-down" class="text-base w-4 h-4" />
       </div>
 
-      <!-- USD Equivalent -->
       <div class="text-gray-400 text-sm mb-2">
         ≈ ${{
-          saldo !== null ? saldo.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '...'
+          totalValue !== null
+            ? totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })
+            : '...'
         }}
       </div>
 
-      <!-- PNL -->
       <div class="text-xs flex items-center text-black mb-4">
-        Today's PNL
-        <span class="text-[#3ABBA3] font-semibold"> +0,00938701 USDT (+0,84%) </span>
-        <!-- Icon ➡️ ganti tabler:chevron-right -->
+        Unrealized PnL
+        <span
+          class="font-semibold ml-1"
+          :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'"
+        >
+          {{ signedMoneyId(portfolioUpnlAbs, 2) }}
+          ({{ signedPercent(portfolioUpnlPct) }})
+        </span>
         <Icon icon="tabler:chevron-right" class="ml-1 text-gray-400 w-4 h-4" />
       </div>
 
-      <!-- Action Buttons -->
       <div class="grid grid-cols-3 gap-3">
         <RouterLink
           to="/add-funds"
@@ -42,14 +46,12 @@
         >
           Add Funds
         </RouterLink>
-
         <RouterLink
           to="/send"
           class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
         >
           Send
         </RouterLink>
-
         <RouterLink
           to="/transfer"
           class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
@@ -58,6 +60,8 @@
         </RouterLink>
       </div>
     </section>
+
+    <!-- ===== Assets ===== -->
     <div class="mb-20">
       <div v-if="loadingAssets" class="text-sm text-gray-500 px-5 py-3">Loading assets…</div>
       <div v-else-if="errorAssets" class="text-sm text-red-500 px-5 py-3">{{ errorAssets }}</div>
@@ -69,25 +73,25 @@
         v-else
         v-for="a in assets"
         :key="a.symbol"
-        class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md"
+        class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md bg-white"
       >
         <div class="flex justify-between items-center">
-          <p class="text-gray-500 text-sm font-normal">Current pair assets</p>
+          <p class="text-gray-500 text-sm font-normal">Asset</p>
           <Icon icon="tabler:adjustments-horizontal" class="text-gray-400 text-sm" />
         </div>
 
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-2">
             <img
-              :alt="`${a.name} logo`"
-              class="flex-shrink-0 rounded-full"
+              :alt="`${a.base} logo`"
+              class="rounded-full"
               :src="a.logoUrl"
               width="20"
               height="20"
             />
             <p class="font-bold text-black text-base leading-5">
-              {{ a.symbol }}
-              <span class="font-normal text-gray-400 text-sm">{{ a.name }}</span>
+              {{ a.base }}
+              <span class="font-normal text-gray-400 text-sm">/{{ a.quote }}</span>
             </p>
           </div>
 
@@ -96,33 +100,35 @@
           </button>
         </div>
 
+        <!-- Unrealized PnL -->
         <div
           class="flex justify-between items-center space-x-4 font-semibold text-base leading-5"
-          :class="a.changePct >= 0 ? 'text-green-600' : 'text-red-600'"
+          :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'"
         >
-          <p>{{ signedMoneyId(a.changeAbsUsd, 8) }}</p>
-          <p>{{ signedPercent(a.changePct) }}</p>
+          <p>{{ signedMoneyId(a.uPnlAbs, 2) }}</p>
+          <p>{{ signedPercent(a.uPnlPct) }}</p>
         </div>
 
-        <div class="flex justify-between text-xs text-gray-400 font-normal">
-          <div class="flex flex-col">
-            <span class="text-gray-600 font-normal text-xs">Balances</span>
-            <span class="text-black font-normal text-sm">
-              {{ formatNumberId(a.balanceCoin, 8) }}
+        <!-- Balances, Avg Cost, Last Price -->
+        <div class="grid grid-cols-3 gap-2 text-xs text-gray-400 font-normal">
+          <div>
+            <span class="text-gray-600 block">Balances</span>
+            <span class="text-black font-normal text-sm block">
+              {{ formatNumberId(a.qty, 8) }} {{ a.base }}
             </span>
-            <span>{{ moneyId(a.balanceUsd, a.balanceUsdDigits) }}</span>
+            <span class="block">{{ moneyId(a.valueUsd, 2) }}</span>
           </div>
 
-          <!-- <div class="flex flex-col text-right">
-          <span class="text-gray-600 font-normal text-xs">Avg. Cost</span>
-          <span class="text-black font-normal text-sm">
-            {{ moneyId(a.avgCostUsd, 2) }}
-          </span>
-        </div> -->
+          <div class="text-right">
+            <span class="text-gray-600 block">Avg. Cost ({{ a.quote }})</span>
+            <span class="text-black font-normal text-sm block">
+              {{ formatNumberId(a.avgCost, 2) }}
+            </span>
+          </div>
 
-          <div class="flex flex-col text-right">
-            <span class="text-gray-600 font-normal text-xs">Last Price ({{ a.quote }})</span>
-            <span class="text-black font-normal text-sm">
+          <div class="text-right">
+            <span class="text-gray-600 block">Last Price ({{ a.quote }})</span>
+            <span class="text-black font-normal text-sm block">
               {{ formatNumberId(a.lastPrice, 2) }}
             </span>
           </div>
@@ -133,64 +139,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 
-/** ---------- Saldo ---------- */
-interface SaldoResponse {
-  status: string
-  saldo: number
-  koin: number
-}
-const saldo = ref<number | null>(null)
-const koin = ref<number | null>(null)
-
-async function loadSaldo() {
-  const token = localStorage.getItem('token')
-  if (!token) return
-  const res = await fetch('https://ledger.masmutdev.id/api/saldo', {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-  })
-  const data: SaldoResponse = await res.json()
-  if (res.ok && data.status === 'success') {
-    saldo.value = data.saldo
-    koin.value = data.koin
-  }
-}
-
-/** ---------- Types ---------- */
+/** ===== Types ===== */
 type Quote = 'USDT' | 'USDC' | 'USD'
-
-type HistoryRow = {
-  id: string | number
-  symbol: string
-  jenis: 'BUY' | 'SELL' | string
-  daily_pnl: string
-  pnl: string
-  last_prices: string
-  balances_buy?: string
-  balances_sell?: string
-  profit?: string
-  time_order: string
+type PositionRow = {
+  id: number
+  id_users: number
+  symbol: string // e.g. BTCUSDT
+  qty: string | number
+  avg_cost: string | number
+  realized_pnl: string | number
   created_at: string
   updated_at: string
 }
-
 type AssetItem = {
   symbol: string
-  name: string
-  logoUrl: string
+  base: string
   quote: Quote
-  changeAbsUsd: number
-  changePct: number
-  balanceCoin: number
-  balanceUsd: number
-  balanceUsdDigits?: number
+  logoUrl: string
+  qty: number
+  avgCost: number
   lastPrice: number
-  ts: number
+  valueUsd: number
+  uPnlAbs: number
+  uPnlPct: number
 }
 
-/** ---------- Helpers ---------- */
+/** ===== Konstanta ===== */
+const API_BASE = 'https://ledger.masmutdev.id/api'
+const WS_BASE = 'wss://ledgersocketone.online'
 const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote }> = {
   BTC: {
     name: 'Bitcoin',
@@ -199,15 +178,26 @@ const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote 
   },
   ETH: {
     name: 'Ethereum',
-    logoUrl: 'https://placehold.co/20x20/gray/fff/png?text=E',
+    logoUrl: 'https://placehold.co/20x20/666/fff/png?text=E',
     quote: 'USDT',
   },
   SOL: { name: 'Solana', logoUrl: 'https://placehold.co/20x20/000/fff/png?text=S', quote: 'USDT' },
 }
 
+/** ===== State saldo & portfolio ===== */
+const saldo = ref<number | null>(null)
+const totalValue = ref<number | null>(null) // saldo + sum(asset value)
+const portfolioUpnlAbs = ref<number>(0)
+const portfolioUpnlPct = ref<number>(0)
+
+/** ===== State assets ===== */
+const assets = ref<AssetItem[]>([])
+const loadingAssets = ref(false)
+const errorAssets = ref<string | null>(null)
+
+/** ===== Helpers ===== */
 const nfId = (min: number, max: number) =>
   new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max })
-
 function formatNumberId(n: number, digits = 2): string {
   return Number.isFinite(n) ? nfId(digits, digits).format(n) : '0'
 }
@@ -215,29 +205,40 @@ function moneyId(n: number, digits = 2): string {
   return `$${formatNumberId(n, digits)}`
 }
 function signedPercent(pct: number): string {
-  return (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%'
+  const sign = pct >= 0 ? '+' : ''
+  return sign + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
 }
 function signedMoneyId(n: number, digits = 2): string {
-  return (n >= 0 ? '+' : '') + moneyId(Math.abs(n), digits)
+  const sign = n >= 0 ? '+' : '-'
+  return sign + moneyId(Math.abs(n), digits)
 }
-function normalizeNumber(v: string | number | null | undefined): number {
+function splitSymbol(sym: string): { base: string; quote: Quote } {
+  const s = sym.toUpperCase()
+  if (s.endsWith('USDT')) return { base: s.slice(0, -4), quote: 'USDT' }
+  if (s.endsWith('USDC')) return { base: s.slice(0, -4), quote: 'USDC' }
+  if (s.endsWith('USD')) return { base: s.slice(0, -3), quote: 'USD' }
+  return { base: s, quote: 'USDT' }
+}
+function normalizeNum(v: string | number | null | undefined): number {
   if (v === null || v === undefined) return 0
   if (typeof v === 'number') return v
-  return Number(String(v).replace(/,/g, '')) || 0
-}
-function parsePercent(s: string): number {
-  const m = String(s).match(/[-+]?\d+(?:\.\d+)?/)
-  return m ? Number(m[0]) : 0
-}
-function toTs(s: string): number {
-  const d = new Date(s.replace(' ', 'T') + 'Z')
-  return isNaN(d.getTime()) ? Date.now() : d.getTime()
+  return Number(String(v)) || 0
 }
 
-/** ---------- Data dari /crypto-history ---------- */
-const assets = ref<AssetItem[]>([])
-const loadingAssets = ref(false)
-const errorAssets = ref<string | null>(null)
+/** ===== Loaders ===== */
+async function loadSaldo() {
+  const token = localStorage.getItem('token')
+  if (!token) return
+  const res = await fetch(`${API_BASE}/saldo`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  if (res.ok && data?.status === 'success') {
+    saldo.value = Number(data.saldo) || 0
+  } else {
+    saldo.value = 0
+  }
+}
 
 async function loadAssets() {
   loadingAssets.value = true
@@ -246,67 +247,184 @@ async function loadAssets() {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Token tidak ada.')
 
-    const res = await fetch('https://ledger.masmutdev.id/api/crypto-history', {
+    // 1) Ambil semua posisi
+    const res = await fetch(`${API_BASE}/positions-all`, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     })
-    if (!res.ok) throw new Error(`Request failed (${res.status})`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const rows: PositionRow[] = await res.json()
 
-    const rows: HistoryRow[] = await res.json()
+    if (!Array.isArray(rows) || rows.length === 0) {
+      assets.value = []
+      recomputeTotals()
+      ensureTickerSubscriptions() // akan menutup semua socket kalau ada
+      return
+    }
 
-    const mapped: AssetItem[] = rows.map((h) => {
-      const meta = SYMBOL_META[h.symbol] ?? {
-        name: h.symbol,
-        logoUrl: 'https://placehold.co/20x20/777/fff/png?text=?',
-        quote: 'USDT' as Quote,
-      }
+    // 2) Map awal asset (lastPrice 0; akan diisi WS)
+    const mapped: AssetItem[] = rows
+      .filter((r) => normalizeNum(r.qty) > 0)
+      .map((r) => {
+        const sym = String(r.symbol).toUpperCase()
+        const { base, quote } = splitSymbol(sym)
+        const meta = SYMBOL_META[base] ?? {
+          name: base,
+          logoUrl: 'https://placehold.co/20x20/777/fff/png?text=?',
+          quote: quote as Quote,
+        }
+        const qty = normalizeNum(r.qty)
+        const avg = normalizeNum(r.avg_cost)
+        const last = 0
+        const value = qty * last
+        const uAbs = (last - avg) * qty
+        const uPct = avg > 0 ? ((last - avg) / avg) * 100 : 0
+        return {
+          symbol: sym,
+          base,
+          quote: meta.quote,
+          logoUrl: meta.logoUrl,
+          qty,
+          avgCost: avg,
+          lastPrice: last,
+          valueUsd: value,
+          uPnlAbs: uAbs,
+          uPnlPct: uPct,
+        }
+      })
 
-      const last = normalizeNumber(h.last_prices)
-      const pnlPct = parsePercent(h.pnl)
-      const absUsd = normalizeNumber(h.daily_pnl)
-      const isBuy = String(h.jenis).toUpperCase() === 'BUY'
-
-      let qtyCoin = 0
-      let usdVal = 0
-
-      if (isBuy) {
-        qtyCoin = normalizeNumber(h.profit) || normalizeNumber(h.balances_buy) / (last || Infinity)
-        usdVal = qtyCoin * last
-      } else {
-        qtyCoin = normalizeNumber(h.balances_sell)
-        usdVal = normalizeNumber(h.profit) || qtyCoin * last
-      }
-
-      return {
-        symbol: h.symbol,
-        name: meta.name,
-        logoUrl: meta.logoUrl,
-        quote: meta.quote,
-        changeAbsUsd: absUsd,
-        changePct: pnlPct,
-        balanceCoin: Number.isFinite(qtyCoin) ? qtyCoin : 0,
-        balanceUsd: Number.isFinite(usdVal) ? usdVal : 0,
-        balanceUsdDigits: 2,
-        lastPrice: Number.isFinite(last) ? last : 0,
-        ts: toTs(h.time_order || h.updated_at || h.created_at),
-      }
-    })
-
-    mapped.sort((a, b) => b.ts - a.ts)
+    // urutkan by nilai terbesar
+    mapped.sort((a, b) => b.valueUsd - a.valueUsd)
     assets.value = mapped
-  } catch (e) {
-    errorAssets.value = e instanceof Error ? e.message : 'Gagal memuat crypto-history.'
+
+    // 3) subscribe WS ticker untuk simbol-simbol yang ada
+    ensureTickerSubscriptions()
+
+    // 4) Hitung total portfolio
+    recomputeTotals()
+  } catch (e: any) {
+    errorAssets.value = e?.message || 'Gagal memuat assets.'
     assets.value = []
+    recomputeTotals()
+    ensureTickerSubscriptions()
   } finally {
     loadingAssets.value = false
   }
 }
 
-/** ---------- Mount ---------- */
+/** Hitung total value & portfolio uPNL */
+function recomputeTotals() {
+  const sumValue = assets.value.reduce((acc, a) => acc + (a.valueUsd || 0), 0)
+  const sumUpnl = assets.value.reduce((acc, a) => acc + (a.uPnlAbs || 0), 0)
+  const cost = assets.value.reduce((acc, a) => acc + a.avgCost * a.qty, 0)
+
+  portfolioUpnlAbs.value = sumUpnl
+  portfolioUpnlPct.value = cost > 0 ? (sumUpnl / cost) * 100 : 0
+
+  const s = saldo.value ?? 0
+  totalValue.value = s + sumValue
+}
+
+/** ===== Realtime via WebSocket (ticker) ===== */
+const sockets = new Map<string, WebSocket>()
+const reconnectTimers = new Map<string, number>() // id timer
+
+function parseLastPrice(payload: any): number {
+  // Versi relay custom: { ch:'ticker', symbol:'btcusdt', last:123, ts:... }
+  if (payload && payload.ch === 'ticker' && 'last' in payload) {
+    const v = Number(payload.last)
+    return Number.isFinite(v) ? v : 0
+  }
+  // Versi raw Huobi: { ch:'market.btcusdt.trade.detail', tick: { data: [{ price }] } }
+  if (payload?.ch?.includes('.trade.detail')) {
+    const v = Number(payload?.tick?.data?.[0]?.price)
+    return Number.isFinite(v) ? v : 0
+  }
+  return 0
+}
+
+function connectTicker(symbolUpper: string) {
+  const sym = symbolUpper.toLowerCase() // 'btcusdt'
+  const key = `${sym}-ticker`
+
+  // kalau sudah ada, jangan duplikasi
+  if (sockets.has(key)) return
+
+  const url = `${WS_BASE}/${sym}/ticker`
+  const ws: WebSocket | null = new WebSocket(url)
+
+  ws.onopen = () => {
+    // console.log('ticker open', sym)
+  }
+
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data as string)
+      const last = parseLastPrice(msg)
+      if (!last) return
+      // update asset terkait
+      const symbolUp = symbolUpper.toUpperCase()
+      const a = assets.value.find((x) => x.symbol === symbolUp)
+      if (!a) return
+      a.lastPrice = last
+      a.valueUsd = a.qty * last
+      a.uPnlAbs = (last - a.avgCost) * a.qty
+      a.uPnlPct = a.avgCost > 0 ? ((last - a.avgCost) / a.avgCost) * 100 : 0
+      recomputeTotals()
+    } catch {}
+  }
+
+  ws.onclose = () => {
+    sockets.delete(key)
+    // jadwalkan reconnect kalau aset masih ada
+    if (assets.value.some((a) => a.symbol.toLowerCase() === sym)) {
+      const t = window.setTimeout(() => connectTicker(symbolUpper), 2000)
+      reconnectTimers.set(key, t)
+    }
+  }
+
+  ws.onerror = () => {
+    ws?.close()
+  }
+
+  sockets.set(key, ws)
+}
+
+function ensureTickerSubscriptions() {
+  // Tutup socket yang tidak lagi dibutuhkan
+  for (const [key, sock] of sockets.entries()) {
+    const sym = key.replace('-ticker', '').toUpperCase()
+    if (!assets.value.some((a) => a.symbol === sym)) {
+      try {
+        sock.close()
+      } catch {}
+      sockets.delete(key)
+    }
+  }
+  // Buka socket untuk aset yang belum tersubscribe
+  for (const a of assets.value) {
+    connectTicker(a.symbol)
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([loadSaldo(), loadAssets()])
+  await loadSaldo()
+  await loadAssets()
+})
+
+// Jika nanti kamu refresh assets (mis. setelah trade), pastikan panggil loadAssets() lagi.
+// Tambah watcher untuk menjaga subscription jika daftar assets berubah manual.
+watch(assets, () => ensureTickerSubscriptions(), { deep: true })
+
+onUnmounted(() => {
+  for (const ws of sockets.values()) {
+    try {
+      ws.close()
+    } catch {}
+  }
+  sockets.clear()
+  for (const t of reconnectTimers.values()) {
+    clearTimeout(t)
+  }
+  reconnectTimers.clear()
 })
 </script>
-
-<style scoped>
-/* Tambahan gaya jika perlu */
-</style>
