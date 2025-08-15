@@ -2,39 +2,43 @@
   <div>
     <!-- Section: Total Value Summary -->
     <section class="bg-white mb-6 px-4 mt-5">
-      <!-- Header -->
       <div class="flex items-center space-x-1 text-gray-700 text-sm font-normal mb-1">
         <span>Est. Total Value</span>
-        <!-- Icon 👁️ ganti tabler:eye -->
         <Icon icon="tabler:eye" class="w-4 h-4" />
       </div>
 
-      <!-- Total Value -->
       <div class="flex items-baseline space-x-1 font-semibold text-3xl text-black mb-1">
-        <span>{{
-          saldo !== null ? saldo.toLocaleString('id-ID', { minimumFractionDigits: 2 }) : '...'
-        }}</span>
+        <span>
+          {{
+            totalValue !== null
+              ? totalValue.toLocaleString('id-ID', { minimumFractionDigits: 2 })
+              : '...'
+          }}
+        </span>
         <span class="text-base font-normal">USDT</span>
-        <!-- Icon ▼ ganti tabler:chevron-down -->
         <Icon icon="tabler:chevron-down" class="text-base w-4 h-4" />
       </div>
 
-      <!-- USD Equivalent -->
       <div class="text-gray-400 text-sm mb-2">
         ≈ ${{
-          saldo !== null ? saldo.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '...'
+          totalValue !== null
+            ? totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })
+            : '...'
         }}
       </div>
 
-      <!-- PNL -->
       <div class="text-xs flex items-center text-black mb-4">
-        Today's PNL
-        <span class="text-[#3ABBA3] font-semibold"> +0,00938701 USDT (+0,84%) </span>
-        <!-- Icon ➡️ ganti tabler:chevron-right -->
+        Unrealized PnL
+        <span
+          class="font-semibold ml-1"
+          :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'"
+        >
+          {{ signedMoneyId(portfolioUpnlAbs, 2) }}
+          ({{ signedPercent(portfolioUpnlPct) }})
+        </span>
         <Icon icon="tabler:chevron-right" class="ml-1 text-gray-400 w-4 h-4" />
       </div>
 
-      <!-- Action Buttons -->
       <div class="grid grid-cols-3 gap-3">
         <RouterLink
           to="/add-funds"
@@ -42,14 +46,12 @@
         >
           Add Funds
         </RouterLink>
-
         <RouterLink
           to="/send"
           class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
         >
           Send
         </RouterLink>
-
         <RouterLink
           to="/transfer"
           class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
@@ -193,7 +195,7 @@
 <script setup lang="ts">
 import { useApiAlertStore } from '@/stores/apiAlert'
 import SliderDashboard from '@/components/dashboard/SliderDashboard.vue'
-import { ref, onMounted, computed } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 
 interface MarketItem {
@@ -203,37 +205,195 @@ interface MarketItem {
   icon?: string
 }
 
-interface SaldoResponse {
-  status: string
-  saldo: number
-  koin: number
+type Quote = 'USDT' | 'USDC' | 'USD'
+type PositionRow = {
+  symbol: string // e.g. BTCUSDT
+  qty: string | number
+  avg_cost: string | number
 }
 
-const saldo = ref<number | null>(null)
-const koin = ref<number | null>(null)
+const API_BASE = 'https://ledger.masmutdev.id/api'
+const WS_BASE = 'wss://ledgersocketone.online'
 
-onMounted(async () => {
-  try {
-    const token = localStorage.getItem('token')
-    const res = await fetch('https://ledger.masmutdev.id/api/saldo', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
-    })
+/** ===== State summary ===== */
+const saldo = ref<number | null>(null) // dari /saldo
+const totalValue = ref<number | null>(null) // saldo + Σ(qty * last)
+const portfolioUpnlAbs = ref<number>(0) // Σ((last-avg)*qty)
+const portfolioUpnlPct = ref<number>(0) // ΣuPNL / Σcost * 100
 
-    const data: SaldoResponse = await res.json()
+/** ===== State positions & harga ===== */
+const positions = ref<PositionRow[]>([]) // dari /positions-all
+const priceMap = reactive<Record<string, number>>({}) // { BTCUSDT: 12345 }
+const sockets = new Map<string, WebSocket>()
+const reconnectTimers = new Map<string, number>()
 
-    if (res.ok && data.status === 'success') {
-      saldo.value = data.saldo
-      koin.value = data.koin
-    } else {
-      console.error('Gagal ambil saldo:', data)
-    }
-  } catch (err) {
-    console.error('Fetch error:', err)
+/** ===== Helpers ===== */
+function n(v: any, d = 0) {
+  const x = Number(v)
+  return Number.isFinite(x) ? x : d
+}
+function splitSymbol(sym: string): { base: string; quote: Quote } {
+  const s = sym.toUpperCase()
+  if (s.endsWith('USDT')) return { base: s.slice(0, -4), quote: 'USDT' }
+  if (s.endsWith('USDC')) return { base: s.slice(0, -4), quote: 'USDC' }
+  if (s.endsWith('USD')) return { base: s.slice(0, -3), quote: 'USD' }
+  return { base: s, quote: 'USDT' }
+}
+function parseLastPrice(payload: any): number {
+  // Versi relay custom: { ch:'ticker', symbol:'btcusdt', last:123, ts:... }
+  if (payload?.ch === 'ticker' && 'last' in payload) return n(payload.last, 0)
+  // Versi Huobi raw: { ch:'market.btcusdt.trade.detail', tick:{data:[{price}]}}
+  if (payload?.ch?.includes('.trade.detail')) return n(payload?.tick?.data?.[0]?.price, 0)
+  return 0
+}
+
+/** ===== Recompute totals ===== */
+function recomputeTotals() {
+  let sumValue = 0
+  let sumUpnl = 0
+  let sumCost = 0
+
+  for (const p of positions.value) {
+    const sym = String(p.symbol).toUpperCase()
+    const last = n(priceMap[sym], 0)
+    const qty = n(p.qty, 0)
+    const avg = n(p.avg_cost, 0)
+    sumValue += qty * last
+    sumUpnl += (last - avg) * qty
+    sumCost += avg * qty
   }
+
+  portfolioUpnlAbs.value = sumUpnl
+  portfolioUpnlPct.value = sumCost > 0 ? (sumUpnl / sumCost) * 100 : 0
+  totalValue.value = (saldo.value ?? 0) + sumValue
+}
+
+/** ===== WS ticker per simbol ===== */
+function connectTicker(symbolUpper: string) {
+  const symLower = symbolUpper.toLowerCase() // 'btcusdt'
+  const key = `${symLower}-ticker`
+  if (sockets.has(key)) return
+
+  const url = `${WS_BASE}/${symLower}/ticker`
+  const ws: WebSocket | null = new WebSocket(url)
+
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data as string)
+      const last = parseLastPrice(msg)
+      if (!last) return
+      priceMap[symbolUpper] = last
+      recomputeTotals()
+    } catch {}
+  }
+
+  ws.onclose = () => {
+    sockets.delete(key)
+    // auto-reconnect selama simbol masih ada di posisi
+    if (positions.value.some((p) => String(p.symbol).toUpperCase() === symbolUpper)) {
+      const t = window.setTimeout(() => connectTicker(symbolUpper), 2000)
+      reconnectTimers.set(key, t)
+    }
+  }
+
+  ws.onerror = () => {
+    try {
+      ws?.close()
+    } catch {}
+  }
+  sockets.set(key, ws)
+}
+
+function ensureTickerSubscriptions() {
+  // tutup yang tidak perlu
+  for (const [key, sock] of sockets.entries()) {
+    const symUp = key.replace('-ticker', '').toUpperCase()
+    if (!positions.value.some((p) => String(p.symbol).toUpperCase() === symUp)) {
+      try {
+        sock.close()
+      } catch {}
+      sockets.delete(key)
+    }
+  }
+  // buka yang belum terhubung
+  for (const p of positions.value) {
+    connectTicker(String(p.symbol).toUpperCase())
+  }
+}
+
+/** ===== Loaders awal ===== */
+async function loadSaldo() {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    saldo.value = 0
+    return
+  }
+  const res = await fetch(`${API_BASE}/saldo`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  saldo.value = res.ok && data?.status === 'success' ? n(data.saldo, 0) : 0
+}
+
+async function loadPositions() {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    positions.value = []
+    return
+  }
+  const res = await fetch(`${API_BASE}/positions-all`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  })
+  const rows: PositionRow[] = res.ok ? await res.json() : []
+  // ambil hanya yang qty > 0
+  positions.value = rows.filter((r) => n(r.qty, 0) > 0)
+}
+
+/** ===== Mount / Unmount ===== */
+onMounted(async () => {
+  await Promise.all([loadSaldo(), loadPositions()])
+  // inisialisasi harga ke 0 untuk semua simbol agar recompute tidak NaN
+  for (const p of positions.value) priceMap[String(p.symbol).toUpperCase()] = 0
+  recomputeTotals()
+  ensureTickerSubscriptions()
 })
+
+// opsional: kalau kamu sudah broadcast event dari backend setelah trade,
+// pasang listener di sini untuk refresh qty/saldo tanpa reload halaman:
+window.addEventListener('portfolio-updated', async () => {
+  await Promise.all([loadSaldo(), loadPositions()])
+  ensureTickerSubscriptions()
+  recomputeTotals()
+})
+
+onUnmounted(() => {
+  for (const ws of sockets.values()) {
+    try {
+      ws.close()
+    } catch {}
+  }
+  sockets.clear()
+  for (const t of reconnectTimers.values()) clearTimeout(t)
+  reconnectTimers.clear()
+})
+
+/** ===== Formatting yang kamu sudah punya (dipakai template) ===== */
+const nfId = (min: number, max: number) =>
+  new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max })
+function formatNumberId(nu: number, digits = 2) {
+  return Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0'
+}
+function moneyId(nu: number, digits = 2) {
+  return `$${formatNumberId(nu, digits)}`
+}
+function signedPercent(pct: number) {
+  const s = pct >= 0 ? '+' : ''
+  return s + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
+}
+function signedMoneyId(nu: number, digits = 2) {
+  const s = nu >= 0 ? '+' : '-'
+  return s + moneyId(Math.abs(nu), digits)
+}
 
 interface ApiNewsItem {
   id: number
