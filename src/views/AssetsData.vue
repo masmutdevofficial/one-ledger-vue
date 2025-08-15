@@ -35,24 +35,24 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="grid grid-cols-3 gap-3">
         <RouterLink
           to="/add-funds"
-          class="bg-teal-400 active:bg-teal-500 text-white rounded-md px-6 py-2 text-base font-normal transition-colors w-full text-center"
+          class="bg-teal-400 flex justify-center items-center active:bg-teal-500 text-white rounded-md px-6 py-2 text-base font-normal transition-colors w-full text-center"
         >
           Add Funds
         </RouterLink>
 
         <RouterLink
           to="/send"
-          class="bg-[#E6E6E6] text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
+          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
         >
           Send
         </RouterLink>
 
         <RouterLink
           to="/transfer"
-          class="bg-[#E6E6E6] text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
+          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
         >
           Transfer
         </RouterLink>

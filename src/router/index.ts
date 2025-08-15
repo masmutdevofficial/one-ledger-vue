@@ -59,6 +59,10 @@ const routes = [
         component: () => import('@/views/SendUSDT.vue'),
       },
       {
+        path: 'notification',
+        component: () => import('@/views/NotificationTransactions.vue'),
+      },
+      {
         path: 'transfer',
         component: () => import('@/views/TransferUSDT.vue'),
       },
