@@ -41,6 +41,9 @@ onMounted(async () => {
 function isActive(path: string): boolean {
   return route.path.startsWith(path)
 }
+
+const noHeaderPaths = ['/account'] // bisa ditambah: '/account/settings', dll
+const hideHeader = computed(() => noHeaderPaths.some((p) => route.path.startsWith(p)))
 </script>
 
 <template>
@@ -48,6 +51,7 @@ function isActive(path: string): boolean {
     <div class="w-full max-w-md bg-white min-h-screen flex flex-col relative">
       <!-- Header -->
       <header
+        v-if="!hideHeader"
         class="bg-white fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 shadow-sm flex items-center px-6 py-4 space-x-8"
       >
         <!-- Logo -->
