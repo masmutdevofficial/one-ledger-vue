@@ -56,9 +56,9 @@ function isActive(path: string): boolean {
         </RouterLink>
         <!-- ... search & nav ... -->
         <form class="flex-1">
-          <div class="relative w-[80%]">
+          <div class="relative w-[100%]">
             <input
-              class="w-full border-[1px] border-black rounded-full py-2 pl-6 pr-10 text-black text-base focus:outline-none"
+              class="w-full border-[1px] border-black rounded-full py-1 pl-6 pr-10 text-black text-base focus:outline-none"
               placeholder="Search"
               type="search"
             />

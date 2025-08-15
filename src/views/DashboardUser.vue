@@ -35,7 +35,7 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="grid grid-cols-3 gap-3">
         <RouterLink
           to="/add-funds"
           class="bg-teal-400 active:bg-teal-500 text-white rounded-md px-6 py-2 text-base font-normal transition-colors w-full text-center"
