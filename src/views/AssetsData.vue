@@ -114,12 +114,14 @@
 
         <!-- Unrealized PnL -->
         <div
+          v-if="a.lastPrice > 0"
           class="flex justify-between items-center space-x-4 font-semibold text-base leading-5"
           :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'"
         >
           <p>{{ signedMoneyId(a.uPnlAbs, 2) }}</p>
           <p>{{ signedPercent(a.uPnlPct) }}</p>
         </div>
+        <div v-else class="text-xs text-gray-400">—</div>
 
         <!-- Balances, Avg Cost, Last Price -->
         <div class="grid grid-cols-3 gap-2 text-xs text-gray-400 font-normal">

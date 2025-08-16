@@ -176,16 +176,18 @@
           <div class="relative z-50 text-gray-900 font-bold flex items-center space-x-1 right-10">
             <input
               id="totalAmount"
-              type="number"
+              ref="amountInputEl"
+              type="text"
               inputmode="decimal"
-              :step="activeTab === 'buy' ? 0.01 : 0.00000001"
-              min="0"
-              :max="available"
+              autocomplete="off"
               class="bg-transparent text-right outline-none w-36"
               :disabled="availableLoading || availableError"
               v-model="totalAmountInput"
-              @input="onTotalManualInputStr"
-              :placeholder="activeTab === 'buy' ? '0.00' : '0.00000000'"
+              :placeholder="activeTab === 'buy' ? '0,00' : '0,00000000'"
+              @focus="onAmountFocus"
+              @blur="onAmountBlur"
+              @input="onAmountTyping"
+              @keydown.enter.prevent="onAmountCommit"
             />
             <span>{{ availableUnit }}</span>
           </div>
@@ -390,13 +392,23 @@ function connectWS(pairSymbol: string) {
 }
 
 /** Turunan tampilan */
-const top7Asks = computed(() =>
-  depthData.value ? depthData.value.tick.asks.slice(-7).reverse() : [],
-)
-const top7Bids = computed(() => (depthData.value ? depthData.value.tick.bids.slice(0, 7) : []))
+// Aman + sesuai urutan buku
+const top7Asks = computed(() => {
+  if (!depthData.value) return []
+  const asks = [...depthData.value.tick.asks].sort((a, b) => a[0] - b[0]) // ASC
+  return asks.slice(0, 7).reverse()
+})
+
+const top7Bids = computed(() => {
+  if (!depthData.value) return []
+  const bids = [...depthData.value.tick.bids].sort((a, b) => b[0] - a[0]) // DESC
+  return bids.slice(0, 7)
+})
+
 const maxAskAmount = computed(() =>
   top7Asks.value.length ? Math.max(...top7Asks.value.map((a) => a[1])) : 1,
 )
+
 const maxBidAmount = computed(() =>
   top7Bids.value.length ? Math.max(...top7Bids.value.map((b) => b[1])) : 1,
 )
@@ -512,17 +524,23 @@ function onInput(v: number) {
   rawPercent.value = v
   const s = available.value
   totalAmount.value = roundTo((s * v) / 100, 8)
-  totalAmountInput.value =
-    activeTab.value === 'buy' ? totalAmount.value.toFixed(2) : totalAmount.value.toFixed(8)
+  if (!isEditingAmount.value) {
+    totalAmountInput.value =
+      activeTab.value === 'buy'
+        ? formatLocaleDecimal(totalAmount.value)
+        : formatLocaleDecimal(totalAmount.value)
+  }
 }
+
 function commitSnap() {
   if (!canSlide.value) return
   amountPercent.value = snapToNearestMark(rawPercent.value)
   rawPercent.value = amountPercent.value
   const s = available.value
   totalAmount.value = roundTo((s * amountPercent.value) / 100, 8)
-  totalAmountInput.value =
-    activeTab.value === 'buy' ? totalAmount.value.toFixed(2) : totalAmount.value.toFixed(8)
+  if (!isEditingAmount.value) {
+    totalAmountInput.value = formatLocaleDecimal(totalAmount.value)
+  }
 }
 function setPercent(p: number) {
   if (!canSlide.value) return
@@ -537,22 +555,61 @@ function handlePointerUp() {
   isDragging.value = false
   commitSnap()
 }
-function onTotalManualInputStr() {
-  const a = available.value
-  const rawAny = totalAmountInput.value as unknown
-  const raw = (typeof rawAny === 'string' ? rawAny : String(rawAny ?? '')).trim()
-  if (raw === '') {
-    totalAmount.value = 0
-    syncPercentFromTotal()
-    return
-  }
-  let v = Number(raw.replace(',', ''))
-  if (!Number.isFinite(v)) return
+// --- tambahkan di script ---
+const amountInputEl = ref<HTMLInputElement | null>(null)
+const isEditingAmount = ref(false)
+const dp = computed(() => (activeTab.value === 'buy' ? 2 : 8))
+
+// format ke "id-ID" → 20,00
+function formatLocaleDecimal(num: number): string {
+  if (!Number.isFinite(num)) return ''
+  return num.toLocaleString('id-ID', {
+    minimumFractionDigits: dp.value,
+    maximumFractionDigits: dp.value,
+  })
+}
+
+// parse dari string "20,00" / "20.000,00" ke number 20
+function parseLocaleDecimal(str: string): number {
+  if (!str) return NaN
+  // buang spasi, buang pemisah ribuan (.)
+  const cleaned = str.replace(/\s/g, '').replace(/\./g, '').replace(',', '.')
+  return Number(cleaned)
+}
+
+// fokus: kalau nilai 0 → kosongkan, select agar langsung ketik
+function onAmountFocus(e: FocusEvent) {
+  isEditingAmount.value = true
+  if (!totalAmount.value) totalAmountInput.value = ''
+  requestAnimationFrame(() => (e.target as HTMLInputElement).select())
+}
+
+// saat ketik: filter karakter, JANGAN format di sini
+function onAmountTyping() {
+  // izinkan hanya angka, koma, titik
+  totalAmountInput.value = totalAmountInput.value.replace(/[^\d.,]/g, '')
+}
+
+// commit (enter) = blur
+function onAmountCommit() {
+  amountInputEl.value?.blur()
+}
+
+// blur: parse → clamp → round → simpan → format tampilan
+function onAmountBlur() {
+  isEditingAmount.value = false
+
+  const raw = (totalAmountInput.value || '').trim()
+  let v = parseLocaleDecimal(raw)
+
+  if (!Number.isFinite(v)) v = 0
   if (v < 0) v = 0
+  const a = available.value
   if (a > 0 && v > a) v = a
-  v = roundTo(v, activeTab.value === 'buy' ? 2 : 8)
+
+  v = roundTo(v, dp.value) // fungsi roundTo milikmu
   totalAmount.value = v
-  totalAmountInput.value = activeTab.value === 'buy' ? v.toFixed(2) : v.toFixed(8)
+  totalAmountInput.value = v ? formatLocaleDecimal(v) : ''
   syncPercentFromTotal()
 }
 
@@ -564,16 +621,22 @@ function reconnectFor(pair: string) {
   connectWS(sym)
   connectKlineWS(sym)
 }
+
+function rawSymbolFromRoute(): string {
+  return (route.query.symbol as string) ?? (route.query.pairSymbol as string) ?? ''
+}
+
 onMounted(() => {
-  const pairFromUrl = toPair(route.query.pairSymbol as string)
+  const pairFromUrl = toPair(rawSymbolFromRoute())
   selectedPair.value = pairFromUrl || 'BTC/USDT'
   reconnectFor(selectedPair.value)
   getAvailable()
 })
+
 watch(
-  () => route.query.pairSymbol,
-  (nv) => {
-    const pair = toPair(nv as string)
+  () => [route.query.symbol, route.query.pairSymbol],
+  ([sym, pairSym]) => {
+    const pair = toPair((sym as string) ?? (pairSym as string))
     if (pair && pair !== selectedPair.value) {
       selectedPair.value = pair
       reconnectFor(pair)
@@ -581,6 +644,7 @@ watch(
     }
   },
 )
+
 function selectPair(pair: string) {
   if (!tradingPairs.includes(pair)) return
   if (pair === selectedPair.value) {
@@ -589,7 +653,7 @@ function selectPair(pair: string) {
   }
   selectedPair.value = pair
   dropdownOpen.value = false
-  router.replace({ query: { ...route.query, pairSymbol: pairToQuery(pair) } })
+  router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } }) // <— standar pakai 'symbol'
   reconnectFor(pair)
   getAvailable()
 }
@@ -611,12 +675,15 @@ const API_BASE = 'https://ledger.masmutdev.id/api' // sesuaikan
 
 function bestBid(): number {
   const bids = depthData.value?.tick?.bids
-  return Array.isArray(bids) && bids.length ? Number(bids[0][0]) : 0 // top bid
+  // Huobi: bids descending → top bid = index 0
+  return Array.isArray(bids) && bids.length ? Number(bids[0][0]) : 0
 }
 function bestAsk(): number {
   const asks = depthData.value?.tick?.asks
-  return Array.isArray(asks) && asks.length ? Number(asks[asks.length - 1][0]) : 0 // asumsi best ask di akhir
+  // Huobi: asks ascending → best ask = index 0  ✅
+  return Array.isArray(asks) && asks.length ? Number(asks[0][0]) : 0
 }
+
 const marketPrice = computed<number>(() => (activeTab.value === 'buy' ? bestAsk() : bestBid()))
 
 watch(activeTab, () => {
@@ -650,8 +717,8 @@ async function getAvailable() {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       })
       if (!res.ok) throw new Error()
-      const data = await res.json() // { qty: "0.12345678", avg_cost: "...", ... }
-      const t = Number(data?.qty ?? 0) // qty posisi untuk symbol ini
+      const data = await res.json() // { qty, avg_cost, ... }
+      const t = Number(data?.qty ?? 0)
       coinTotal.value = Number.isFinite(t) ? t : 0
     }
 
@@ -669,8 +736,8 @@ async function getAvailable() {
     }
   } catch {
     availableError.value = true
-    saldo.value = activeTab.value === 'buy' ? null : saldo.value
-    coinTotal.value = activeTab.value === 'sell' ? null : coinTotal.value
+    if (activeTab.value === 'buy') saldo.value = null
+    if (activeTab.value === 'sell') coinTotal.value = null
     amountPercent.value = 0
     rawPercent.value = 0
     totalAmount.value = 0
@@ -691,35 +758,49 @@ async function submitTrade() {
     if (!token) throw new Error('No token')
 
     const side = activeTab.value === 'buy' ? 'BUY' : 'SELL'
-    const price = marketPrice.value
+
+    // pakai top-of-book sesuai sisi
+    let price = marketPrice.value
     if (!price || price <= 0) throw new Error('Harga market tidak tersedia')
+
+    // sanity: spread wajar (opsional, tapi bagus buat cegah data depth aneh)
+    const bid = bestBid()
+    const ask = bestAsk()
+    if (bid > 0 && ask > 0) {
+      const spreadPct = ((ask - bid) / bid) * 100
+      if (spreadPct > 2) {
+        throw new Error(`Spread terlalu lebar (${spreadPct.toFixed(2)}%).`)
+      }
+      if (side === 'buy' && price !== ask) price = ask
+      if (side === 'sell' && price !== bid) price = bid
+    }
 
     const amount = Number(totalAmount.value)
     if (!(amount > 0)) throw new Error('Total tidak valid')
 
     // Qty coin:
     // BUY: USDT / price, SELL: langsung amount coin
-    let qty =
-      side === 'BUY'
-        ? amount / price // raw qty dari USDT
-        : amount // raw qty coin utk SELL
+    let qty = side === 'BUY' ? amount / price : amount
 
+    // Clamp & FLOOR supaya tidak oversell gara-gara pembulatan
     if (side === 'SELL') {
       const maxQty = Number(coinTotal.value ?? 0)
-      const EPS = 1e-10 // kecil saja
-      // clamp ke [0, maxQty - EPS]
+      const EPS = 1e-10
       qty = Math.min(qty, Math.max(0, maxQty - EPS))
+      qty = Math.floor(qty * 1e8) / 1e8
+    } else {
+      // BUY: floor juga aman (lebih konservatif)
+      qty = Math.floor(qty * 1e8) / 1e8
     }
 
-    // terakhir: bulatkan ke presisi qty (8 desimal di contoh ini)
-    qty = Number(qty.toFixed(8))
+    if (!(qty > 0)) throw new Error('Qty = 0 setelah pembulatan')
 
     const payload = {
-      symbol: pairToApiSymbol(selectedPair.value), // BTCUSDT
+      symbol: pairToApiSymbol(selectedPair.value), // "BTCUSDT"
       side,
       price,
       qty,
-      fee: 0, // sesuaikan jika sudah ada perhitungan fee
+      fee: 0,
     }
 
     const res = await fetch(`${API_BASE}/save-trades`, {
@@ -738,19 +819,18 @@ async function submitTrade() {
     }
 
     await res.json()
-    modal?.open?.('Succesfull', 'Order Created')
+    modal?.open?.('Success', 'Order Created')
 
-    // refresh saldo & reset input
+    // refresh saldo/posisi & reset input
     await getAvailable()
     totalAmount.value = 0
     totalAmountInput.value = ''
     rawPercent.value = 0
     amountPercent.value = 0
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : typeof e === 'string' ? e : 'Gagal kirim order'
-
-    submitError.value = msg // selalu string
-    modal?.open?.('error', msg) // aman: string, bukan string|null
+    const msg = e instanceof Error ? e.message : 'Gagal kirim order'
+    submitError.value = msg
+    modal?.open?.('error', msg)
   } finally {
     submitting.value = false
   }
