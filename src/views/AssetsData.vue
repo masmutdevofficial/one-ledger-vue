@@ -60,7 +60,18 @@
         </RouterLink>
       </div>
     </section>
-
+    <div class="flex items-center justify-between px-4 py-3">
+      <div class="flex items-center space-x-3">
+        <img alt="USDT logo" class="w-6 h-6" height="24" :src="USDT_ICON" width="24" />
+        <div>
+          <p class="text-gray-900 font-semibold text-sm leading-tight">USDT</p>
+          <p class="text-gray-400 text-xs leading-tight">TetherUS</p>
+        </div>
+      </div>
+      <p class="text-gray-900 font-bold text-sm leading-tight">
+        {{ saldoText }}
+      </p>
+    </div>
     <!-- ===== Assets ===== -->
     <div class="mb-20">
       <div v-if="loadingAssets" class="text-sm text-gray-500 px-5 py-3">Loading assets…</div>
@@ -139,8 +150,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+
+interface SaldoResponse {
+  status: string
+  saldo: number
+  koin: number
+}
+
+const saldoAwal = ref<number | null>(null)
+const koinAwal = ref<number | null>(null)
+
+// pakai file lokal agar stabil: simpan logo di public/img/usdt.svg
+const USDT_ICON = '/img/crypto/usdt.png'
+
+const saldoText = computed(() =>
+  saldoAwal.value !== null
+    ? saldoAwal.value.toLocaleString('id-ID', {
+        minimumFractionDigits: 6,
+        maximumFractionDigits: 6,
+      })
+    : '...',
+)
+
+onMounted(async () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Token tidak ada')
+    const res = await fetch('https://ledger.masmutdev.id/api/saldo', {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    })
+    const data: SaldoResponse = await res.json()
+    if (res.ok && data.status === 'success') {
+      saldoAwal.value = Number(data.saldo) || 0
+      koinAwal.value = Number(data.koin) || 0
+    } else {
+      console.error('Gagal ambil saldo:', data)
+    }
+  } catch (err) {
+    console.error('Fetch error:', err)
+  }
+})
 
 /** ===== Types ===== */
 type Quote = 'USDT' | 'USDC' | 'USD'
