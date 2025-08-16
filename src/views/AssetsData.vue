@@ -84,7 +84,8 @@
         v-else
         v-for="a in assets"
         :key="a.symbol"
-        class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md bg-white"
+        class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md bg-white cursor-pointer hover:ring-2 hover:ring-teal-200 transition"
+        @click="goAsset(a)"
       >
         <div class="flex justify-between items-center">
           <p class="text-gray-500 text-[12px] font-normal">Asset</p>
@@ -152,6 +153,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 interface SaldoResponse {
   status: string
@@ -438,6 +442,12 @@ function connectTicker(symbolUpper: string) {
   }
 
   sockets.set(key, ws)
+}
+
+function goAsset(a: { symbol: string }) {
+  const sym = String(a.symbol || '').toLowerCase() // e.g. BTCUSDT -> btcusdt
+  if (!sym) return
+  router.push({ path: '/trade', query: { symbol: sym } })
 }
 
 function ensureTickerSubscriptions() {
