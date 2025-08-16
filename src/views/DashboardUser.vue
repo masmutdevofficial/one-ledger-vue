@@ -42,7 +42,7 @@
       <div class="grid grid-cols-3 gap-3">
         <RouterLink
           to="/add-funds"
-          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-black rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-full text-center"
+          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-white rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-full text-center"
         >
           Add Funds
         </RouterLink>
