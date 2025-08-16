@@ -771,8 +771,8 @@ async function submitTrade() {
       if (spreadPct > 2) {
         throw new Error(`Spread terlalu lebar (${spreadPct.toFixed(2)}%).`)
       }
-      if (side === 'buy' && price !== ask) price = ask
-      if (side === 'sell' && price !== bid) price = bid
+      if (side === 'BUY' && price !== ask) price = ask
+      if (side === 'SELL' && price !== bid) price = bid
     }
 
     const amount = Number(totalAmount.value)
