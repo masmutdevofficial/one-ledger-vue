@@ -13,16 +13,26 @@
           @click="navigate"
         >
           <!-- KIRI -->
-          <div>
-            <div class="flex items-center space-x-1">
-              <span class="font-bold text-sm">{{ crypto.symbol }}</span>
-              <span class="text-gray-400 text-xs select-none">/USDT</span>
-              <span class="text-xs bg-gray-200 rounded px-1 select-none">
-                {{ crypto.leverage }}
-              </span>
-            </div>
-            <div class="text-gray-400 text-xs mt-0.5 select-none">
-              {{ crypto.volume }}
+          <div class="flex items-center space-x-2">
+            <img
+              :src="iconPath(crypto.symbol)"
+              :alt="crypto.symbol + ' icon'"
+              class="w-5 h-5 rounded-full"
+              width="20"
+              height="20"
+              @error="onIconError"
+            />
+            <div>
+              <div class="flex items-center space-x-1">
+                <span class="font-bold text-sm">{{ crypto.symbol }}</span>
+                <span class="text-gray-400 text-xs select-none">/USDT</span>
+                <span class="text-xs bg-gray-200 rounded px-1 select-none">
+                  {{ crypto.leverage }}
+                </span>
+              </div>
+              <div class="text-gray-400 text-xs mt-0.5 select-none">
+                {{ crypto.volume }}
+              </div>
             </div>
           </div>
 
@@ -104,6 +114,21 @@ const symbolMap: Record<string, string> = {
   LUNA: 'luna',
   GALA: 'gala',
   PEPE: 'pepe',
+}
+
+// Path icon dari /public (Vite serve di root). BASE_URL jaga-jaga kalau deploy di subpath.
+const BASE = import.meta.env.BASE_URL || '/'
+const ICON_FALLBACK = `${BASE}img/crypto/_default.svg` // siapkan file ini (opsional)
+
+// /public/img/crypto/<lowercase>.svg
+function iconPath(symbol: string) {
+  return `${BASE}img/crypto/${symbol.toLowerCase()}.svg`
+}
+
+// Kalau icon missing, set fallback agar nggak broken image
+function onIconError(e: Event) {
+  const el = e.target as HTMLImageElement | null
+  if (el && el.src !== ICON_FALLBACK) el.src = ICON_FALLBACK
 }
 
 async function fetchInitialData() {

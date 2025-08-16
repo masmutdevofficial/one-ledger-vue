@@ -227,18 +227,30 @@ type AssetItem = {
 /** ===== Konstanta ===== */
 const API_BASE = 'https://ledger.masmutdev.id/api'
 const WS_BASE = 'wss://ledgersocketone.online'
+const BASE = import.meta.env.BASE_URL || '/'
+const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
+
 const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote }> = {
-  BTC: {
-    name: 'Bitcoin',
-    logoUrl: 'https://placehold.co/20x20/orange/fff/png?text=B',
-    quote: 'USDT',
-  },
-  ETH: {
-    name: 'Ethereum',
-    logoUrl: 'https://placehold.co/20x20/666/fff/png?text=E',
-    quote: 'USDT',
-  },
-  SOL: { name: 'Solana', logoUrl: 'https://placehold.co/20x20/000/fff/png?text=S', quote: 'USDT' },
+  BTC: { name: 'Bitcoin', logoUrl: localLogo('btc'), quote: 'USDT' },
+  ETH: { name: 'Ethereum', logoUrl: localLogo('eth'), quote: 'USDT' },
+  BNB: { name: 'BNB (Binance Coin)', logoUrl: localLogo('bnb'), quote: 'USDT' },
+  SOL: { name: 'Solana', logoUrl: localLogo('sol'), quote: 'USDT' },
+  LTC: { name: 'Litecoin', logoUrl: localLogo('ltc'), quote: 'USDT' },
+  LINK: { name: 'Chainlink', logoUrl: localLogo('link'), quote: 'USDT' },
+  TON: { name: 'Toncoin', logoUrl: localLogo('ton'), quote: 'USDT' },
+  SUI: { name: 'Sui', logoUrl: localLogo('sui'), quote: 'USDT' },
+  XRP: { name: 'XRP', logoUrl: localLogo('xrp'), quote: 'USDT' },
+  QTUM: { name: 'Qtum', logoUrl: localLogo('qtum'), quote: 'USDT' },
+  THETA: { name: 'Theta Network', logoUrl: localLogo('theta'), quote: 'USDT' },
+  ADA: { name: 'Cardano', logoUrl: localLogo('ada'), quote: 'USDT' },
+  RAD: { name: 'Radworks (RAD)', logoUrl: localLogo('rad'), quote: 'USDT' },
+  BAND: { name: 'Band Protocol', logoUrl: localLogo('band'), quote: 'USDT' },
+  ALGO: { name: 'Algorand', logoUrl: localLogo('algo'), quote: 'USDT' },
+  POL: { name: 'Polygon (POL)', logoUrl: localLogo('pol'), quote: 'USDT' },
+  DOGE: { name: 'Dogecoin', logoUrl: localLogo('doge'), quote: 'USDT' },
+  LUNA: { name: 'Terra (LUNA)', logoUrl: localLogo('luna'), quote: 'USDT' },
+  GALA: { name: 'Gala', logoUrl: localLogo('gala'), quote: 'USDT' },
+  PEPE: { name: 'Pepe', logoUrl: localLogo('pepe'), quote: 'USDT' },
 }
 
 /** ===== State saldo & portfolio ===== */
@@ -358,6 +370,7 @@ async function loadAssets() {
 
     // 4) Hitung total portfolio
     recomputeTotals()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     errorAssets.value = e?.message || 'Gagal memuat assets.'
     assets.value = []
@@ -385,6 +398,7 @@ function recomputeTotals() {
 const sockets = new Map<string, WebSocket>()
 const reconnectTimers = new Map<string, number>() // id timer
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseLastPrice(payload: any): number {
   // Versi relay custom: { ch:'ticker', symbol:'btcusdt', last:123, ts:... }
   if (payload && payload.ch === 'ticker' && 'last' in payload) {

@@ -91,15 +91,15 @@
             :key="item.name"
           >
             <div class="flex items-center space-x-1 font-semibold text-[14px] text-black">
-              <span>{{ item.name }}</span>
               <img
-                v-if="item.icon"
                 :src="item.icon"
                 :alt="item.name + ' icon'"
                 class="w-3.5 h-3.5"
                 width="14"
                 height="14"
+                @error="item.icon = ICON_FALLBACK"
               />
+              <span>{{ item.name }}</span>
             </div>
             <div class="text-right">
               <div class="font-bold text-[16px] leading-none">
@@ -195,17 +195,21 @@
 <script setup lang="ts">
 import { useApiAlertStore } from '@/stores/apiAlert'
 import SliderDashboard from '@/components/dashboard/SliderDashboard.vue'
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 
 interface MarketItem {
   name: string
   price: number
   change: number
-  icon?: string
+  icon: string
 }
 
-type Quote = 'USDT' | 'USDC' | 'USD'
+const ICON_FALLBACK = '/img/crypto/_default.svg' // siapkan file fallback optional
+function iconPath(symbol: string) {
+  return `/img/crypto/${symbol.toLowerCase()}.svg`
+}
+
 type PositionRow = {
   symbol: string // e.g. BTCUSDT
   qty: string | number
@@ -228,17 +232,13 @@ const sockets = new Map<string, WebSocket>()
 const reconnectTimers = new Map<string, number>()
 
 /** ===== Helpers ===== */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function n(v: any, d = 0) {
   const x = Number(v)
   return Number.isFinite(x) ? x : d
 }
-function splitSymbol(sym: string): { base: string; quote: Quote } {
-  const s = sym.toUpperCase()
-  if (s.endsWith('USDT')) return { base: s.slice(0, -4), quote: 'USDT' }
-  if (s.endsWith('USDC')) return { base: s.slice(0, -4), quote: 'USDC' }
-  if (s.endsWith('USD')) return { base: s.slice(0, -3), quote: 'USD' }
-  return { base: s, quote: 'USDT' }
-}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseLastPrice(payload: any): number {
   // Versi relay custom: { ch:'ticker', symbol:'btcusdt', last:123, ts:... }
   if (payload?.ch === 'ticker' && 'last' in payload) return n(payload.last, 0)
@@ -501,6 +501,7 @@ async function fetchInitialMarketData() {
           name: coin,
           price: price,
           change: ((price - open) / open) * 100,
+          icon: iconPath(coin),
         })
       }
     } catch (err) {
@@ -531,6 +532,7 @@ function connectWebSocket(coin: string) {
         name: coin,
         price: close,
         change: ((close - open) / open) * 100,
+        icon: iconPath(coin),
       }
 
       if (index >= 0) {
