@@ -59,10 +59,10 @@
         <!-- ASKS (SELL, merah) -->
         <div class="space-y-1" v-if="depthData">
           <div
-            v-for="ask in top5Asks"
+            v-for="ask in top7Asks"
             :key="ask[0]"
             class="relative flex justify-between overflow-hidden rounded"
-            style="height: 28px"
+            style="height: 17.5px"
           >
             <!-- BG bar -->
             <div
@@ -70,10 +70,10 @@
               :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
             ></div>
             <!-- Data -->
-            <p class="text-pink-400 text-sm text-right z-10 px-2 w-1/2">
+            <p class="text-pink-400 text-[10px] text-start z-10 px-2 w-1/2">
               {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
-            <p class="text-black text-sm text-left z-10 px-2 w-1/2">
+            <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
               {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
             </p>
           </div>
@@ -81,13 +81,13 @@
 
         <!-- CURRENT PRICE (Bid Teratas, jika ada) -->
         <div class="text-center my-3" v-if="depthData">
-          <p class="text-[#2DBE87] font-semibold text-[28px]">
+          <p class="text-black font-semibold text-[16px]">
             {{
               depthData.tick.bids[0]?.[0]?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ??
               '-'
             }}
           </p>
-          <p class="text-[#7F7F7F] text-[14px]">
+          <p class="text-[#7F7F7F] text-[10px]">
             ≈ ${{
               depthData.tick.bids[0]?.[0]?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ??
               '-'
@@ -98,10 +98,10 @@
         <!-- BIDS (BUY, hijau) -->
         <div class="space-y-1" v-if="depthData">
           <div
-            v-for="bid in top5Bids"
+            v-for="bid in top7Bids"
             :key="bid[0]"
             class="relative flex justify-between overflow-hidden rounded"
-            style="height: 28px"
+            style="height: 17.5px"
           >
             <!-- BG bar -->
             <div
@@ -109,10 +109,10 @@
               :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
             ></div>
             <!-- Data -->
-            <p class="text-[#2DBE87] text-sm text-right z-10 px-2 w-1/2">
+            <p class="text-[#2DBE87] text-[10px] text-start z-10 px-2 w-1/2">
               {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
-            <p class="text-black text-sm text-left z-10 px-2 w-1/2">
+            <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
               {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
             </p>
           </div>
@@ -390,15 +390,15 @@ function connectWS(pairSymbol: string) {
 }
 
 /** Turunan tampilan */
-const top5Asks = computed(() =>
-  depthData.value ? depthData.value.tick.asks.slice(-5).reverse() : [],
+const top7Asks = computed(() =>
+  depthData.value ? depthData.value.tick.asks.slice(-7).reverse() : [],
 )
-const top5Bids = computed(() => (depthData.value ? depthData.value.tick.bids.slice(0, 5) : []))
+const top7Bids = computed(() => (depthData.value ? depthData.value.tick.bids.slice(0, 7) : []))
 const maxAskAmount = computed(() =>
-  top5Asks.value.length ? Math.max(...top5Asks.value.map((a) => a[1])) : 1,
+  top7Asks.value.length ? Math.max(...top7Asks.value.map((a) => a[1])) : 1,
 )
 const maxBidAmount = computed(() =>
-  top5Bids.value.length ? Math.max(...top5Bids.value.map((b) => b[1])) : 1,
+  top7Bids.value.length ? Math.max(...top7Bids.value.map((b) => b[1])) : 1,
 )
 
 /* ──────────────────────────────────────────────────────────────────────────────

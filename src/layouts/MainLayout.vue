@@ -135,7 +135,7 @@ const teal600Filter = {
 
               <RouterLink
                 to="/market"
-                class="flex flex-col items-center"
+                class="flex flex-col items-center ml-2"
                 :class="isActive('/market') ? 'text-teal-600' : 'text-gray-400'"
               >
                 <img
@@ -149,7 +149,7 @@ const teal600Filter = {
 
               <RouterLink
                 to="/trade"
-                class="flex flex-col items-center"
+                class="flex flex-col items-center ml-4"
                 :class="isActive('/trade') ? 'text-teal-600' : 'text-gray-400'"
               >
                 <img

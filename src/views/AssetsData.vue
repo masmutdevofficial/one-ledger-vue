@@ -42,19 +42,19 @@
       <div class="grid grid-cols-3 gap-3">
         <RouterLink
           to="/add-funds"
-          class="bg-teal-400 flex justify-center items-center active:bg-teal-500 text-white rounded-md px-6 py-2 text-base font-normal transition-colors w-full text-center"
+          class="bg-yellow-400 flex justify-center items-center active:bg-yellow-600 text-black rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-full text-center"
         >
           Add Funds
         </RouterLink>
         <RouterLink
           to="/send"
-          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
+          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center"
         >
           Send
         </RouterLink>
         <RouterLink
           to="/transfer"
-          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-base font-semibold w-full text-center"
+          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center"
         >
           Transfer
         </RouterLink>
@@ -76,7 +76,7 @@
     <div class="mb-20">
       <div v-if="loadingAssets" class="text-sm text-gray-500 px-5 py-3">Loading assets…</div>
       <div v-else-if="errorAssets" class="text-sm text-red-500 px-5 py-3">{{ errorAssets }}</div>
-      <div v-else-if="assets.length === 0" class="text-sm text-gray-500 px-5 py-3">
+      <div v-else-if="assets.length === 0" class="text-sm text-center text-gray-500 px-5 py-3">
         No Data Available
       </div>
 
@@ -87,11 +87,11 @@
         class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md bg-white"
       >
         <div class="flex justify-between items-center">
-          <p class="text-gray-500 text-sm font-normal">Asset</p>
-          <Icon icon="tabler:adjustments-horizontal" class="text-gray-400 text-sm" />
+          <p class="text-gray-500 text-[12px] font-normal">Asset</p>
+          <Icon icon="tabler:adjustments-horizontal" class="text-gray-400 text-[12px]" />
         </div>
 
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center text-[12px]">
           <div class="flex items-center space-x-2">
             <img
               :alt="`${a.base} logo`"
@@ -124,7 +124,7 @@
         <div class="grid grid-cols-3 gap-2 text-xs text-gray-400 font-normal">
           <div>
             <span class="text-gray-600 block">Balances</span>
-            <span class="text-black font-normal text-sm block">
+            <span class="text-black font-normal text-[12px] block">
               {{ formatNumberId(a.qty, 8) }} {{ a.base }}
             </span>
             <span class="block">{{ moneyId(a.valueUsd, 2) }}</span>
@@ -132,14 +132,14 @@
 
           <div class="text-right">
             <span class="text-gray-600 block">Avg. Cost ({{ a.quote }})</span>
-            <span class="text-black font-normal text-sm block">
+            <span class="text-black font-normal text-[12px] block">
               {{ formatNumberId(a.avgCost, 2) }}
             </span>
           </div>
 
           <div class="text-right">
             <span class="text-gray-600 block">Last Price ({{ a.quote }})</span>
-            <span class="text-black font-normal text-sm block">
+            <span class="text-black font-normal text-[12px] block">
               {{ formatNumberId(a.lastPrice, 2) }}
             </span>
           </div>
