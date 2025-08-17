@@ -88,11 +88,11 @@
         @click="goAsset(a)"
       >
         <div class="flex justify-between items-center">
-          <p class="text-gray-500 text-[12px] font-normal">Asset</p>
-          <Icon icon="tabler:adjustments-horizontal" class="text-gray-400 text-[12px]" />
+          <p class="text-gray-500 text-[10px] font-normal">Asset</p>
+          <Icon icon="tabler:adjustments-horizontal" class="text-gray-400 text-[10px]" />
         </div>
 
-        <div class="flex justify-between items-center text-[12px]">
+        <div class="flex justify-between items-center text-[10px]">
           <div class="flex items-center space-x-2">
             <img
               :alt="`${a.base} logo`"
@@ -101,33 +101,33 @@
               width="20"
               height="20"
             />
-            <p class="font-bold text-black text-base leading-5">
+            <p class="font-bold text-black text-xs leading-4">
               {{ a.base }}
-              <span class="font-normal text-gray-400 text-sm">/{{ a.quote }}</span>
+              <span class="font-normal text-gray-400 text-[10px]">/{{ a.quote }}</span>
             </p>
           </div>
 
           <button aria-label="Share" class="text-gray-400 hover:text-gray-600">
-            <Icon icon="tabler:share-3" class="text-base" />
+            <Icon icon="tabler:share-3" class="text-xs" />
           </button>
         </div>
 
         <!-- Unrealized PnL -->
         <div
           v-if="a.lastPrice > 0"
-          class="flex justify-between items-center space-x-4 font-semibold text-base leading-5"
+          class="flex justify-between items-center space-x-4 font-semibold text-xs leading-4"
           :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'"
         >
           <p>{{ signedMoneyId(a.uPnlAbs, 2) }}</p>
           <p>{{ signedPercent(a.uPnlPct) }}</p>
         </div>
-        <div v-else class="text-xs text-gray-400">—</div>
+        <div v-else class="text-[10px] text-gray-400">—</div>
 
         <!-- Balances, Avg Cost, Last Price -->
-        <div class="grid grid-cols-3 gap-2 text-xs text-gray-400 font-normal">
+        <div class="grid grid-cols-3 gap-2 text-[10px] text-gray-400 font-normal">
           <div>
             <span class="text-gray-600 block">Balances</span>
-            <span class="text-black font-normal text-[12px] block">
+            <span class="text-black font-normal text-[10px] block">
               {{ formatNumberId(a.qty, 8) }} {{ a.base }}
             </span>
             <span class="block">{{ moneyId(a.valueUsd, 2) }}</span>
@@ -135,14 +135,14 @@
 
           <div class="text-right">
             <span class="text-gray-600 block">Avg. Cost ({{ a.quote }})</span>
-            <span class="text-black font-normal text-[12px] block">
+            <span class="text-black font-normal text-[10px] block">
               {{ formatNumberId(a.avgCost, 2) }}
             </span>
           </div>
 
           <div class="text-right">
             <span class="text-gray-600 block">Last Price ({{ a.quote }})</span>
-            <span class="text-black font-normal text-[12px] block">
+            <span class="text-black font-normal text-[10px] block">
               {{ formatNumberId(a.lastPrice, 2) }}
             </span>
           </div>

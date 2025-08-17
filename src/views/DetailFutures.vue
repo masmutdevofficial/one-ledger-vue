@@ -93,7 +93,18 @@
       </div>
 
       <!-- Position Risk -->
-      <h2 class="font-semibold text-base mb-2">Position Risk</h2>
+      <div class="flex flex-row justify-between items-start">
+        <h2 class="font-semibold text-base mb-2">Position Risk</h2>
+        <button
+          v-if="trader?.slug"
+          type="button"
+          class="inline-flex items-center text-gray-600 hover:text-black"
+          @click="goHistory"
+          aria-label="Open futures history"
+        >
+          <Icon icon="tabler:file-description" class="w-4 h-4" />
+        </button>
+      </div>
       <div class="grid grid-cols-2 gap-4 mb-8">
         <!-- Take Profit -->
         <div>
@@ -340,6 +351,12 @@ async function loadTrader(slug: string) {
   } finally {
     loading.value = false
   }
+}
+
+function goHistory() {
+  const slug = trader.value?.slug
+  if (!slug) return
+  router.push({ path: `/futures/${slug}/history` })
 }
 
 /* =========================

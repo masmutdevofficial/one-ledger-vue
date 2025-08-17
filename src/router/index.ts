@@ -126,6 +126,10 @@ const routes = [
         path: 'futures/:username',
         component: () => import('@/views/DetailFutures.vue'),
       },
+      {
+        path: 'futures/:username/history',
+        component: () => import('@/views/FuturesHistory.vue'),
+      },
       // 404 Not Found
       {
         path: '/:catchAll(.*)',
