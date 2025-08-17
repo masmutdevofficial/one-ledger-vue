@@ -151,15 +151,17 @@
           <span class="underline">Net Copy Amount</span>
           <span class="text-black">{{ netCopyAmount }}</span>
         </div>
-        <div class="flex justify-between text-xs text-gray-400 mb-1">
-          <span class="underline">{{ trader.text_roi_30d_pct || '30D ROI' }}</span>
-          <span class="text-teal-400">{{ signedPercent(trader.roi_30d_pct) }}</span>
-        </div>
-        <!-- PnL (only when there is a pending tx in localStorage) -->
+        <!-- ROI: show ONLY when there is a pending tx, and include progress % here -->
         <div v-if="hasPendingForPnl" class="flex justify-between text-xs text-gray-400 mb-1">
-          <span class="underline">{{ trader.text_pnl_30d || 'PnL (USDT)' }}</span>
+          <span class="underline">ROI</span>
+          <span class="text-teal-400"> {{ Math.round(progress * 100) }}% </span>
+        </div>
+
+        <!-- PnL: keep only the animated money, remove the % from here -->
+        <div v-if="hasPendingForPnl" class="flex justify-between text-xs text-gray-400 mb-1">
+          <span class="underline">PNL</span>
           <span class="text-teal-400">
-            {{ signedMoney(currentProfit, 4) }} ({{ Math.round(progress * 100) }}%)
+            {{ signedMoney(currentProfit, 4) }}
           </span>
         </div>
         <div v-if="hasPendingForPnl" class="flex justify-between text-[11px] text-gray-400 mb-1">
@@ -179,14 +181,14 @@
         </div>
 
         <!-- When there IS a pending order: hide submit, show countdown + progress -->
-        <div v-else class="mt-3 float-right flex items-center gap-2">
+        <!-- <div v-else class="mt-3 float-right flex items-center gap-2">
           <div
             class="pointer-events-none select-none text-xs font-semibold rounded-md py-1 px-3 bg-gray-200 text-gray-600"
             title="Pending order in progress"
           >
             Pending… {{ remainingClock }}
           </div>
-        </div>
+        </div> -->
 
         <p v-if="submitError" class="text-red-500 text-xs mt-2">{{ submitError }}</p>
         <p v-if="submitSuccess" class="text-green-500 text-xs mt-2">{{ submitSuccess }}</p>
@@ -241,11 +243,11 @@ function fmtMoney(n: number, dp = 4): string {
   if (!Number.isFinite(n)) return '0'
   return n.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
 }
-function signedPercent(v: number): string {
-  if (!Number.isFinite(v)) return '0.00%'
-  const s = v >= 0 ? '+' : ''
-  return s + v.toFixed(2) + '%'
-}
+// function signedPercent(v: number): string {
+//   if (!Number.isFinite(v)) return '0.00%'
+//   const s = v >= 0 ? '+' : ''
+//   return s + v.toFixed(2) + '%'
+// }
 function signedMoney(v: number, dp = 2): string {
   if (!Number.isFinite(v)) return '0'
   const s = v >= 0 ? '+' : ''
@@ -488,16 +490,16 @@ const hasPendingForPnl = computed(() => !!activePending.value)
 // Reuse hasPendingForPnl as the “order lock”
 const hasPendingOrder = computed(() => hasPendingForPnl.value)
 
-const remainingMs = computed(() => {
-  const p = activePending.value
-  return p ? Math.max(0, p.expiresAt - nowTick.value) : 0
-})
-const remainingClock = computed(() => {
-  const ms = remainingMs.value
-  const mm = Math.floor(ms / 60000)
-  const ss = Math.floor((ms % 60000) / 1000)
-  return `${mm}:${String(ss).padStart(2, '0')}`
-})
+// const remainingMs = computed(() => {
+//   const p = activePending.value
+//   return p ? Math.max(0, p.expiresAt - nowTick.value) : 0
+// })
+// const remainingClock = computed(() => {
+//   const ms = remainingMs.value
+//   const mm = Math.floor(ms / 60000)
+//   const ss = Math.floor((ms % 60000) / 1000)
+//   return `${mm}:${String(ss).padStart(2, '0')}`
+// })
 
 // finalize
 async function finalizeWinLose(txId: number) {
@@ -549,9 +551,7 @@ function scheduleFinalize(txId: number, expiresAt: number) {
 const loadingSubmit = ref(false)
 async function submitWinLose() {
   if (hasPendingOrder.value) {
-    return alertError(
-      `You already have a pending order. Please wait ${remainingClock.value} to place a new one.`,
-    )
+    return alertError(`You already have a pending order. Please wait to place a new one.`)
   }
 
   const normalized = (amount.value || '').replace(',', '.').trim()
