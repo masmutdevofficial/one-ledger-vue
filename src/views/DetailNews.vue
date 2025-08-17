@@ -63,10 +63,6 @@
           loading="lazy"
         />
       </figure>
-      <div v-else class="mt-2 flex items-center gap-2 text-xs text-gray-400">
-        <Icon icon="tabler:photo-off" class="w-4 h-4" />
-        No cover image
-      </div>
 
       <!-- Content (HTML from backend) -->
       <section

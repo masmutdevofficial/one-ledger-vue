@@ -163,7 +163,7 @@
           <span class="text-black">{{ netCopyAmount }}</span>
         </div>
         <!-- ROI: show ONLY when there is a pending tx, and include progress % here -->
-        <div v-if="hasPendingForPnl" class="flex justify-between text-xs text-gray-400 mb-1">
+        <div v-if="hasPendingForPnl" class="hidden text-xs text-gray-400 mb-1">
           <span class="underline">ROI</span>
           <span class="text-teal-400"> {{ Math.round(progress * 100) }}% </span>
         </div>
@@ -175,7 +175,7 @@
             {{ signedMoney(currentProfit, 4) }}
           </span>
         </div>
-        <div v-if="hasPendingForPnl" class="flex justify-between text-[11px] text-gray-400 mb-1">
+        <div v-if="hasPendingForPnl" class="hidden text-[11px] text-gray-400 mb-1">
           <span class="underline">Current Value</span>
           <span class="text-black">{{ currentTotal.toFixed(4) }}</span>
         </div>
@@ -539,7 +539,7 @@ async function finalizeWinLose(txId: number) {
 
     // show success only if this component is still mounted
     if (isAlive) {
-      alertSuccess('Transaction completed. Your balance has been updated.')
+      alertSuccess('Take Profit Reached. Your position has hit the target profit')
     }
 
     return data
@@ -575,8 +575,10 @@ async function submitWinLose() {
   const amt = Number(normalized)
   if (!Number.isFinite(amt) || amt <= 0) return alertError('Amount is invalid')
   if (amountError.value) return alertError(amountError.value)
-  if (!tp.value || tp.value < 1 || tp.value > 100) return alertError('Take Profit is invalid')
-  if (!sl.value || sl.value < 10 || sl.value > 100) return alertError('Stop Loss is invalid')
+  if (!tp.value || tp.value < 1 || tp.value > 100)
+    return alertError('Your order quantity or price exceeds the range. please adjust your order')
+  if (!sl.value || sl.value < 10 || sl.value > 100)
+    return alertError('Your order quantity or price exceeds the range. please adjust your order')
 
   loadingSubmit.value = true
   try {
@@ -600,7 +602,7 @@ async function submitWinLose() {
 
     // success notice (as you asked earlier)
     alertSuccess(
-      'Transaction applied and processed in 5 minutes. Please wait until the process is complete.',
+      'Order created.',
       () => {
         amount.value = ''
       }, // don’t refresh balance here; it changes on finalize

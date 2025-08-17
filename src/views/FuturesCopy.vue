@@ -81,7 +81,7 @@
         <!-- Label bar: pakai label dari API -->
         <div class="flex justify-between text-xs text-gray-400 select-none">
           <span>{{ item.labelPnl }}</span>
-          <span>{{ item.labelRoi }}</span>
+          <span class="ml-[30px]">{{ item.labelRoi }}</span>
           <span>{{ item.labelAum }}</span>
         </div>
 
@@ -89,7 +89,7 @@
           <div :class="item.pnlClass + ' font-semibold text-lg select-none'">
             {{ item.pnl }}
           </div>
-          <div class="text-teal-600 font-semibold text-sm select-none ml-4">
+          <div class="text-teal-600 font-semibold text-sm select-none ml-[32px]">
             {{ item.roi }}
           </div>
           <div class="font-bold text-sm select-none">{{ item.aum }}</div>
@@ -102,7 +102,7 @@
           <div class="flex-1">
             <div class="flex items-start justify-between text-xs text-gray-400 select-none">
               <div class="flex flex-col justify-center text-xs text-gray-400 select-none ml-23">
-                <span>{{ item.labelMdd }}</span>
+                <span class="mr-3">{{ item.labelMdd }}</span>
                 <span
                   :class="
                     item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none ml-1.5'

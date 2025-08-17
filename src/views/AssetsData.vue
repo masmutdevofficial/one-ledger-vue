@@ -140,7 +140,7 @@
             </span>
           </div>
 
-          <div class="text-right">
+          <div class="text-right mt-0.3">
             <span class="text-gray-600 block">Last Price ({{ a.quote }})</span>
             <span class="text-black font-normal text-[10px] block">
               {{ formatNumberId(a.lastPrice, 2) }}

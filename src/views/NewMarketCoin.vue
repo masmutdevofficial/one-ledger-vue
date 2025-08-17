@@ -747,9 +747,32 @@ async function getAvailable() {
   }
 }
 
+// optional: simpan key di konstanta
+const PENDING_LS_KEY = 'pendingTxs'
+
+function hasPendingTxs(): boolean {
+  const raw = localStorage.getItem(PENDING_LS_KEY)
+  if (!raw) return false
+  try {
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) && arr.length > 0 // ada nilai -> blok
+  } catch {
+    // kalau format rusak, anggap tidak ada pending (atau ubah ke true jika ingin lebih ketat)
+    return false
+  }
+}
+
 async function submitTrade() {
   if (submitting.value) return
   submitError.value = ''
+
+  if (hasPendingTxs()) {
+    modal?.open?.(
+      'Error',
+      'You already have a pending copy trade. Please wait until it completes before placing a new order.',
+    )
+    return
+  }
 
   try {
     submitting.value = true

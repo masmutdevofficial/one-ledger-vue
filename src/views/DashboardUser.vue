@@ -165,6 +165,7 @@
         <!-- Content -->
         <div class="flex items-start space-x-4">
           <img
+            v-if="news && news.image"
             :src="`https://ledger.masmutdev.id${news.image}`"
             alt="News Image"
             class="w-24 h-16 object-cover rounded-lg"

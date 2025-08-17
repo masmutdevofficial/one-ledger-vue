@@ -1,5 +1,15 @@
 <template>
+  <button
+    aria-label="Back"
+    class="mb-4 ml-4 inline-flex items-center text-black"
+    type="button"
+    @click="goBack"
+  >
+    <Icon icon="tabler:arrow-left" class="w-6 h-6" />
+  </button>
   <div class="flex flex-col p-5">
+    <!-- Back -->
+
     <div v-if="loading" class="text-sm text-gray-500 py-10 text-center">Loading…</div>
     <div v-else-if="errorMsg" class="text-sm text-red-500 py-10 text-center">{{ errorMsg }}</div>
     <div v-else-if="rows.length === 0" class="text-sm text-gray-500 py-10 text-center">
@@ -33,8 +43,15 @@
 </template>
 
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+
+const router = useRouter()
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/copy')
+}
 
 // --- API base + helper (plain + token) ---
 const API_BASE = 'https://ledger.masmutdev.id/api'
