@@ -222,16 +222,9 @@ async function authFetch(path: string, init: RequestInit = {}) {
     Authorization: `Bearer ${token}`,
     ...(init.headers || {}),
   }
-
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers })
   const text = await res.text()
-
-  if (!res.ok) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const err = new Error(text.trim() || `HTTP ${res.status}`) as any
-    err.status = res.status // <= keep status
-    throw err
-  }
+  if (!res.ok) throw new Error(text.trim() || `HTTP ${res.status}`)
   return { text, json: () => JSON.parse(text) }
 }
 
@@ -296,7 +289,8 @@ let isAlive = true
 const finalizeControllers = new Map<number, AbortController>()
 onUnmounted(() => {
   isAlive = false
-  finalizeControllers.forEach((c) => c.abort())
+  // cancel any in-flight finalize requests
+  finalizeControllers.forEach((ctrl) => ctrl.abort())
   finalizeControllers.clear()
 })
 
@@ -519,25 +513,20 @@ async function finalizeWinLose(txId: number) {
     })
 
     const data = json()
+
+    // always update storage + server-side balance, even if user navigates
     removePendingTx(txId)
     await fetchSaldo()
 
+    // show success only if this component is still mounted
     if (isAlive) {
-      alertSuccess('Transaction finalized. Your balance has been updated.')
+      alertSuccess('Transaction completed. Your balance has been updated.')
     }
+
     return data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
-    // If another tab/instance already finalized it, treat as success.
-    if (e?.status === 409 || /already processed/i.test(String(e?.message))) {
-      removePendingTx(txId)
-      await fetchSaldo()
-      if (isAlive) {
-        alertSuccess('Transaction was already finalized earlier. Your balance is up to date.')
-      }
-      return
-    }
-    // Navigated away: ignore abort
+    // ignore aborts caused by unmount/navigation
     if (e?.name === 'AbortError') return
     throw e
   } finally {
