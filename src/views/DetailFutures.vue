@@ -176,7 +176,7 @@
             :disabled="loadingSubmit"
             @click="submitWinLose"
           >
-            {{ loadingSubmit ? 'Processing…' : 'Close Position' }}
+            {{ loadingSubmit ? 'Processing…' : 'Open Position' }}
           </button>
         </div>
 
