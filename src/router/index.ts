@@ -52,6 +52,10 @@ const routes = [
       },
       {
         path: 'add-funds',
+        component: () => import('@/views/DepositRoute.vue'),
+      },
+      {
+        path: 'on-chain-deposit',
         component: () => import('@/views/AddFunds.vue'),
       },
       {
@@ -109,6 +113,14 @@ const routes = [
       {
         path: 'p2p',
         component: () => import('@/views/menu/P2P.vue'),
+      },
+      {
+        path: 'p2p-detail',
+        component: () => import('@/views/menu/P2PDetail.vue'),
+      },
+      {
+        path: 'p2p-checkout',
+        component: () => import('@/views/menu/P2PCheckout.vue'),
       },
       {
         path: 'security',

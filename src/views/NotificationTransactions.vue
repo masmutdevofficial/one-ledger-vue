@@ -1,9 +1,9 @@
 <template>
   <div class="max-w-md mx-auto space-y-6 px-4">
     <!-- Loading / Error / Empty -->
-    <div v-if="loading" class="text-gray-500 text-sm py-6 text-center">Loading…</div>
-    <div v-else-if="errorMsg" class="text-red-500 text-[13px] py-6 text-center">{{ errorMsg }}</div>
-    <div v-else-if="cards.length === 0" class="text-gray-500 text-sm py-6 text-center">
+    <div v-if="loading" class="text-gray-500 text-[10px] py-6 text-center">Loading…</div>
+    <div v-else-if="errorMsg" class="text-red-500 text-[9px] py-6 text-center">{{ errorMsg }}</div>
+    <div v-else-if="cards.length === 0" class="text-gray-500 text-[10px] py-6 text-center">
       No Data Available
     </div>
 
@@ -11,12 +11,12 @@
     <template v-else>
       <div v-for="c in cards" :key="c.key" class="space-y-2">
         <div class="bg-gray-100 rounded-xl p-6">
-          <h2 class="text-black text-xl font-semibold leading-snug">{{ c.title }}</h2>
-          <p class="text-black text-[12px] leading-relaxed mt-2">
+          <h2 class="text-black text-sm font-semibold leading-snug">{{ c.title }}</h2>
+          <p class="text-black text-[10px] leading-relaxed mt-2">
             {{ c.message }}
           </p>
         </div>
-        <p class="text-gray-400 text-[12px] leading-relaxed">{{ c.timeShort }}</p>
+        <p class="text-gray-400 text-[10px] leading-relaxed">{{ c.timeShort }}</p>
       </div>
     </template>
   </div>

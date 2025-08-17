@@ -96,8 +96,9 @@
           <span>{{ trade.time }}</span>
         </div>
         <button
-          class="bg-green-500 text-white text-xs font-semibold rounded-md px-6 py-1"
+          class="bg-teal-500 text-white text-xs font-semibold rounded-md px-6 py-1"
           type="button"
+          @click="goDetail(trade.id)"
         >
           Buy
         </button>
@@ -125,7 +126,13 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
+
+function goDetail(tradeId: number) {
+  router.push(`/p2p-detail?id=${tradeId}`)
+}
 // type Emoji = { src: string; alt: string }
 
 type Trade = {
