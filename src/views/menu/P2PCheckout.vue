@@ -18,11 +18,28 @@ const invoiceId = computed<string | null>(() => {
 // ====== State umum ======
 const pageError = ref<string | null>(null)
 const invoiceValid = ref(false)
-const invoiceStatus = ref<number | null>(null) // ⬅️ status dari API cek-invoice (contoh: 1=Pending, 2=Approved, 3=Rejected)
+const invoiceStatus = ref<number | null>(null) // 1=Pending, 2=Approved, 3=Rejected
 const invoiceApproved = computed(() => invoiceStatus.value === 2)
 
 const transferredClicked = ref(false)
 const rejectedSent = ref(false)
+
+// ====== Data dari cek-invoice ======
+type InvoiceData = {
+  id: number
+  order_id: string
+  invoice: string
+  keterangan: string
+  jumlah: number
+  status: number
+  created_at: string
+  advertiser_name: string | null
+  account_name: string | null
+  account_number: string | null
+  account_bank: string | null
+  totalDibayar: number
+}
+const invoiceData = ref<InvoiceData | null>(null)
 
 // ====== Timer 30 menit (per-invoice) ======
 const DURATION = 30 * 60 * 1000
@@ -37,7 +54,7 @@ function getStartTime(inv: string): number {
   const k = lsKey(inv)
   const v = localStorage.getItem(k)
   if (v && !Number.isNaN(Number(v))) return Number(v)
-  const legacy = localStorage.getItem('paymentStartTime') // fallback lama
+  const legacy = localStorage.getItem('paymentStartTime')
   if (legacy && !Number.isNaN(Number(legacy))) {
     localStorage.setItem(k, legacy)
     localStorage.removeItem('paymentStartTime')
@@ -53,12 +70,19 @@ function clearTimer() {
     timer = null
   }
 }
+
 function formatTime(ms: number): string {
   const totalSec = Math.floor(ms / 1000)
   const m = Math.floor(totalSec / 60)
   const s = totalSec % 60
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
+const nf0 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+const formattedJumlah = computed(() => {
+  if (!invoiceData.value) return '—'
+  return `Rp ${nf0.format(invoiceData.value.totalDibayar)}`
+})
 
 async function sendReject(inv: string) {
   if (rejectedSent.value) return
@@ -76,13 +100,12 @@ async function sendReject(inv: string) {
       body: JSON.stringify({ invoice: inv, status: 3 }),
     })
   } catch {
-    // abaikan error server
+    /* abaikan */
   }
 }
 
 function updateRemaining() {
   if (!invoiceId.value) return
-  // Jika sudah approved, hentikan timer & jangan reject
   if (invoiceApproved.value) {
     clearTimer()
     return
@@ -94,14 +117,13 @@ function updateRemaining() {
   if (remaining.value <= 0) {
     clearTimer()
     if (!transferredClicked.value && invoiceValid.value && !invoiceApproved.value) {
-      // auto reject
       sendReject(invoiceId.value)
       pageError.value = 'Payment Rejected'
     }
   }
 }
 
-// ====== Copy helper (pakai modal) ======
+// ====== Copy helper ======
 async function copyText(value: string, fieldLabel?: string) {
   try {
     await navigator.clipboard.writeText(value)
@@ -135,14 +157,14 @@ async function cancelOrder() {
       body: JSON.stringify({ invoice: invoiceId.value }),
     })
   } catch {
-    // abaikan
+    /* abaikan */
   } finally {
     clearTimer()
     pageError.value = 'Invalid Invoice ID'
   }
 }
 
-// ====== CTA "Transferred, Notify Seller" ======
+// ====== CTA ======
 function notifySellerClicked() {
   transferredClicked.value = true
   modal.open('Notified', 'Seller has been notified.')
@@ -164,13 +186,30 @@ async function checkInvoice() {
     )
     if (!res.ok) throw new Error('Invalid Invoice ID')
 
-    const data = await res.json().catch(() => ({}))
-    // Asumsi server mengembalikan field `status`
-    // 1 = Pending, 2 = Approved, 3 = Rejected (contoh)
-    invoiceStatus.value = typeof data?.status === 'number' ? data.status : null
+    const data = (await res.json()) as Partial<InvoiceData> & { status?: number }
+    invoiceStatus.value = typeof data?.status === 'number' ? data.status! : null
     invoiceValid.value = true
 
-    // Jika approved, hentikan timer (tidak perlu hitung mundur)
+    // simpan field yg diperlukan untuk tampilan
+    invoiceData.value = {
+      id: Number(data.id ?? 0),
+      order_id: String(data.order_id ?? ''),
+      invoice: String(data.invoice ?? ''),
+      keterangan: String(data.keterangan ?? ''),
+      jumlah: Number(data.jumlah ?? 0),
+      status: Number(data.status ?? 0),
+      created_at: String(data.created_at ?? ''),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      advertiser_name: (data as any).advertiser_name ?? null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      account_name: (data as any).account_name ?? null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      account_number: (data as any).account_number ?? null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      account_bank: (data as any).account_bank ?? null,
+      totalDibayar: Number(data.totalDibayar ?? 0),
+    }
+
     if (invoiceApproved.value) {
       clearTimer()
     }
@@ -216,11 +255,9 @@ onBeforeUnmount(() => {
     <main v-else class="flex-grow px-5 pt-5">
       <h1 class="text-xl font-normal mb-1">Open For Payment</h1>
 
-      <!-- Jika approved, tampilkan keterangan English dan sembunyikan countdown + tombol -->
       <template v-if="invoiceApproved">
         <p class="text-sm font-normal text-green-700">This deposit has been approved.</p>
       </template>
-
       <template v-else>
         <p class="text-xs font-normal mb-5">
           Order will be canceled in
@@ -228,27 +265,33 @@ onBeforeUnmount(() => {
         </p>
       </template>
 
+      <!-- Payment method (advertiser_name) -->
       <input
         type="text"
         readonly
-        value="LucasFastpay"
+        :value="invoiceData?.advertiser_name ?? ''"
         class="w-full rounded-lg border border-gray-300 px-4 py-3 mb-7 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-cyan-400 cursor-default"
         aria-label="Payment method"
       />
 
       <section class="space-y-5">
         <div>
-          <p class="font-semibold text-sm mb-1">Transfer via: BCA</p>
+          <!-- account_bank -->
+          <p class="font-semibold text-sm mb-1">
+            Transfer via: {{ invoiceData?.account_bank ?? '-' }}
+          </p>
         </div>
 
         <div>
           <p class="text-gray-500 text-xs mb-0.5">You Pay</p>
           <div class="flex items-center justify-between">
-            <p class="font-bold text-base">Rp1.622.400,00</p>
+            <!-- jumlah -->
+            <p class="font-bold text-base">{{ formattedJumlah }}</p>
             <button
               aria-label="Copy amount"
               class="text-black text-lg"
-              @click="copyText('1622400', 'Amount')"
+              :disabled="!invoiceData"
+              @click="copyText(String(invoiceData?.totalDibayar ?? ''), 'Amount')"
             >
               <Icon icon="tabler:copy" width="20" height="20" />
             </button>
@@ -258,11 +301,13 @@ onBeforeUnmount(() => {
         <div>
           <p class="text-gray-400 text-xs mb-0.5">Account Number</p>
           <div class="flex items-center justify-between">
-            <p class="text-sm font-normal">8171787955</p>
+            <!-- account_number -->
+            <p class="text-sm font-normal">{{ invoiceData?.account_number ?? '—' }}</p>
             <button
               aria-label="Copy account number"
               class="text-black text-lg"
-              @click="copyText('8171787955', 'Account number')"
+              :disabled="!invoiceData?.account_number"
+              @click="copyText(invoiceData?.account_number ?? '', 'Account number')"
             >
               <Icon icon="tabler:copy" width="20" height="20" />
             </button>
@@ -272,11 +317,13 @@ onBeforeUnmount(() => {
         <div>
           <p class="text-gray-400 text-xs mb-0.5">Name</p>
           <div class="flex items-center justify-between">
-            <p class="text-sm font-normal">Atit</p>
+            <!-- account_name -->
+            <p class="text-sm font-normal">{{ invoiceData?.account_name ?? '—' }}</p>
             <button
               aria-label="Copy name"
               class="text-black text-lg"
-              @click="copyText('Atit', 'Name')"
+              :disabled="!invoiceData?.account_name"
+              @click="copyText(invoiceData?.account_name ?? '', 'Name')"
             >
               <Icon icon="tabler:copy" width="20" height="20" />
             </button>

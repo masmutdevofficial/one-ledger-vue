@@ -55,12 +55,8 @@
           You Pay <span class="font-bold">{{ youPayIdr }}</span>
         </p>
 
-        <p class="text-[10px] text-gray-400 mt-1">
-          <span v-if="rateLoading">Fetching rate…</span>
-          <span v-else-if="rateError">{{ rateError }}</span>
-          <span v-else-if="rateIdrPerUsdt"
-            >~ {{ new Intl.NumberFormat('id-ID').format(rateIdrPerUsdt!) }} IDR / USDT</span
-          >
+        <p class="text-[10px] text-gray-400 mt-1" v-if="offer">
+          ~ {{ new Intl.NumberFormat('id-ID').format(offer.price_fiat) }} IDR / USDT
         </p>
       </section>
 
@@ -104,7 +100,6 @@
   </div>
 </template>
 
-<!-- BuyUsdtPage.vue -->
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -130,7 +125,7 @@ type ApiRow = {
   side: 'buy' | 'sell'
   asset_symbol: string
   fiat_currency: string
-  price_fiat: number
+  price_fiat: number // <— rate IDR per 1 USDT
   limit_min_fiat: number
   limit_max_fiat: number
   available_asset: number
@@ -143,13 +138,8 @@ const loading = ref(true)
 const errorMsg = ref<string | null>(null)
 const offer = ref<ApiRow | null>(null)
 
-// ===== Amount & rate state
+// ===== Amount & submit state
 const amountUsdt = ref<number | null>(null)
-const rateIdrPerUsdt = ref<number | null>(null)
-const rateLoading = ref(false)
-const rateError = ref<string | null>(null)
-
-// ===== Submit state
 const submitLoading = ref(false)
 
 const idParam = computed<number | null>(() => {
@@ -160,7 +150,6 @@ const idParam = computed<number | null>(() => {
 })
 
 const nf0 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-// const nf2 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const limitText = computed(() => {
   if (!offer.value) return ''
@@ -169,8 +158,8 @@ const limitText = computed(() => {
 })
 
 const youPayIdr = computed(() => {
-  if (!rateIdrPerUsdt.value || !amountUsdt.value) return '—'
-  const v = amountUsdt.value * rateIdrPerUsdt.value
+  if (!offer.value || !amountUsdt.value) return '—'
+  const v = amountUsdt.value * offer.value.price_fiat
   return `Rp ${nf0.format(v)}`
 })
 
@@ -196,49 +185,18 @@ async function fetchOffer() {
   offer.value = await res.json()
 }
 
-async function fetchRate() {
-  rateLoading.value = true
-  rateError.value = null
-  try {
-    const r1 = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=idr',
-    )
-    if (r1.ok) {
-      const j = await r1.json()
-      const v = j?.tether?.idr
-      if (typeof v === 'number' && v > 0) {
-        rateIdrPerUsdt.value = v
-        return
-      }
-    }
-    const r2 = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=IDR')
-    if (!r2.ok) throw new Error('Rate fetch failed.')
-    const j2 = await r2.json()
-    const v2 = j2?.rates?.IDR
-    if (typeof v2 === 'number' && v2 > 0) {
-      rateIdrPerUsdt.value = v2
-      return
-    }
-    throw new Error('Rate not available.')
-  } catch (e) {
-    rateError.value = e instanceof Error ? e.message : 'Rate error.'
-    rateIdrPerUsdt.value = null
-  } finally {
-    rateLoading.value = false
-  }
-}
-
 function onClickMax() {
   if (!offer.value) return
-  if (!rateIdrPerUsdt.value) {
-    rateError.value = 'Currency rate is not available.'
+  const rate = offer.value.price_fiat
+  if (!rate || rate <= 0) {
+    modal.open('Rate unavailable', 'Price rate (price_fiat) is not available.')
     return
   }
-  const usdt = offer.value.limit_max_fiat / rateIdrPerUsdt.value
+  const usdt = offer.value.limit_max_fiat / rate
   amountUsdt.value = Number(clampToAvailable(usdt).toFixed(2))
 }
 
-// ===== Place Order -> POST /deposits
+// ===== Place Order -> POST /api/deposits
 type DepositResp = {
   id: number
   order_id: string
@@ -284,14 +242,12 @@ async function placeOrder() {
 
     const data: DepositResp = await res.json()
 
-    // ✅ Modal sukses + redirect saat OK
-    modal.open('Place Order Successfull', `Invoice: ${data.invoice}`, () => {
+    modal.open('Order Created', `Invoice: ${data.invoice}`, () => {
       router.push(`/p2p-checkout?invoice_id=${encodeURIComponent(data.invoice)}`)
     })
   } catch (e) {
-    // ❌ Modal gagal
     const msg = e instanceof Error ? e.message : 'Unknown error.'
-    modal.open('Place Order Failed', msg)
+    modal.open('Order Failed', msg)
   } finally {
     submitLoading.value = false
   }
@@ -300,7 +256,7 @@ async function placeOrder() {
 onMounted(async () => {
   try {
     if (!idParam.value) throw new Error('Invalid or missing id.')
-    await Promise.all([fetchOffer(), fetchRate()])
+    await fetchOffer()
   } catch (e) {
     errorMsg.value = e instanceof Error ? e.message : 'Unknown error.'
   } finally {

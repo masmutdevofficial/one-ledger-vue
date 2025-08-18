@@ -4,13 +4,7 @@
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center space-x-4 text-sm font-normal text-gray-900">
         <div class="flex items-center space-x-1 cursor-pointer select-none">
-          <img
-            alt="USDT coin icon"
-            class="w-5 h-5 rounded-full"
-            height="20"
-            src="https://storage.googleapis.com/a1aa/image/5f0cf905-cc74-4690-75ed-3741d9e2aed4.jpg"
-            width="20"
-          />
+          <img src="/img/crypto/tether-usdt.svg" alt="USDT" class="w-5 h-5 rounded-full" />
           <span>USDT</span>
           <Icon icon="tabler:chevron-down" class="w-3 h-3" />
         </div>
@@ -50,14 +44,6 @@
         <span class="text-sm font-semibold text-gray-900">
           {{ trade.username }}
         </span>
-
-        <img
-          v-for="(emoji, idx) in trade.emojis"
-          :key="idx"
-          :alt="emoji.alt"
-          class="w-3.5 h-3.5"
-          :src="emoji.src"
-        />
       </div>
       <div class="text-xs text-gray-500 mb-1">
         Trade(s) {{ trade.trades }} ({{ trade.successRate }})
