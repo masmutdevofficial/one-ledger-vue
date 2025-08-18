@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-md mx-auto space-y-6 px-4">
+  <div class="max-w-md mx-auto space-y-6 px-4 mb-20">
     <!-- Loading / Error / Empty -->
     <div v-if="loading" class="text-gray-500 text-[10px] py-6 text-center">Loading…</div>
     <div v-else-if="errorMsg" class="text-red-500 text-[9px] py-6 text-center">{{ errorMsg }}</div>
