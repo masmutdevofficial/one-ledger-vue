@@ -105,33 +105,7 @@
           <Icon icon="tabler:file-description" class="w-4 h-4" />
         </button>
       </div>
-      <div class="grid grid-cols-2 gap-4 mb-8">
-        <!-- Take Profit -->
-        <div>
-          <label for="tp" class="text-gray-400 text-xs mb-1 block">Take Profit</label>
-          <div class="relative">
-            <input
-              id="tp"
-              v-model.number="tp"
-              type="number"
-              step="0.01"
-              min="-100"
-              max="100"
-              inputmode="decimal"
-              placeholder="0.00"
-              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none"
-              @input="fixComma($event)"
-              :disabled="hasPendingOrder"
-              :class="hasPendingOrder ? 'opacity-60 cursor-not-allowed' : ''"
-            />
-            <span
-              class="absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-gray-700 pointer-events-none"
-            >
-              % ROI
-            </span>
-          </div>
-        </div>
-
+      <div class="grid grid-cols-1 gap-4 mb-8">
         <!-- Stop Loss -->
         <div>
           <label for="sl" class="text-gray-400 text-xs mb-1 block">Stop Loss</label>
@@ -436,11 +410,37 @@ const showSummary = computed(() => {
 const tp = ref<number | null>(null) // integer 1..100 (server enforces >0)
 const sl = ref<number | null>(null) // select 10..100
 
-function fixComma(e: Event) {
-  const el = e.target as HTMLInputElement
-  if (!el) return
-  el.value = el.value.replace(',', '.')
+async function fetchTakeProfit(): Promise<void> {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Unauthorized.')
+
+    const res = await fetch(`${API_BASE}/users/me/take-profit`, {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    if (!res.ok) {
+      // server kadang balas text/plain untuk error
+      let msg = `HTTP ${res.status}`
+      try {
+        msg = await res.text()
+      } catch {}
+      throw new Error(msg)
+    }
+
+    const data = await res.json() // { id: number, take_profit: number }
+    const v = Number(data?.take_profit)
+    tp.value = Number.isInteger(v) && v > 0 ? v : null
+  } catch {
+    tp.value = null
+    // opsional: tampilkan modal/toast kamu di sini
+    // modal.open('Error', 'Failed to fetch take profit.')
+  }
 }
+
+onMounted(fetchTakeProfit)
 
 /* =========================
    Pending TX (localStorage) + PnL animation
