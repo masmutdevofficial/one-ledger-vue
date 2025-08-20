@@ -22,7 +22,7 @@ const defaultMeta = {
 // Ambil meta dari API di onMounted, update meta.value
 onMounted(async () => {
   try {
-    const res = await fetch('https://ledger.masmutdev.id/api/meta-web')
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/meta-web')
     if (!res.ok) throw new Error('Gagal mengambil meta')
     const data = await res.json()
     meta.value = data

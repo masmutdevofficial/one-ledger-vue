@@ -161,7 +161,7 @@ onMounted(async () => {
       loading.value = false
       return
     }
-    const res = await fetch('https://ledger.masmutdev.id/api/get-saldo', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/get-saldo', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
@@ -223,7 +223,7 @@ async function submitWithdraw() {
       return
     }
 
-    const res = await fetch('https://ledger.masmutdev.id/api/save-withdraw', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/save-withdraw', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
