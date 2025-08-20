@@ -1,32 +1,42 @@
 <template>
   <div>
     <!-- Section: Total Value Summary -->
-    <section class="bg-white mb-6 px-4 mt-5">
-      <div class="flex items-center space-x-1 text-gray-700 text-sm font-normal mb-1">
-        <span>Est. Total Value</span>
-        <Icon icon="tabler:eye" class="w-4 h-4" />
-      </div>
+    <section class="bg-white mb-6 px-4 mt-2">
+      <div class="flex flex-row justify-between items-center">
+        <div class="flex flex-col">
+          <div class="flex items-center space-x-1 text-gray-700 text-sm font-normal mb-1">
+            <span>Est. Total Value</span>
+            <Icon icon="tabler:eye" class="w-4 h-4" />
+          </div>
 
-      <div class="flex items-baseline space-x-1 font-semibold text-3xl text-black mb-1">
-        <span>
-          {{
-            totalValue !== null
-              ? totalValue.toLocaleString('id-ID', { minimumFractionDigits: 2 })
-              : '...'
-          }}
-        </span>
-        <span class="text-base font-normal">USDT</span>
-        <Icon icon="tabler:chevron-down" class="text-base w-4 h-4" />
-      </div>
+          <div class="flex items-baseline space-x-1 font-semibold text-3xl text-black mb-1">
+            <span>
+              {{
+                totalValue !== null
+                  ? totalValue.toLocaleString('id-ID', { minimumFractionDigits: 2 })
+                  : '...'
+              }}
+            </span>
+            <span class="text-base font-normal">USDT</span>
+            <Icon icon="tabler:chevron-down" class="text-base w-4 h-4" />
+          </div>
 
-      <div class="text-gray-400 text-sm mb-2">
-        ≈ ${{
-          totalValue !== null
-            ? totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })
-            : '...'
-        }}
-      </div>
+          <div class="text-gray-400 text-sm mb-2">
+            ≈ ${{
+              totalValue !== null
+                ? totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })
+                : '...'
+            }}
+          </div>
+        </div>
 
+        <RouterLink
+          to="/add-funds"
+          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-white rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-[100px] text-center"
+        >
+          Add Funds
+        </RouterLink>
+      </div>
       <div class="text-xs flex items-center text-black mb-4">
         Unrealized PnL
         <span
@@ -38,25 +48,20 @@
         </span>
         <Icon icon="tabler:chevron-right" class="ml-1 text-gray-400 w-4 h-4" />
       </div>
-
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid grid-cols-4 gap-x-6 gap-y-6 mt-5">
         <RouterLink
-          to="/add-funds"
-          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-white rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-full text-center"
+          v-for="item in items"
+          :key="item.to"
+          :to="item.to"
+          class="group flex flex-col items-center"
+          aria-label="item.label"
         >
-          Add Funds
-        </RouterLink>
-        <RouterLink
-          to="/send"
-          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center"
-        >
-          Send
-        </RouterLink>
-        <RouterLink
-          to="/transfer"
-          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center"
-        >
-          Transfer
+          <div
+            class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shadow-sm ring-1 ring-gray-200/60 hover:ring-gray-300 transition group-active:scale-95"
+          >
+            <img :src="item.img" :alt="item.label" class="w-7 h-7 object-contain" />
+          </div>
+          <span class="mt-2 text-xs text-gray-700 text-center font-semibold">{{ item.label }}</span>
         </RouterLink>
       </div>
     </section>
@@ -205,6 +210,21 @@ interface MarketItem {
   change: number
   icon: string
 }
+
+interface MenuItem {
+  label: string
+  to: string
+  img: string
+}
+
+const items: MenuItem[] = [
+  { label: 'Arbitrage', to: '/smart-arbitrage', img: '/img/robot-logo.png' },
+  { label: 'Hub reward', to: '/hub-rewards', img: '/img/newmenu/hub-reward.png' },
+  { label: 'Megadrop', to: '/megadrop', img: '/img/newmenu/megadrop.png' },
+  { label: 'LaunchPool', to: '/launchpool', img: '/img/newmenu/launchpool.png' },
+  { label: 'Event', to: '/event', img: '/img/newmenu/event.png' },
+  { label: 'More', to: '/account', img: '/img/newmenu/more.png' },
+]
 
 const ICON_FALLBACK = '/img/crypto/_default.svg' // siapkan file fallback optional
 function iconPath(symbol: string) {

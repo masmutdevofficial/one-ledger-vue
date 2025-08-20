@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- ===== Summary ===== -->
-    <section class="bg-white mb-6 px-4 mt-5">
+    <section class="bg-white mb-6 px-4 mt-2">
       <div class="flex items-center space-x-1 text-gray-700 text-sm font-normal mb-1">
         <span>Est. Total Value</span>
         <Icon icon="tabler:eye" class="w-4 h-4" />

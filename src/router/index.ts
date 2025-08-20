@@ -44,7 +44,7 @@ const routes = [
     children: [
       {
         path: 'account',
-        component: () => import('@/views/AccountMenu.vue'),
+        component: () => import('@/views/NewAccountMenu.vue'),
       },
       {
         path: 'dashboard',
@@ -53,6 +53,10 @@ const routes = [
       {
         path: 'add-funds',
         component: () => import('@/views/DepositRoute.vue'),
+      },
+      {
+        path: 'verify',
+        component: () => import('@/views/menu/VerifyKTP.vue'),
       },
       {
         path: 'on-chain-deposit',

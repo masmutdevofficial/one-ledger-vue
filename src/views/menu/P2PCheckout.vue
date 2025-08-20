@@ -335,10 +335,10 @@ onBeforeUnmount(() => {
       <button
         v-if="!invoiceApproved"
         type="button"
-        class="w-full mt-8 bg-cyan-400 text-white text-base font-normal py-3 rounded-lg hover:bg-cyan-500"
+        class="w-full mt-8 bg-[#00bf63] text-white text-base font-normal py-3 rounded-lg hover:bg-cyan-500"
         @click="notifySellerClicked"
       >
-        Transferred, Notify Seller
+        Request Bank Details from Seller
       </button>
     </main>
   </div>
