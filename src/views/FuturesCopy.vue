@@ -1,6 +1,17 @@
 <template>
   <div class="px-4 mb-20">
-    <h2 class="font-semibold text-base mb-2 select-none">Futures Copy</h2>
+    <div class="flex flex-row justify-start items-center mb-4">
+      <button
+        aria-label="Back"
+        class="mr-2 inline-flex items-center text-black"
+        type="button"
+        @click="goBack"
+      >
+        <Icon icon="tabler:arrow-left" class="w-6 h-6" />
+      </button>
+      <h2 class="font-semibold text-base select-none">Futures Copy</h2>
+    </div>
+
     <div class="text-sm font-semibold mb-4 select-none">Public</div>
 
     <!-- Filter bar -->
@@ -130,6 +141,11 @@ import { useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'
 
 const router = useRouter()
+
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/copy')
+}
 
 /** ==== API Row ==== */
 type ApiRow = {
