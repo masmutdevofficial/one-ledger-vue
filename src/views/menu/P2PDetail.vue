@@ -206,6 +206,13 @@ type DepositResp = {
   timestamp: string
 }
 
+// tipe payload (opsional, biar rapi)
+type DepositPayload = {
+  jumlah: number
+  keterangan: string
+  advertiser_name: string
+}
+
 async function placeOrder() {
   try {
     if (!idParam.value) throw new Error('Invalid or missing id.')
@@ -216,6 +223,18 @@ async function placeOrder() {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Unauthorized.')
 
+    // pastikan offer sudah ada
+    if (!offer.value) {
+      await fetchOffer()
+      if (!offer.value) throw new Error('Offer not loaded.')
+    }
+
+    const payload: DepositPayload = {
+      jumlah: Number(amountUsdt.value.toFixed(2)),
+      keterangan: String(idParam.value),
+      advertiser_name: String(offer.value.advertiser_name || ''),
+    }
+
     submitLoading.value = true
 
     const res = await fetch('https://one-ledger.masmutpanel.my.id/api/deposits', {
@@ -225,37 +244,29 @@ async function placeOrder() {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        jumlah: Number(amountUsdt.value.toFixed(2)),
-        keterangan: String(idParam.value),
-      }),
+      body: JSON.stringify(payload),
     })
 
     if (!res.ok) {
-      // Coba baca JSON error
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let payload: any = null
+      let payloadErr: any = null
       try {
-        payload = await res.json()
+        payloadErr = await res.json()
       } catch {}
 
-      // Tangani kasus pending order (409) -> redirect ke checkout
-      const msg = (payload?.message ?? '').trim()
-      const inv = payload?.invoice
-
+      const msg = (payloadErr?.message ?? '').trim()
+      const inv = payloadErr?.invoice
       const isPendingMsg =
         msg === 'Complete your pending order before creating a new request.' ||
         msg === 'A pending deposit already exists.'
 
       if (res.status === 409 && isPendingMsg && typeof inv === 'string' && inv.length > 0) {
-        // opsional: pakai modal agar user paham
         modal.open('Pending Order', msg, () =>
           router.push(`/p2p-checkout?invoice_id=${encodeURIComponent(inv)}`),
         )
         return
       }
 
-      // Selain itu, lempar error standar
       throw new Error(msg || `Request failed (HTTP ${res.status}).`)
     }
 
