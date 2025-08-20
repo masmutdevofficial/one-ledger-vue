@@ -1,5 +1,5 @@
 <template>
-  <main class="px-4 py-4 flex-grow">
+  <main class="px-4 py-4 flex-grow mb-20">
     <ul class="space-y-4">
       <RouterLink
         v-for="crypto in cryptoList"

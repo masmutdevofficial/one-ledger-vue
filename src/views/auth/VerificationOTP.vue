@@ -112,7 +112,7 @@ async function submitCode() {
   }
   loading.value = true
   try {
-    const res = await fetch('https://ledger.masmutdev.id/api/verify-otp', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/verify-otp', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -184,7 +184,7 @@ onMounted(async () => {
   try {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Token tidak ada')
-    const res = await fetch('https://ledger.masmutdev.id/api/saldo', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/saldo', {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     })
     const data: SaldoResponse = await res.json()
@@ -225,7 +225,7 @@ type AssetItem = {
 }
 
 /** ===== Konstanta ===== */
-const API_BASE = 'https://ledger.masmutdev.id/api'
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 const WS_BASE = 'wss://ledgersocketone.online'
 const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`

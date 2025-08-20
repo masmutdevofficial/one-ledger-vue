@@ -74,7 +74,7 @@ const loading = ref(false)
 async function login() {
   loading.value = true
   try {
-    const res = await fetch('https://ledger.masmutdev.id/api/login', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

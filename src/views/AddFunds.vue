@@ -112,7 +112,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await fetch('https://ledger.masmutdev.id/api/web-deposit', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/web-deposit', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
@@ -123,7 +123,7 @@ onMounted(async () => {
     deposit.value = {
       usdt_wallet: data.usdt_wallet || defaultDeposit.usdt_wallet,
       usdt_qr: data.usdt_qr
-        ? `https://ledger.masmutdev.id/storage/${data.usdt_qr}`
+        ? `https://one-ledger.masmutpanel.my.id/storage/${data.usdt_qr}`
         : defaultDeposit.usdt_qr,
     }
   } catch {

@@ -45,7 +45,7 @@ async function handleContinue() {
 
   loading.value = true
   try {
-    const res = await fetch('https://ledger.masmutdev.id/api/check-email', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/check-email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

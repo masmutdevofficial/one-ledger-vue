@@ -249,7 +249,7 @@ onMounted(async () => {
       return
     }
 
-    const res = await fetch('https://ledger.masmutdev.id/api/data-lable-copy-trading', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/data-lable-copy-trading', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,

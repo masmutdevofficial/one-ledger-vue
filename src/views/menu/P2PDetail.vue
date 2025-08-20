@@ -171,7 +171,7 @@ function clampToAvailable(usdt: number): number {
 async function fetchOffer() {
   const token = localStorage.getItem('token')
   if (!token) throw new Error('Unauthorized.')
-  const res = await fetch(`https://ledger.masmutdev.id/api/p2p-offers/${idParam.value}`, {
+  const res = await fetch(`https://one-ledger.masmutpanel.my.id/api/p2p-offers/${idParam.value}`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   })
   if (!res.ok) {
@@ -218,7 +218,7 @@ async function placeOrder() {
 
     submitLoading.value = true
 
-    const res = await fetch('https://ledger.masmutdev.id/api/deposits', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/deposits', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -232,17 +232,36 @@ async function placeOrder() {
     })
 
     if (!res.ok) {
-      let msg = `Request failed (HTTP ${res.status}).`
+      // Coba baca JSON error
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let payload: any = null
       try {
-        const j = await res.json()
-        if (j?.message) msg = j.message
+        payload = await res.json()
       } catch {}
-      throw new Error(msg)
+
+      // Tangani kasus pending order (409) -> redirect ke checkout
+      const msg = (payload?.message ?? '').trim()
+      const inv = payload?.invoice
+
+      const isPendingMsg =
+        msg === 'Complete your pending order before creating a new request.' ||
+        msg === 'A pending deposit already exists.'
+
+      if (res.status === 409 && isPendingMsg && typeof inv === 'string' && inv.length > 0) {
+        // opsional: pakai modal agar user paham
+        modal.open('Pending Order', msg, () =>
+          router.push(`/p2p-checkout?invoice_id=${encodeURIComponent(inv)}`),
+        )
+        return
+      }
+
+      // Selain itu, lempar error standar
+      throw new Error(msg || `Request failed (HTTP ${res.status}).`)
     }
 
     const data: DepositResp = await res.json()
 
-    modal.open('Order Created', `Invoice: ${data.invoice}`, () => {
+    modal.open('Order Created', ``, () => {
       router.push(`/p2p-checkout?invoice_id=${encodeURIComponent(data.invoice)}`)
     })
   } catch (e) {

@@ -611,7 +611,7 @@ async function getAvailable() {
     if (!token) throw new Error('No token')
 
     if (activeTab.value === 'buy') {
-      const res = await fetch('https://ledger.masmutdev.id/api/saldo', {
+      const res = await fetch('https://one-ledger.masmutpanel.my.id/api/saldo', {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       })
       if (!res.ok) throw new Error()
@@ -620,9 +620,12 @@ async function getAvailable() {
       saldo.value = Number.isFinite(s) ? s : 0
       coinTotal.value = null
     } else {
-      const res = await fetch(`https://ledger.masmutdev.id/api/crypto-total/${baseAsset.value}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-      })
+      const res = await fetch(
+        `https://one-ledger.masmutpanel.my.id/api/crypto-total/${baseAsset.value}`,
+        {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        },
+      )
       if (!res.ok) throw new Error()
       const data = await res.json()
       const t = Number(data?.total_amount ?? 0)
@@ -711,7 +714,7 @@ onUnmounted(() => {
 
 const submitting = ref(false)
 const submitError = ref<string | null>(null)
-const API_BASE = 'https://ledger.masmutdev.id/api' // sesuaikan
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api' // sesuaikan
 
 function nowIsoUtc() {
   return new Date().toISOString()
@@ -884,7 +887,7 @@ async function getOpenOrders() {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Token tidak ada.')
 
-    const res = await fetch('https://ledger.masmutdev.id/api/open-orders-crypto', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/open-orders-crypto', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,

@@ -90,7 +90,7 @@ async function sendReject(inv: string) {
   try {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Unauthorized.')
-    await fetch('https://ledger.masmutdev.id/api/update-deposit', {
+    await fetch('https://one-ledger.masmutpanel.my.id/api/update-deposit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -147,7 +147,7 @@ async function cancelOrder() {
   try {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Unauthorized.')
-    await fetch('https://ledger.masmutdev.id/api/delete-deposit', {
+    await fetch('https://one-ledger.masmutpanel.my.id/api/delete-deposit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -181,7 +181,7 @@ async function checkInvoice() {
     if (!token) throw new Error('Unauthorized.')
 
     const res = await fetch(
-      `https://ledger.masmutdev.id/api/cek-invoice?invoice=${encodeURIComponent(invoiceId.value)}`,
+      `https://one-ledger.masmutpanel.my.id/api/cek-invoice?invoice=${encodeURIComponent(invoiceId.value)}`,
       { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } },
     )
     if (!res.ok) throw new Error('Invalid Invoice ID')

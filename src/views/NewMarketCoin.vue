@@ -671,7 +671,7 @@ onUnmounted(() => {
  * ────────────────────────────────────────────────────────────────────────────*/
 const submitting = ref(false)
 const submitError = ref<string>('')
-const API_BASE = 'https://ledger.masmutdev.id/api' // sesuaikan
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api' // sesuaikan
 
 function bestBid(): number {
   const bids = depthData.value?.tick?.bids

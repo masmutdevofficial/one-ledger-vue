@@ -166,7 +166,7 @@
         <div class="flex items-start space-x-4">
           <img
             v-if="news && news.image"
-            :src="`https://ledger.masmutdev.id${news.image}`"
+            :src="`https://one-ledger.masmutpanel.my.id${news.image}`"
             alt="News Image"
             class="w-24 h-16 object-cover rounded-lg"
           />
@@ -217,7 +217,7 @@ type PositionRow = {
   avg_cost: string | number
 }
 
-const API_BASE = 'https://ledger.masmutdev.id/api'
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 const WS_BASE = 'wss://ledgersocketone.online'
 
 /** ===== State summary ===== */
@@ -426,7 +426,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await fetch('https://ledger.masmutdev.id/api/news', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/news', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,

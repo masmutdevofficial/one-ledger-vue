@@ -129,7 +129,7 @@ type Item = {
   executed_at: string
 }
 
-const API_BASE = 'https://ledger.masmutdev.id/api'
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 
 const loading = ref(true)
 const errorMsg = ref<string | null>(null)

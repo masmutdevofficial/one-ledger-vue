@@ -165,7 +165,7 @@ router.beforeEach(async (to, from, next) => {
   if (token) {
     try {
       // Validasi token ke server
-      const res = await fetch('https://ledger.masmutdev.id/api/auth-token', {
+      const res = await fetch('https://one-ledger.masmutpanel.my.id/api/auth-token', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

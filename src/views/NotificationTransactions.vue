@@ -71,7 +71,7 @@ onMounted(async () => {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Unauthorized')
 
-    const base = 'https://ledger.masmutdev.id/api/wallet'
+    const base = 'https://one-ledger.masmutpanel.my.id/api/wallet'
     const [dRes, wRes, tRes] = await Promise.allSettled([
       fetchJson<DepositRow[]>(`${base}/deposits`, token),
       fetchJson<WithdrawRow[]>(`${base}/withdraws`, token),

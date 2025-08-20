@@ -225,7 +225,7 @@ async function fetchOffers() {
     if (!token) throw new Error('Unauthorized')
 
     // kalau API satu domain, cukup '/api/p2p-offers'
-    const res = await fetch('https://ledger.masmutdev.id/api/p2p-offers', {
+    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/p2p-offers', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,

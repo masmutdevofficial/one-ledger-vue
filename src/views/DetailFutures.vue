@@ -225,7 +225,7 @@ const submitSuccess = ref<string | null>(null)
 /* =========================
    API helpers
 ========================= */
-const API_BASE = 'https://ledger.masmutdev.id/api'
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 async function authFetch(path: string, init: RequestInit = {}) {
   const token = localStorage.getItem('token')
   if (!token) throw new Error('Token not found')
@@ -310,7 +310,7 @@ onUnmounted(() => {
 function ensureAbsoluteUrl(u?: string | null): string | null {
   if (!u) return null
   if (/^https?:\/\//i.test(u)) return u
-  const base = 'https://ledger.masmutdev.id/'
+  const base = 'https://one-ledger.masmutpanel.my.id/'
   return base + u.replace(/^\/+/, '')
 }
 const avatarUrl = computed(() => {
