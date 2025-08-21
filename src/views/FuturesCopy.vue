@@ -108,7 +108,7 @@
 
         <div class="flex items-start space-x-3">
           <!-- Kiri: Gambar -->
-          <MiniAreaChart :series="item.chartSeries" :categories="item.chartCategories" />
+          <!-- <MiniAreaChart :series="item.chartSeries" :categories="item.chartCategories" /> -->
           <!-- Kanan: Info -->
           <div class="flex-1">
             <div class="flex items-start justify-between text-xs text-gray-400 select-none">
@@ -135,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import MiniAreaChart from '@/components/futures/MiniAreaChart.vue'
+// import MiniAreaChart from '@/components/futures/MiniAreaChart.vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
 import { ref, onMounted } from 'vue'

@@ -101,7 +101,7 @@ async function fetchAccount(): Promise<void> {
       email: data.email ?? '',
       avatar: data.avatar ?? '',
       // progress tidak disediakan API; isi 0/atau hitung dari endpoint lain jika ada
-      progress: 0,
+      progress: 1,
     }
     formInisial.value = user.value.name ?? ''
   } catch (e) {
@@ -320,7 +320,7 @@ onMounted(fetchAccount)
                 class="w-16 h-16 rounded-full object-cover"
               />
             </div>
-            <p class="text-xs text-gray-500 mt-1">Max 7 MB. jpg/jpeg/png</p>
+            <p class="text-xs text-gray-500 mt-1">Max 1 MB. jpg/jpeg/png</p>
           </div>
 
           <div class="flex space-x-3 pt-2">
