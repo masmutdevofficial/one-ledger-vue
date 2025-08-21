@@ -199,20 +199,21 @@ onBeforeUnmount(() => {
       </nav>
 
       <!-- Search Bar -->
-      <div class="w-full px-4 pb-4 mt-3">
-        <div class="relative w-full">
-          <input
-            type="search"
-            placeholder="#HotJulyPPI"
-            class="w-full rounded-xl bg-gray-100 text-gray-500 placeholder-gray-500 px-4 py-2 text-sm focus:outline-none pr-10"
-          />
-          <Icon
-            icon="tabler:search"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"
-          />
+      <div v-if="$route.path === '/dashboard'">
+        <div class="w-full px-4 pb-4 mt-3">
+          <div class="relative w-full">
+            <input
+              type="search"
+              placeholder="#HotJulyPPI"
+              class="w-full rounded-xl bg-gray-100 text-gray-500 placeholder-gray-500 px-4 py-2 text-sm focus:outline-none pr-10"
+            />
+            <Icon
+              icon="tabler:search"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"
+            />
+          </div>
         </div>
       </div>
-
       <!-- Main Content -->
       <main class="flex-1 overflow-y-auto relative -mt-3">
         <!-- Loader -->
