@@ -127,6 +127,10 @@ const routes = [
         component: () => import('@/views/menu/P2PCheckout.vue'),
       },
       {
+        path: 'event',
+        component: () => import('@/views/menu/WeeklyEvent.vue'),
+      },
+      {
         path: 'security',
         component: () => import('@/views/menu/SecurityPassword.vue'),
       },

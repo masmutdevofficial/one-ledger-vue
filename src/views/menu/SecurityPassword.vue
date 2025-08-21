@@ -1,5 +1,8 @@
 <template>
   <div class="px-4 pt-4 pb-20 flex-grow">
+    <button aria-label="Go back" class="text-black text-xl" @click="goBack">
+      <Icon icon="tabler:arrow-left" width="24" height="24" />
+    </button>
     <h1 class="text-[18px] font-semibold text-black mb-3">Change Password</h1>
     <div
       class="bg-[#FEF3C7] border border-[#FDE68A] rounded-md p-3 mb-5 text-[12px] text-[#92400E]"
@@ -107,10 +110,17 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
 const modal = useApiAlertStore()
+const router = useRouter()
+
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/buy-p2p')
+}
 
 // STATE
 const newPassword = ref('')

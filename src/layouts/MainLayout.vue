@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
@@ -49,6 +49,93 @@ const teal600Filter = {
   filter:
     'brightness(0) saturate(100%) invert(33%) sepia(86%) saturate(373%) hue-rotate(130deg) brightness(92%) contrast(90%)',
 }
+// ---- Notification Badge
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+function getToken(): string | null {
+  return localStorage.getItem('token')
+}
+
+const loading = ref(false)
+const notificationCount = ref<number>(0)
+
+const notificationLabel = computed(() =>
+  notificationCount.value > 99 ? '99+' : String(notificationCount.value),
+)
+
+const badgeClass = computed(() =>
+  notificationCount.value > 99 ? 'w-5 h-5 text-[10px]' : 'w-4 h-4 text-[8px]',
+)
+
+async function fetchNotificationCount(): Promise<void> {
+  const token = getToken()
+  if (!token) {
+    notificationCount.value = 0
+    return
+  }
+  try {
+    loading.value = true
+    const res = await fetch(`${API_BASE}/notifications/count`, {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      // credentials: 'include', // aktifkan hanya jika pakai cookie Sanctum
+    })
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      await router.replace({ path: '/login', query: { reason: 'unauthorized' } })
+      return
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = (await res.json()) as { count?: number }
+    notificationCount.value = Number.isFinite(data.count as number) ? (data.count as number) : 0
+  } catch {
+    notificationCount.value = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+async function markAllRead(): Promise<void> {
+  const token = getToken()
+  if (!token) return
+  try {
+    const res = await fetch(`${API_BASE}/notifications/read-all`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      // credentials: 'include',
+    })
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      await router.replace({ path: '/login', query: { reason: 'unauthorized' } })
+      return
+    }
+    notificationCount.value = 0
+  } catch {
+    // silent
+  }
+}
+
+async function handleClickNotification(): Promise<void> {
+  await markAllRead()
+  router.push('/notification')
+}
+
+// Refetch saat window fokus (balik dari halaman lain)
+function onFocus() {
+  fetchNotificationCount()
+}
+
+onMounted(() => {
+  fetchNotificationCount()
+  window.addEventListener('focus', onFocus)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', onFocus)
+})
 </script>
 
 <template>
@@ -65,14 +152,29 @@ const teal600Filter = {
           <RouterLink to="/account" aria-label="Menu" class="focus:outline-none">
             <img src="/img/newmenu/menu.png" alt="Menu" class="w-7 h-7 object-contain" />
           </RouterLink>
-          <RouterLink to="/notification" aria-label="Chat" class="focus:outline-none">
+          <RouterLink
+            to="/notification"
+            aria-label="Chat"
+            class="focus:outline-none relative inline-block"
+            @click.prevent="handleClickNotification"
+          >
             <img src="/img/newmenu/notification.png" alt="Menu" class="w-7 h-7 object-contain" />
+
+            <span
+              v-if="notificationCount > 0"
+              :class="[
+                'absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse min-w-[1rem] px-1',
+                badgeClass,
+              ]"
+            >
+              {{ notificationLabel }}
+            </span>
           </RouterLink>
         </div>
 
         <!-- Spot/Futures Toggle -->
         <div
-          class="relative flex items-center bg-gray-100 rounded-lg px-1.5 py-1 mr-4 text-sm font-medium"
+          class="relative flex items-center bg-gray-100 rounded-lg px-1.5 py-1 mr-5 text-sm font-medium"
         >
           <RouterLink
             to="/dashboard"
@@ -97,7 +199,7 @@ const teal600Filter = {
       </nav>
 
       <!-- Search Bar -->
-      <div class="w-full px-4 pb-4 mt-3" v-if="!hideHeader">
+      <div class="w-full px-4 pb-4 mt-3">
         <div class="relative w-full">
           <input
             type="search"
@@ -150,7 +252,7 @@ const teal600Filter = {
                 class="flex flex-col items-center"
                 :class="isActive('/dashboard') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <img alt="Home" src="/img/logo.png" class="w-5 h-5 object-contain rotate-33" />
+                <img alt="Home" src="/img/logo.png" class="w-4 h-4 object-contain rotate-33" />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>
 
@@ -162,7 +264,7 @@ const teal600Filter = {
                 <img
                   alt="Market"
                   src="/img/markets-icon.png"
-                  class="w-5 h-5 object-contain filter"
+                  class="w-4 h-4 object-contain filter"
                   :style="isActive('/market') ? teal600Filter : null"
                 />
                 <span class="text-xs mt-1">Market</span>
@@ -176,7 +278,7 @@ const teal600Filter = {
                 <img
                   alt="Trade"
                   src="/img/trade-icon.png"
-                  class="w-5 h-5 object-contain filter"
+                  class="w-4 h-4 object-contain filter"
                   :style="isActive('/trade') ? teal600Filter : null"
                 />
                 <span class="text-xs mt-1">Trade</span>
@@ -187,7 +289,7 @@ const teal600Filter = {
                 class="flex flex-col items-center"
                 :class="isActive('/history') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <Icon icon="tabler:history" class="w-5 h-5" />
+                <Icon icon="tabler:history" class="w-4 h-4 mt-[2px]" />
                 <span class="text-xs mt-1 text-center">Order History</span>
               </RouterLink>
 
@@ -196,7 +298,7 @@ const teal600Filter = {
                 class="flex flex-col items-center"
                 :class="isActive('/assets') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <Icon icon="tabler:wallet" class="w-5 h-5" />
+                <Icon icon="tabler:wallet" class="w-4 h-4 mt-[2px]" />
                 <span class="text-xs mt-1">Assets</span>
               </RouterLink>
             </div>

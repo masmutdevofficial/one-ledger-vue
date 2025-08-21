@@ -118,7 +118,8 @@ function updateRemaining() {
     clearTimer()
     if (!transferredClicked.value && invoiceValid.value && !invoiceApproved.value) {
       sendReject(invoiceId.value)
-      pageError.value = 'Payment Rejected'
+      pageError.value =
+        'Payment rejected Or Complete your pending order before creating a new request.'
     }
   }
 }

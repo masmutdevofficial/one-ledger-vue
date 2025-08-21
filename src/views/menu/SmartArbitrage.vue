@@ -1,5 +1,8 @@
 <template>
   <div class="px-4 pt-4 flex-grow">
+    <button aria-label="Go back" class="text-black text-xl" @click="goBack">
+      <Icon icon="tabler:arrow-left" width="24" height="24" />
+    </button>
     <h1 class="font-semibold text-base mb-3">Smart Arbitrage</h1>
     <section class="mb-4">
       <div class="flex items-center space-x-2 mb-1 text-sm font-normal">
@@ -65,7 +68,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/buy-p2p')
+}
 interface CoinInfo {
   symbol: string
   name: string

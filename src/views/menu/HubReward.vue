@@ -1,5 +1,8 @@
 <template>
   <div class="px-4 pt-6 pb-20 flex-grow max-w-md mx-auto w-full">
+    <button aria-label="Go back" class="text-black text-xl" @click="goBack">
+      <Icon icon="tabler:arrow-left" width="24" height="24" />
+    </button>
     <h1 class="font-semibold text-lg leading-6 text-black mb-4">My Tasks</h1>
     <nav class="flex space-x-6 mb-4 text-sm font-medium">
       <button
@@ -100,7 +103,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/buy-p2p')
+}
 type Task = {
   id: number
   title: string

@@ -1,5 +1,8 @@
 <template>
-  <div class="px-4 py-4 space-y-4 flex-1 overflow-auto">
+  <div class="px-4 py-4 space-y-4 flex-1 overflow-auto mb-20">
+    <button aria-label="Go back" class="text-black text-xl" @click="goBack">
+      <Icon icon="tabler:arrow-left" width="24" height="24" />
+    </button>
     <section
       v-for="airdrop in airdrops"
       :key="airdrop.id"
@@ -55,7 +58,13 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/buy-p2p')
+}
 interface Airdrop {
   id: number
   token: string

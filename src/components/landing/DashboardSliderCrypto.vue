@@ -17,8 +17,8 @@ const items = ref<CryptoItem[]>([
     symbol: 'BTC',
     price: '$109,465.86',
     growth: '+76.04%',
-    icon: '/crypto/btc.png',
-    bg: 'bg-yellow-400',
+    icon: '/img/crypto/btc.png',
+    bg: 'bg-transparent',
     chart: [100, 120, 115, 130, 160, 140, 180, 190, 200, 210, 220, 230],
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
   },
@@ -26,8 +26,8 @@ const items = ref<CryptoItem[]>([
     symbol: 'ETH',
     price: '$4,865.22',
     growth: '+45.21%',
-    icon: '/crypto/eth.png',
-    bg: 'bg-indigo-500',
+    icon: '/img/crypto/eth.png',
+    bg: 'bg-transparent',
     chart: [50, 55, 53, 60, 62, 58, 65, 72, 80, 90, 100, 105],
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
   },
@@ -35,8 +35,8 @@ const items = ref<CryptoItem[]>([
     symbol: 'XRP',
     price: '$0.89',
     growth: '+12.07%',
-    icon: '/crypto/xrp.png',
-    bg: 'bg-blue-500',
+    icon: '/img/crypto/xrp.png',
+    bg: 'bg-transparent',
     chart: [10, 11, 9, 13, 14, 12, 15, 20, 18, 21, 23, 25],
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
   },
@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
                   class="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold"
                   :class="item.bg"
                 >
-                  <img :src="item.icon" alt="crypto icon" class="w-3.5 h-3.5 object-contain" />
+                  <img :src="item.icon" alt="crypto icon" class="w-5 h-5 object-contain" />
                 </div>
                 <span class="font-semibold text-gray-900 text-base">{{ item.symbol }}</span>
                 <span class="text-gray-400 text-sm font-normal">{{ item.price }}</span>
