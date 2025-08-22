@@ -108,19 +108,19 @@
           <!-- Kanan: Info -->
           <div class="flex-1">
             <div class="flex items-start justify-between text-xs text-gray-400 select-none">
-              <div class="flex flex-col justify-center text-xs text-gray-400 select-none">
-                <span class="mr-3">{{ item.labelMdd }}</span>
+              <div class="flex flex-col justify-start text-xs text-gray-400 select-none">
+                <span class="">{{ item.labelMdd }}</span>
                 <span
-                  :class="
-                    item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none ml-1.5'
-                  "
+                  :class="item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none'"
                 >
                   {{ item.mddValue }}
                 </span>
               </div>
-              <div class="flex flex-col justify-center text-xs text-gray-400 select-none">
+              <div
+                class="flex flex-col justify-center items-center text-xs text-gray-400 select-none"
+              >
                 <span>{{ item.labelRoi }}</span>
-                <div class="text-teal-600 font-semibold text-sm select-none">
+                <div class="text-gray-900 font-semibold text-xs select-none">
                   {{ item.roi }}
                 </div>
               </div>
