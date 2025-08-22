@@ -127,7 +127,7 @@
 
               <div class="flex flex-col justify-center text-xs text-gray-400 select-none">
                 <span>{{ item.labelSharpe }}</span>
-                <span class="text-gray-900 text-end">{{ item.sharpe }}</span>
+                <span class="text-gray-900 font-semibold text-end">{{ item.sharpe }}</span>
               </div>
             </div>
           </div>

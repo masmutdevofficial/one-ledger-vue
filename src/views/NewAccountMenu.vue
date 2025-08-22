@@ -27,7 +27,7 @@
         <img
           :src="displayAvatar"
           :alt="user.name || 'Default Profile'"
-          class="w-12 h-12 rounded-full"
+          class="w-12 h-12 rounded-full object-cover"
         />
         <h2 class="font-semibold text-gray-900 text-base leading-5">
           {{ user.name || 'No Name' }}
