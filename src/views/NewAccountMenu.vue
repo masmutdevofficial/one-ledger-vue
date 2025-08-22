@@ -1,200 +1,10 @@
-<script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { Icon } from '@iconify/vue'
-import MenuSection from '@/components/menu/MenuSection.vue'
-import { useApiAlertStore } from '@/stores/apiAlert'
-
-// ====== Config API ======
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
-function getToken(): string | null {
-  return localStorage.getItem('token')
-}
-
-// ====== Tipe ======
-interface UserApi {
-  uid: string
-  email: string
-  inisial: string | null
-  avatar: string | null
-}
-interface User {
-  uid: string
-  name: string
-  email: string
-  avatar: string
-  progress: number
-}
-
-// ====== State ======
-const user = ref<User>({
-  uid: '',
-  name: '',
-  email: '',
-  avatar: '',
-  progress: 0,
-})
-
-const showEditModal = ref(false)
-const formInisial = ref<string>('')
-
-// upload state
-const avatarFile = ref<File | null>(null)
-const previewUrl = ref<string | null>(null)
-
-const modal = useApiAlertStore()
-
-// ====== Helpers ======
-function goBack(): void {
-  window.history.back()
-}
-
-const showEmail = ref(false)
-
-function maskEmail(email: string | null | undefined): string {
-  if (!email) return '-'
-  const [local, domainRaw = ''] = email.split('@')
-  const maskedLocal =
-    local.length <= 2
-      ? '•'.repeat(local.length)
-      : `${local[0]}${'•'.repeat(local.length - 2)}${local.slice(-1)}`
-  const maskedDomain = domainRaw.replace(/[^.]/g, '•')
-  return `${maskedLocal}@${maskedDomain}`
-}
-
-const emailDisplay = computed(() =>
-  showEmail.value ? user.value.email : maskEmail(user.value.email),
-)
-
-async function copyUid(): Promise<void> {
-  if (!user.value.uid) return
-  try {
-    await navigator.clipboard.writeText(user.value.uid)
-    modal.open('Copied', 'UID has been copied to clipboard.')
-  } catch {
-    modal.open('Copy failed', 'Unable to copy UID. Please try again.')
-  }
-}
-
-function toggleEmailVisibility(): void {
-  showEmail.value = !showEmail.value
-}
-const displayAvatar = computed(() =>
-  user.value.avatar && user.value.avatar.trim() !== ''
-    ? user.value.avatar
-    : '/img/newmenu/profile.png',
-)
-
-// ====== Fetch Account ======
-async function fetchAccount(): Promise<void> {
-  const token = getToken()
-  if (!token) return
-  try {
-    const res = await fetch(`${API_BASE}/data-account`, {
-      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
-    })
-    const data = (await res.json()) as UserApi
-
-    // map ke tampilanmu
-    user.value = {
-      uid: data.uid ?? '',
-      name: data.inisial ?? '',
-      email: data.email ?? '',
-      avatar: data.avatar ?? '',
-      // progress tidak disediakan API; isi 0/atau hitung dari endpoint lain jika ada
-      progress: 1,
-    }
-    formInisial.value = user.value.name ?? ''
-  } catch (e) {
-    // fallback tetap pakai default kosong
-    console.error(e)
-  }
-}
-
-// ====== Modal Edit ======
-function openEdit(): void {
-  // set form dari nilai user sekarang
-  formInisial.value = user.value.name ?? ''
-  previewUrl.value = null
-  avatarFile.value = null
-  showEditModal.value = true
-}
-function closeEdit(): void {
-  showEditModal.value = false
-  // bersihkan preview
-  if (previewUrl.value) {
-    URL.revokeObjectURL(previewUrl.value)
-    previewUrl.value = null
-  }
-  avatarFile.value = null
-}
-const MAX_BYTES = 1 * 1024 * 1024
-
-function handleAvatarChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0] ?? null
-  if (!file) return
-  if (file.size > MAX_BYTES) {
-    modal.open('Upload failed', 'File size exceeds 1 MB.')
-    input.value = ''
-    return
-  }
-  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
-  avatarFile.value = file
-  previewUrl.value = URL.createObjectURL(file)
-}
-async function submitEdit(): Promise<void> {
-  const token = getToken()
-  if (!token) return
-
-  const initial = (formInisial.value ?? '').trim()
-
-  // inisial wajib 1 huruf
-  if (initial && !/^[A-Za-z]$/.test(initial)) {
-    modal.open('Invalid Initial', 'Initial must be exactly 1 letter (A-Z).')
-    return
-  }
-
-  const fd = new FormData()
-  if (initial) fd.append('inisial', initial)
-  if (avatarFile.value) fd.append('avatar_file', avatarFile.value)
-
-  if ([...fd.keys()].length === 0) {
-    modal.open('Nothing to update', 'Please change initials or choose a new avatar.')
-    return
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/update-data-account`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: fd,
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      const msg = data?.message || 'Update failed'
-      throw new Error(msg)
-    }
-
-    modal.open('Success', 'Profile updated!', () => {
-      if (initial) user.value.name = initial
-      if (data?.data?.avatar) user.value.avatar = data.data.avatar
-      closeEdit()
-    })
-  } catch (err: any) {
-    modal.open('Error', err?.message || 'Failed to update profile.')
-  }
-}
-
-onMounted(fetchAccount)
-</script>
-
 <template>
-  <div class="max-w-md mx-auto p-4 mt-5">
+  <div class="max-w-md mx-auto p-4">
     <!-- Header -->
     <header class="flex items-center mb-6">
-      <button aria-label="Go back" class="text-gray-900 text-xl" @click="goBack">
+      <!-- <button aria-label="Go back" class="text-gray-900 text-xl" @click="goBack">
         <Icon icon="tabler:arrow-left" />
-      </button>
+      </button> -->
       <h1 class="flex-grow text-center font-semibold text-lg leading-6">Account Info</h1>
       <div class="w-6"></div>
     </header>
@@ -343,3 +153,193 @@ onMounted(fetchAccount)
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+import { Icon } from '@iconify/vue'
+import MenuSection from '@/components/menu/MenuSection.vue'
+import { useApiAlertStore } from '@/stores/apiAlert'
+
+// ====== Config API ======
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+function getToken(): string | null {
+  return localStorage.getItem('token')
+}
+
+// ====== Tipe ======
+interface UserApi {
+  uid: string
+  email: string
+  inisial: string | null
+  avatar: string | null
+}
+interface User {
+  uid: string
+  name: string
+  email: string
+  avatar: string
+  progress: number
+}
+
+// ====== State ======
+const user = ref<User>({
+  uid: '',
+  name: '',
+  email: '',
+  avatar: '',
+  progress: 0,
+})
+
+const showEditModal = ref(false)
+const formInisial = ref<string>('')
+
+// upload state
+const avatarFile = ref<File | null>(null)
+const previewUrl = ref<string | null>(null)
+
+const modal = useApiAlertStore()
+
+// ====== Helpers ======
+// function goBack(): void {
+//   window.history.back()
+// }
+
+const showEmail = ref(false)
+
+function maskEmail(email: string | null | undefined): string {
+  if (!email) return '-'
+  const [local, domainRaw = ''] = email.split('@')
+  const maskedLocal =
+    local.length <= 2
+      ? '•'.repeat(local.length)
+      : `${local[0]}${'•'.repeat(local.length - 2)}${local.slice(-1)}`
+  const maskedDomain = domainRaw.replace(/[^.]/g, '•')
+  return `${maskedLocal}@${maskedDomain}`
+}
+
+const emailDisplay = computed(() =>
+  showEmail.value ? user.value.email : maskEmail(user.value.email),
+)
+
+async function copyUid(): Promise<void> {
+  if (!user.value.uid) return
+  try {
+    await navigator.clipboard.writeText(user.value.uid)
+    modal.open('Copied', 'UID has been copied to clipboard.')
+  } catch {
+    modal.open('Copy failed', 'Unable to copy UID. Please try again.')
+  }
+}
+
+function toggleEmailVisibility(): void {
+  showEmail.value = !showEmail.value
+}
+const displayAvatar = computed(() =>
+  user.value.avatar && user.value.avatar.trim() !== ''
+    ? user.value.avatar
+    : '/img/newmenu/profile.png',
+)
+
+// ====== Fetch Account ======
+async function fetchAccount(): Promise<void> {
+  const token = getToken()
+  if (!token) return
+  try {
+    const res = await fetch(`${API_BASE}/data-account`, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    })
+    const data = (await res.json()) as UserApi
+
+    // map ke tampilanmu
+    user.value = {
+      uid: data.uid ?? '',
+      name: data.inisial ?? '',
+      email: data.email ?? '',
+      avatar: data.avatar ?? '',
+      // progress tidak disediakan API; isi 0/atau hitung dari endpoint lain jika ada
+      progress: 1,
+    }
+    formInisial.value = user.value.name ?? ''
+  } catch (e) {
+    // fallback tetap pakai default kosong
+    console.error(e)
+  }
+}
+
+// ====== Modal Edit ======
+function openEdit(): void {
+  // set form dari nilai user sekarang
+  formInisial.value = user.value.name ?? ''
+  previewUrl.value = null
+  avatarFile.value = null
+  showEditModal.value = true
+}
+function closeEdit(): void {
+  showEditModal.value = false
+  // bersihkan preview
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value)
+    previewUrl.value = null
+  }
+  avatarFile.value = null
+}
+const MAX_BYTES = 1 * 1024 * 1024
+
+function handleAvatarChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0] ?? null
+  if (!file) return
+  if (file.size > MAX_BYTES) {
+    modal.open('Upload failed', 'File size exceeds 1 MB.')
+    input.value = ''
+    return
+  }
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+  avatarFile.value = file
+  previewUrl.value = URL.createObjectURL(file)
+}
+async function submitEdit(): Promise<void> {
+  const token = getToken()
+  if (!token) return
+
+  const initial = (formInisial.value ?? '').trim()
+
+  if (initial && !/^[A-Za-z]+$/.test(initial)) {
+    modal.open('Invalid Initial', 'Initial must contain only letters (A–Z).')
+    return
+  }
+
+  const fd = new FormData()
+  if (initial) fd.append('inisial', initial)
+  if (avatarFile.value) fd.append('avatar_file', avatarFile.value)
+
+  if ([...fd.keys()].length === 0) {
+    modal.open('Nothing to update', 'Please change initials or choose a new avatar.')
+    return
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/update-data-account`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      const msg = data?.message || 'Update failed'
+      throw new Error(msg)
+    }
+
+    modal.open('Success', 'Profile updated!', () => {
+      if (initial) user.value.name = initial
+      if (data?.data?.avatar) user.value.avatar = data.data.avatar
+      closeEdit()
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    modal.open('Error', err?.message || 'Failed to update profile.')
+  }
+}
+
+onMounted(fetchAccount)
+</script>

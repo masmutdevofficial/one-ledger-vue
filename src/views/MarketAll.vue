@@ -39,8 +39,8 @@
           <!-- KANAN -->
           <div class="flex items-center">
             <div class="text-right mr-3">
-              <div class="font-bold text-base">{{ crypto.price }}</div>
-              <div class="text-gray-400 text-xs select-none">${{ crypto.price }}</div>
+              <div class="font-bold text-[12px]">{{ crypto.price }}</div>
+              <div class="text-gray-400 text-[10px] select-none">${{ crypto.price }}</div>
             </div>
             <div
               class="text-xs rounded-lg px-3 py-1 select-none font-semibold"

@@ -92,16 +92,12 @@
         <!-- Label bar: pakai label dari API -->
         <div class="flex justify-between text-xs text-gray-400 select-none">
           <span>{{ item.labelPnl }}</span>
-          <span class="ml-[30px]">{{ item.labelRoi }}</span>
           <span>{{ item.labelAum }}</span>
         </div>
 
         <div class="flex justify-between items-center">
           <div :class="item.pnlClass + ' font-semibold text-lg select-none'">
             {{ item.pnl }}
-          </div>
-          <div class="text-teal-600 font-semibold text-sm select-none ml-[32px]">
-            {{ item.roi }}
           </div>
           <div class="font-bold text-sm select-none">{{ item.aum }}</div>
         </div>
@@ -112,7 +108,7 @@
           <!-- Kanan: Info -->
           <div class="flex-1">
             <div class="flex items-start justify-between text-xs text-gray-400 select-none">
-              <div class="flex flex-col justify-center text-xs text-gray-400 select-none ml-23">
+              <div class="flex flex-col justify-center text-xs text-gray-400 select-none">
                 <span class="mr-3">{{ item.labelMdd }}</span>
                 <span
                   :class="
@@ -123,8 +119,15 @@
                 </span>
               </div>
               <div class="flex flex-col justify-center text-xs text-gray-400 select-none">
+                <span>{{ item.labelRoi }}</span>
+                <div class="text-teal-600 font-semibold text-sm select-none">
+                  {{ item.roi }}
+                </div>
+              </div>
+
+              <div class="flex flex-col justify-center text-xs text-gray-400 select-none">
                 <span>{{ item.labelSharpe }}</span>
-                <span class="text-gray-900">{{ item.sharpe }}</span>
+                <span class="text-gray-900 text-end">{{ item.sharpe }}</span>
               </div>
             </div>
           </div>

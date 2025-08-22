@@ -1,101 +1,5 @@
-<script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue'
-import { Icon } from '@iconify/vue'
-import { useApiAlertStore } from '@/stores/apiAlert'
-
-type ImgMime = 'image/png' | 'image/jpeg' | 'image/jpg'
-const ALLOWED_IMG_TYPES: ImgMime[] = ['image/png', 'image/jpeg', 'image/jpg']
-const MAX_BYTES = 7 * 1024 * 1024 // 7MB
-
-// Refs
-const fileInput = ref<HTMLInputElement | null>(null)
-const uploadedFile = ref<File | null>(null)
-const previewUrl = ref<string | null>(null)
-
-const hasImagePreview = computed<boolean>(() => Boolean(previewUrl.value))
-const previewSrc = computed<string | undefined>(() => previewUrl.value ?? undefined)
-
-const modal = useApiAlertStore()
-
-function goBack(): void {
-  window.history.back()
-}
-
-function onPickFile(): void {
-  fileInput.value?.click()
-}
-
-function destroyPreview(): void {
-  if (previewUrl.value) {
-    URL.revokeObjectURL(previewUrl.value)
-    previewUrl.value = null
-  }
-}
-
-function resetUpload(): void {
-  uploadedFile.value = null
-  destroyPreview()
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
-}
-
-function onFileChange(e: Event): void {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0] ?? null
-  if (!file) return
-
-  if (file.size > MAX_BYTES) {
-    modal.open('Upload failed', 'File size exceeds 7 MB.')
-    if (fileInput.value) fileInput.value.value = ''
-    return
-  }
-
-  if (!ALLOWED_IMG_TYPES.includes(file.type as ImgMime)) {
-    // PDF atau tipe non-image: simpan file, tanpa preview
-    uploadedFile.value = file
-    destroyPreview()
-    modal.open('Notice', 'Preview hanya untuk PNG/JPEG/JPG. File tetap tersimpan.')
-    return
-  }
-
-  // Gambar: simpan & tampilkan preview
-  uploadedFile.value = file
-  destroyPreview()
-  previewUrl.value = URL.createObjectURL(file)
-}
-
-function onContinue(): void {
-  modal.open('Submitted', 'Logic submit belum diimplementasi.', () => {
-    location.reload()
-  })
-}
-
-// Modal Edit Address
-const showEditAddress = ref(false)
-const formName = ref<string>('')
-const formAddress = ref<string>('')
-
-function openEditAddress(): void {
-  showEditAddress.value = true
-}
-function closeEditAddress(): void {
-  showEditAddress.value = false
-}
-function submitEditAddress(): void {
-  showEditAddress.value = false
-  modal.open(
-    'Address updated',
-    `Name: ${formName.value || '-'}\nAddress: ${formAddress.value || '-'}`,
-    () => location.reload(),
-  )
-}
-
-onBeforeUnmount(() => destroyPreview())
-</script>
-
 <template>
-  <div class="w-full px-4 max-w-md mt-4 mb-20">
+  <div class="w-full px-4 max-w-md mb-20">
     <!-- Header -->
     <header class="flex items-center justify-between mb-6">
       <button aria-label="Back" class="text-gray-400 hover:text-gray-600" @click="goBack">
@@ -272,3 +176,99 @@ onBeforeUnmount(() => destroyPreview())
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onBeforeUnmount } from 'vue'
+import { Icon } from '@iconify/vue'
+import { useApiAlertStore } from '@/stores/apiAlert'
+
+type ImgMime = 'image/png' | 'image/jpeg' | 'image/jpg'
+const ALLOWED_IMG_TYPES: ImgMime[] = ['image/png', 'image/jpeg', 'image/jpg']
+const MAX_BYTES = 7 * 1024 * 1024 // 7MB
+
+// Refs
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploadedFile = ref<File | null>(null)
+const previewUrl = ref<string | null>(null)
+
+const hasImagePreview = computed<boolean>(() => Boolean(previewUrl.value))
+const previewSrc = computed<string | undefined>(() => previewUrl.value ?? undefined)
+
+const modal = useApiAlertStore()
+
+function goBack(): void {
+  window.history.back()
+}
+
+function onPickFile(): void {
+  fileInput.value?.click()
+}
+
+function destroyPreview(): void {
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value)
+    previewUrl.value = null
+  }
+}
+
+function resetUpload(): void {
+  uploadedFile.value = null
+  destroyPreview()
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+function onFileChange(e: Event): void {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0] ?? null
+  if (!file) return
+
+  if (file.size > MAX_BYTES) {
+    modal.open('Upload failed', 'File size exceeds 7 MB.')
+    if (fileInput.value) fileInput.value.value = ''
+    return
+  }
+
+  if (!ALLOWED_IMG_TYPES.includes(file.type as ImgMime)) {
+    // PDF atau tipe non-image: simpan file, tanpa preview
+    uploadedFile.value = file
+    destroyPreview()
+    modal.open('Notice', 'Preview hanya untuk PNG/JPEG/JPG. File tetap tersimpan.')
+    return
+  }
+
+  // Gambar: simpan & tampilkan preview
+  uploadedFile.value = file
+  destroyPreview()
+  previewUrl.value = URL.createObjectURL(file)
+}
+
+function onContinue(): void {
+  modal.open('Submitted', 'Logic submit belum diimplementasi.', () => {
+    location.reload()
+  })
+}
+
+// Modal Edit Address
+const showEditAddress = ref(false)
+const formName = ref<string>('')
+const formAddress = ref<string>('')
+
+function openEditAddress(): void {
+  showEditAddress.value = true
+}
+function closeEditAddress(): void {
+  showEditAddress.value = false
+}
+function submitEditAddress(): void {
+  showEditAddress.value = false
+  modal.open(
+    'Address updated',
+    `Name: ${formName.value || '-'}\nAddress: ${formAddress.value || '-'}`,
+    () => location.reload(),
+  )
+}
+
+onBeforeUnmount(() => destroyPreview())
+</script>

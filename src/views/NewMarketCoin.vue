@@ -173,14 +173,14 @@
         >
           <label for="totalUsdt" class="cursor-text">Total</label>
 
-          <div class="relative z-50 text-gray-900 font-bold flex items-center space-x-1 right-10">
+          <div class="relative z-50 text-gray-900 font-bold inline-block shrink-0">
             <input
               id="totalAmount"
               ref="amountInputEl"
               type="text"
               inputmode="decimal"
               autocomplete="off"
-              class="bg-transparent text-right outline-none w-36"
+              class="bg-transparent text-right outline-none w-28 sm:w-32 md:w-36 pr-12"
               :disabled="availableLoading || availableError"
               v-model="totalAmountInput"
               :placeholder="activeTab === 'buy' ? '0,00' : '0,00000000'"
@@ -189,7 +189,12 @@
               @input="onAmountTyping"
               @keydown.enter.prevent="onAmountCommit"
             />
-            <span>{{ availableUnit }}</span>
+            <!-- Unit ditempel di kanan, tidak terdorong keluar -->
+            <span
+              class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-black font-medium whitespace-nowrap"
+            >
+              {{ availableUnit }}
+            </span>
           </div>
         </div>
 

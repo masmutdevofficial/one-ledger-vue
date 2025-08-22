@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
@@ -124,9 +124,95 @@ async function handleClickNotification(): Promise<void> {
   router.push('/notification')
 }
 
-// Refetch saat window fokus (balik dari halaman lain)
+type Quote = 'USDT'
+function localLogo(symbol: string): string {
+  // pakai logo lokal; biarkan 404 kalau belum ada, list tetap muncul
+  return `/img/crypto/${symbol}.svg`
+}
+
+const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote }> = {
+  BTC: { name: 'Bitcoin', logoUrl: localLogo('btc'), quote: 'USDT' },
+  ETH: { name: 'Ethereum', logoUrl: localLogo('eth'), quote: 'USDT' },
+  BNB: { name: 'BNB (Binance Coin)', logoUrl: localLogo('bnb'), quote: 'USDT' },
+  SOL: { name: 'Solana', logoUrl: localLogo('sol'), quote: 'USDT' },
+  LTC: { name: 'Litecoin', logoUrl: localLogo('ltc'), quote: 'USDT' },
+  LINK: { name: 'Chainlink', logoUrl: localLogo('link'), quote: 'USDT' },
+  TON: { name: 'Toncoin', logoUrl: localLogo('ton'), quote: 'USDT' },
+  SUI: { name: 'Sui', logoUrl: localLogo('sui'), quote: 'USDT' },
+  XRP: { name: 'XRP', logoUrl: localLogo('xrp'), quote: 'USDT' },
+  QTUM: { name: 'Qtum', logoUrl: localLogo('qtum'), quote: 'USDT' },
+  THETA: { name: 'Theta Network', logoUrl: localLogo('theta'), quote: 'USDT' },
+  ADA: { name: 'Cardano', logoUrl: localLogo('ada'), quote: 'USDT' },
+  RAD: { name: 'Radworks (RAD)', logoUrl: localLogo('rad'), quote: 'USDT' },
+  BAND: { name: 'Band Protocol', logoUrl: localLogo('band'), quote: 'USDT' },
+  ALGO: { name: 'Algorand', logoUrl: localLogo('algo'), quote: 'USDT' },
+  POL: { name: 'Polygon (POL)', logoUrl: localLogo('pol'), quote: 'USDT' },
+  DOGE: { name: 'Dogecoin', logoUrl: localLogo('doge'), quote: 'USDT' },
+  LUNA: { name: 'Terra (LUNA)', logoUrl: localLogo('luna'), quote: 'USDT' },
+  GALA: { name: 'Gala', logoUrl: localLogo('gala'), quote: 'USDT' },
+  PEPE: { name: 'Pepe', logoUrl: localLogo('pepe'), quote: 'USDT' },
+}
+
+const searchQuery = ref('')
+const isFocused = ref(false)
+let blurTimer: number | null = null
+
+const inputRef = ref<HTMLInputElement | null>(null)
+
+const filteredCoins = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return []
+
+  const entries = Object.entries(SYMBOL_META).map(([symbol, meta]) => ({
+    symbol,
+    name: meta.name,
+    logoUrl: meta.logoUrl,
+    quote: meta.quote,
+  }))
+
+  // cocokkan by startsWith lalu includes
+  const starts = entries.filter(
+    (c) => c.symbol.toLowerCase().startsWith(q) || c.name.toLowerCase().startsWith(q),
+  )
+  const includes = entries.filter(
+    (c) =>
+      (c.symbol.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)) &&
+      !starts.some((s) => s.symbol === c.symbol),
+  )
+  return [...starts, ...includes].slice(0, 10)
+})
+
+watch(searchQuery, (q) => {
+  const val = q.trim()
+  // buka dropdown ketika ada minimal 1 huruf
+  if (val.length >= 1) {
+    isFocused.value = true
+  } else {
+    // kosong → boleh ditutup
+    isFocused.value = false
+  }
+})
+
 function onFocus() {
-  fetchNotificationCount()
+  if (blurTimer) {
+    clearTimeout(blurTimer)
+    blurTimer = null
+  }
+  isFocused.value = true
+}
+function onBlur() {
+  // tunda biar bisa klik item
+  blurTimer = window.setTimeout(() => {
+    isFocused.value = false
+  }, 150)
+}
+
+function chooseCoin(coin: { symbol: string }) {
+  searchQuery.value = coin.symbol
+  // tetap tampilkan list & fokus input agar lanjut edit/replace
+  isFocused.value = true
+  nextTick(() => inputRef.value?.focus())
+  window.location.href = `/trade?symbol=${coin.symbol.toLowerCase()}usdt`
 }
 
 onMounted(() => {
@@ -198,24 +284,50 @@ onBeforeUnmount(() => {
         </RouterLink>
       </nav>
 
-      <!-- Search Bar -->
+      <!-- Search Bar hanya di /dashboard -->
       <div v-if="$route.path === '/dashboard'">
         <div class="w-full px-4 pb-4 mt-3">
           <div class="relative w-full">
             <input
+              v-model="searchQuery"
               type="search"
               placeholder="#HotJulyPPI"
-              class="w-full rounded-xl bg-gray-100 text-gray-500 placeholder-gray-500 px-4 py-2 text-sm focus:outline-none pr-10"
+              class="w-full rounded-xl bg-gray-100 text-gray-700 placeholder-gray-500 px-4 py-2 text-sm focus:outline-none pr-10"
+              @focus="onFocus"
+              @blur="onBlur"
+              autocomplete="off"
             />
             <Icon
               icon="tabler:search"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none"
             />
+
+            <!-- Suggestions -->
+            <div
+              v-if="isFocused && filteredCoins.length > 0"
+              class="absolute left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto"
+            >
+              <button
+                v-for="coin in filteredCoins"
+                :key="coin.symbol"
+                type="button"
+                class="w-full flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer text-left"
+                @mousedown.prevent="chooseCoin(coin)"
+              >
+                <img :src="coin.logoUrl" alt="" class="w-5 h-5 mr-2" />
+                <span class="font-semibold text-gray-800 mr-1">{{ coin.symbol }}</span>
+                <span class="text-gray-500 text-sm">({{ coin.name }})</span>
+                <span class="ml-auto text-xs text-gray-400">{{ coin.quote }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
       <!-- Main Content -->
-      <main class="flex-1 overflow-y-auto relative -mt-3">
+      <main
+        class="flex-1 overflow-y-auto relative"
+        :class="$route.path === '/dashboard' ? '-pt-5' : 'pt-5'"
+      >
         <!-- Loader -->
         <div
           v-if="isLoading && !isPublicPage"

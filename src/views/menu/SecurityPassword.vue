@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 pt-4 pb-20 flex-grow">
+  <div class="px-4 pb-20 flex-grow">
     <button aria-label="Go back" class="text-black text-xl" @click="goBack">
       <Icon icon="tabler:arrow-left" width="24" height="24" />
     </button>

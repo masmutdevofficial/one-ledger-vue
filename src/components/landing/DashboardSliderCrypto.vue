@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
       <div
         v-for="(_, i) in items"
         :key="i"
-        class="w-2 h-2 rounded-full bg-green-200 cursor-pointer"
+        :class="['w-2 h-2 rounded-full bg-green-200 cursor-pointer', i === 0 ? 'ml-4' : '']"
         @click="scrollToIndex(i)"
       ></div>
     </div>
