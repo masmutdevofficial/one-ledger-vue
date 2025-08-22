@@ -348,6 +348,65 @@ const tradingPairs = [
   'LUNA/USDT',
   'GALA/USDT',
   'PEPE/USDT',
+  'CFX/USDT',
+  'TRX/USDT',
+  'TRUMP/USDT',
+  'SHIB/USDT',
+  'ARB/USDT',
+  'FIL/USDT',
+  'API3/USDT',
+  'ENA/USDT',
+  'BIO/USDT',
+  'UNI/USDT',
+  'BTT/USDT',
+  'SATS/USDT',
+  'MEME/USDT',
+  'GT/USDT',
+  'OP/USDT',
+  'AAVE/USDT',
+  'SNAKES/USDT',
+  'TIA/USDT',
+  'SOON/USDT',
+  'ONDO/USDT',
+  'NEO/USDT',
+  'SKL/USDT',
+  'MX/USDT',
+  'FARTCOIN/USDT',
+  'RATS/USDT',
+  'ETC/USDT',
+  'TRB/USDT',
+  'AVAX/USDT',
+  'BCH/USDT',
+  'BSV/USDT',
+  'IOTA/USDT',
+  'CYBER/USDT',
+  'WIF/USDT',
+  'CORE/USDT',
+  'WLD/USDT',
+  'SEI/USDT',
+  'VIRTUAL/USDT',
+  'RENDER/USDT',
+  'MOODENG/USDT',
+  'JUP/USDT',
+  'PONKE/USDT',
+  'MNT/USDT',
+  'PNUT/USDT',
+  'EIGEN/USDT',
+  'GRASS/USDT',
+  'RAY/USDT',
+  'EPIC/USDT',
+  'ZRO/USDT',
+  'BERA/USDT',
+  'CA/USDT',
+  'IP/USDT',
+  'KAITO/USDT',
+  'OMNI/USDT',
+  'A8/USDT',
+  'OBOL/USDT',
+  'SAGA/USDT',
+  'ORCA/USDT',
+  'SHELL/USDT',
+  'NAKA/USDT',
 ]
 
 const route = useRoute()
@@ -375,23 +434,47 @@ const baseAsset = computed(() => selectedPair.value.split('/')[0])
 /* ──────────────────────────────────────────────────────────────────────────────
  * WEBSOCKET: DEPTH ORDERBOOK
  * ────────────────────────────────────────────────────────────────────────────*/
-const ws = ref<WebSocket | null>(null)
 const depthData = ref<DepthData | null>(null)
+const klineData = ref<KlineData | null>(null)
 
-function connectWS(pairSymbol: string) {
-  ws.value?.close()
-  depthData.value = null
-  ws.value = new WebSocket(`wss://ledgersocketone.online/${pairSymbol}/depth`)
-  ws.value.onmessage = (e: MessageEvent) => {
+function connectAggregatorWS() {
+  aggWS.value?.close()
+  aggWS.value = new WebSocket('wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id')
+
+  aggWS.value.onopen = () => console.log('[WS] Connected (aggregator)')
+  aggWS.value.onclose = () => {
+    console.warn('[WS] Closed, reconnecting in 5s...')
+    setTimeout(connectAggregatorWS, 5000)
+  }
+  aggWS.value.onerror = (err) => console.error('[WS] Error:', err)
+
+  aggWS.value.onmessage = (e: MessageEvent) => {
     try {
-      const data = JSON.parse(e.data) as DepthData
-      if (
-        data &&
-        typeof (data as DepthData).tick !== 'undefined' &&
-        (data as DepthData).ch?.includes('depth')
-      ) {
-        depthData.value = data as DepthData
+      const msg = JSON.parse(e.data)
+
+      // DEPTH dari agregator: { type:'depth', symbol, bids, asks, ts }
+      if (msg.type === 'depth' && matchesSelectedPair(msg.symbol)) {
+        depthData.value = {
+          ch: `market.${msg.symbol}.depth.step0`,
+          ts: msg.ts,
+          tick: {
+            bids: Array.isArray(msg.bids) ? (msg.bids as [number, number][]) : [],
+            asks: Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : [],
+          },
+        }
       }
+
+      // KLINE harian dari agregator: { type:'kline', symbol, period:'1day', open, close, ts }
+      if (msg.type === 'kline' && msg.period === '1day' && matchesSelectedPair(msg.symbol)) {
+        klineData.value = {
+          ch: `market.${msg.symbol}.kline.1day`,
+          ts: msg.ts,
+          tick: { open: Number(msg.open), close: Number(msg.close) },
+        }
+      }
+
+      // (opsional) TICKER: { type:'ticker', symbol, last, ts }
+      // if (msg.type === 'ticker' && matchesSelectedPair(msg.symbol)) { ... }
     } catch {}
   }
 }
@@ -421,49 +504,26 @@ const maxBidAmount = computed(() =>
 /* ──────────────────────────────────────────────────────────────────────────────
  * WEBSOCKET: KLINE + REST AWAL (UNTUK % PERUBAHAN)
  * ────────────────────────────────────────────────────────────────────────────*/
-const klineWS = ref<WebSocket | null>(null)
-const klineData = ref<KlineData | null>(null)
+// SATU WS agregator untuk semua event (depth, kline, ticker)
+const aggWS = ref<WebSocket | null>(null)
 
-async function fetchInitialKline(pairSymbol: string) {
-  try {
-    const res = await fetch(
-      `https://api.huobi.pro/market/history/kline?symbol=${pairSymbol}&period=1day&size=1`,
-    )
-    if (!res.ok) throw new Error('Failed to fetch initial kline')
-    const data = await res.json()
-    if (data?.status === 'ok' && Array.isArray(data.data) && data.data.length > 0) {
-      klineData.value = {
-        ch: '',
-        ts: Date.now(),
-        tick: { open: data.data[0].open, close: data.data[0].close },
-      }
-    }
-  } catch {}
-}
-function connectKlineWS(pairSymbol: string) {
-  klineWS.value?.close()
-  klineData.value = null
-  fetchInitialKline(pairSymbol)
-  klineWS.value = new WebSocket(`wss://ledgersocketone.online/${pairSymbol}/1day`)
-  klineWS.value.onmessage = (e: MessageEvent) => {
-    try {
-      const data = JSON.parse(e.data) as KlineData
-      if (
-        data &&
-        typeof (data as KlineData).tick !== 'undefined' &&
-        (data as KlineData).ch?.includes('kline')
-      ) {
-        klineData.value = data as KlineData
-      }
-    } catch {}
-  }
-}
 const percentChange = computed(() => {
   if (!klineData.value) return null
   const { open, close } = klineData.value.tick
   if (!open) return null
   return ((close - open) / open) * 100
 })
+
+function matchesSelectedPair(msgSymbol: string) {
+  // msgSymbol: 'btcusdt'
+  const want = pairToQuery(selectedPair.value) // 'btcusdt'
+  return msgSymbol?.toLowerCase() === want
+}
+
+function resetLocalData() {
+  depthData.value = null
+  klineData.value = null
+}
 
 /* ──────────────────────────────────────────────────────────────────────────────
  * SALDO + SLIDER
@@ -621,11 +681,6 @@ function onAmountBlur() {
 /* ──────────────────────────────────────────────────────────────────────────────
  * SYNC DARI URL + RECONNECT WS
  * ────────────────────────────────────────────────────────────────────────────*/
-function reconnectFor(pair: string) {
-  const sym = pairToQuery(pair)
-  connectWS(sym)
-  connectKlineWS(sym)
-}
 
 function rawSymbolFromRoute(): string {
   return (route.query.symbol as string) ?? (route.query.pairSymbol as string) ?? ''
@@ -634,8 +689,8 @@ function rawSymbolFromRoute(): string {
 onMounted(() => {
   const pairFromUrl = toPair(rawSymbolFromRoute())
   selectedPair.value = pairFromUrl || 'BTC/USDT'
-  reconnectFor(selectedPair.value)
-  getAvailable()
+  connectAggregatorWS()
+  getAvailable() // tetap
 })
 
 watch(
@@ -644,7 +699,7 @@ watch(
     const pair = toPair((sym as string) ?? (pairSym as string))
     if (pair && pair !== selectedPair.value) {
       selectedPair.value = pair
-      reconnectFor(pair)
+      resetLocalData() // <— cukup reset; WS tetap 1 koneksi
       getAvailable()
     }
   },
@@ -656,10 +711,11 @@ function selectPair(pair: string) {
     dropdownOpen.value = false
     return
   }
+
   selectedPair.value = pair
   dropdownOpen.value = false
-  router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } }) // <— standar pakai 'symbol'
-  reconnectFor(pair)
+  router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } })
+  resetLocalData() // <— cukup reset; WS tetap 1 koneksi
   getAvailable()
 }
 
@@ -667,8 +723,7 @@ function selectPair(pair: string) {
  * CLEANUP
  * ────────────────────────────────────────────────────────────────────────────*/
 onUnmounted(() => {
-  ws.value?.close()
-  klineWS.value?.close()
+  aggWS.value?.close()
 })
 
 /* ──────────────────────────────────────────────────────────────────────────────

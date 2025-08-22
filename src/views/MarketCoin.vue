@@ -55,64 +55,54 @@
           <span>Amount ({{ baseAsset }})</span>
         </div>
 
-        <!-- ASKS (SELL, merah) -->
-        <div class="space-y-1" v-if="depthData">
+        <!-- ASKS -->
+        <div class="space-y-1" v-if="depthReady">
           <div
-            v-for="ask in top5Asks"
-            :key="ask[0]"
+            v-for="(ask, i) in top5Asks"
+            :key="`ask-${ask[0]}-${i}`"
             class="relative flex justify-between overflow-hidden rounded"
             style="height: 28px"
           >
-            <!-- BG bar -->
             <div
               class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
-              :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
-            ></div>
-            <!-- Data -->
+              :style="{ width: ((Number(ask[1]) / maxAskAmount) * 100).toFixed(2) + '%' }"
+            />
             <p class="text-pink-400 text-sm text-right z-10 px-2 w-1/2">
-              {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+              {{ Number(ask[0]).toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
             <p class="text-black text-sm text-left z-10 px-2 w-1/2">
-              {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+              {{ Number(ask[1]).toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
             </p>
           </div>
         </div>
 
-        <!-- CURRENT PRICE (Bid Teratas, jika ada) -->
-        <div class="text-center my-3" v-if="depthData">
+        <!-- CURRENT PRICE -->
+        <div class="text-center my-3" v-if="depthReady">
           <p class="text-[#2DBE87] font-semibold text-[28px]">
-            {{
-              depthData.tick.bids[0]?.[0]?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ??
-              '-'
-            }}
+            {{ formatUsd2(depthData?.tick?.bids?.[0]?.[0]) }}
           </p>
           <p class="text-[#7F7F7F] text-[14px]">
-            ≈ ${{
-              depthData.tick.bids[0]?.[0]?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ??
-              '-'
-            }}
+            ≈ ${{ formatUsd2(depthData?.tick?.bids?.[0]?.[0]) }}
           </p>
         </div>
 
-        <!-- BIDS (BUY, hijau) -->
-        <div class="space-y-1" v-if="depthData">
+        <!-- BIDS -->
+        <div class="space-y-1" v-if="depthReady">
           <div
-            v-for="bid in top5Bids"
-            :key="bid[0]"
+            v-for="(bid, i) in top5Bids"
+            :key="`bid-${bid[0]}-${i}`"
             class="relative flex justify-between overflow-hidden rounded"
             style="height: 28px"
           >
-            <!-- BG bar -->
             <div
               class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
-              :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
-            ></div>
-            <!-- Data -->
+              :style="{ width: ((Number(bid[1]) / maxBidAmount) * 100).toFixed(2) + '%' }"
+            />
             <p class="text-[#2DBE87] text-sm text-right z-10 px-2 w-1/2">
-              {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+              {{ Number(bid[0]).toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
             <p class="text-black text-sm text-left z-10 px-2 w-1/2">
-              {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+              {{ Number(bid[1]).toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
             </p>
           </div>
         </div>
@@ -276,6 +266,12 @@
           Copy Trading
         </RouterLink>
       </div>
+      <div class="max-w-md mx-auto mt-2 text-[11px] text-gray-500">
+        <div>WS: {{ wsConnected ? 'connected' : 'disconnected' }}</div>
+        <div>Selected: {{ pairToQuery(selectedPair) }}</div>
+        <div>Last symbol from WS: {{ lastSym }}</div>
+        <div>Depth msgs: {{ depthCount }} | Kline msgs: {{ klineCount }}</div>
+      </div>
     </div>
   </div>
 </template>
@@ -340,6 +336,65 @@ const tradingPairs = [
   'LUNA/USDT',
   'GALA/USDT',
   'PEPE/USDT',
+  'CFX/USDT',
+  'TRX/USDT',
+  'TRUMP/USDT',
+  'SHIB/USDT',
+  'ARB/USDT',
+  'FIL/USDT',
+  'API3/USDT',
+  'ENA/USDT',
+  'BIO/USDT',
+  'UNI/USDT',
+  'BTT/USDT',
+  'SATS/USDT',
+  'MEME/USDT',
+  'GT/USDT',
+  'OP/USDT',
+  'AAVE/USDT',
+  'SNAKES/USDT',
+  'TIA/USDT',
+  'SOON/USDT',
+  'ONDO/USDT',
+  'NEO/USDT',
+  'SKL/USDT',
+  'MX/USDT',
+  'FARTCOIN/USDT',
+  'RATS/USDT',
+  'ETC/USDT',
+  'TRB/USDT',
+  'AVAX/USDT',
+  'BCH/USDT',
+  'BSV/USDT',
+  'IOTA/USDT',
+  'CYBER/USDT',
+  'WIF/USDT',
+  'CORE/USDT',
+  'WLD/USDT',
+  'SEI/USDT',
+  'VIRTUAL/USDT',
+  'RENDER/USDT',
+  'MOODENG/USDT',
+  'JUP/USDT',
+  'PONKE/USDT',
+  'MNT/USDT',
+  'PNUT/USDT',
+  'EIGEN/USDT',
+  'GRASS/USDT',
+  'RAY/USDT',
+  'EPIC/USDT',
+  'ZRO/USDT',
+  'BERA/USDT',
+  'CA/USDT',
+  'IP/USDT',
+  'KAITO/USDT',
+  'OMNI/USDT',
+  'A8/USDT',
+  'OBOL/USDT',
+  'SAGA/USDT',
+  'ORCA/USDT',
+  'SHELL/USDT',
+  'NAKA/USDT',
 ]
 
 const route = useRoute()
@@ -370,47 +425,155 @@ const baseAsset = computed(() => selectedPair.value.split('/')[0])
 // const quoteAsset = computed(() => selectedPair.value.split('/')[1] ?? 'USDT')
 
 /* ──────────────────────────────────────────────────────────────────────────────
- * WEBSOCKET: DEPTH ORDERBOOK
+ * WEBSOCKET: AGGREGATOR (1 koneksi untuk depth + kline)
  * ────────────────────────────────────────────────────────────────────────────*/
 const ws = ref<WebSocket | null>(null)
 const depthData = ref<DepthData | null>(null)
+const klineData = ref<KlineData | null>(null)
 
-function connectWS(pairSymbol: string) {
+type Level = [number, number] // [price, amount]
+
+function toLevels(arr: unknown): Level[] {
+  if (!Array.isArray(arr)) return []
+  return (arr as unknown[]).map((x): Level => {
+    const row = x as [unknown, unknown]
+    const p = Number(row?.[0])
+    const q = Number(row?.[1])
+    return [Number.isFinite(p) ? p : 0, Number.isFinite(q) ? q : 0]
+  })
+}
+
+const wsConnected = ref(false)
+const depthCount = ref(0)
+const klineCount = ref(0)
+const lastSym = ref<string>('')
+
+function sameSym(a?: string, b?: string) {
+  return String(a || '').toLowerCase() === String(b || '').toLowerCase()
+}
+
+function connectAggregator(pairSymbol: string) {
   ws.value?.close()
   depthData.value = null
-  // pairSymbol = 'btcusdt'
-  ws.value = new WebSocket(`wss://ledgersocketone.online/${pairSymbol}/depth`)
+  klineData.value = null
+  depthCount.value = 0
+  klineCount.value = 0
+  wsConnected.value = false
+
+  const wanted = String(pairSymbol).toLowerCase() // 'btcusdt'
+  ws.value = new WebSocket('wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id')
+
+  ws.value.onopen = () => {
+    wsConnected.value = true
+    console.log('[WS] Connected to aggregator, pair =', wanted)
+  }
+
+  ws.value.onclose = () => {
+    wsConnected.value = false
+    console.warn('[WS] Closed, reconnecting in 5s...')
+    setTimeout(() => connectAggregator(wanted), 5000)
+  }
+
   ws.value.onmessage = (e: MessageEvent) => {
     try {
-      const data = JSON.parse(e.data) as DepthData
-      if (
-        data &&
-        typeof (data as DepthData).tick !== 'undefined' &&
-        (data as DepthData).ch?.includes('depth')
-      ) {
-        depthData.value = data as DepthData
+      const msg = JSON.parse(e.data)
+      // simpan symbol terakhir yang datang (buat sanity check)
+      lastSym.value = String(msg?.symbol || msg?.ch?.split?.('.')?.[1] || '')
+
+      // DEPTH (aggregator)
+      if (msg?.type === 'depth') {
+        if (!sameSym(msg.symbol, wanted)) return
+        const bids = toLevels(msg.bids).sort((a, b) => b[0] - a[0])
+        const asks = toLevels(msg.asks).sort((a, b) => a[0] - b[0])
+
+        // jika kosong, jangan set depthReady true
+        if (!bids.length && !asks.length) return
+
+        depthData.value = { ch: 'depth', ts: Number(msg.ts ?? Date.now()), tick: { bids, asks } }
+        depthCount.value++
+        return
       }
-    } catch {}
+
+      // DEPTH (fallback huobi)
+      if (typeof msg?.ch === 'string' && msg.ch.includes('depth')) {
+        const parts = msg.ch.split('.')
+        if (!sameSym(parts?.[1], wanted)) return
+        const t = msg.tick ?? {}
+        const bids = toLevels(t.bids).sort((a, b) => b[0] - a[0])
+        const asks = toLevels(t.asks).sort((a, b) => a[0] - b[0])
+        if (!bids.length && !asks.length) return
+
+        depthData.value = { ch: 'depth', ts: Number(msg.ts ?? Date.now()), tick: { bids, asks } }
+        depthCount.value++
+        return
+      }
+
+      // KLINE (aggregator)
+      if (msg?.type === 'kline' && msg.period === '1day') {
+        if (!sameSym(msg.symbol, wanted)) return
+        klineData.value = {
+          ch: 'kline',
+          ts: Number(msg.ts ?? Date.now()),
+          tick: { open: Number(msg.open ?? 0), close: Number(msg.close ?? 0) },
+        }
+        klineCount.value++
+        return
+      }
+
+      // KLINE (fallback huobi)
+      if (typeof msg?.ch === 'string' && msg.ch.includes('kline.1day')) {
+        const parts = msg.ch.split('.')
+        if (!sameSym(parts?.[1], wanted)) return
+        klineData.value = {
+          ch: 'kline',
+          ts: Number(msg.ts ?? Date.now()),
+          tick: { open: Number(msg?.tick?.open ?? 0), close: Number(msg?.tick?.close ?? 0) },
+        }
+        klineCount.value++
+        return
+      }
+    } catch (err) {
+      console.error('WS parse error:', err)
+    }
   }
 }
 
 /** Turunan tampilan */
-const top5Asks = computed(() =>
-  depthData.value ? depthData.value.tick.asks.slice(-5).reverse() : [],
-)
-const top5Bids = computed(() => (depthData.value ? depthData.value.tick.bids.slice(0, 5) : []))
-const maxAskAmount = computed(() =>
-  top5Asks.value.length ? Math.max(...top5Asks.value.map((a) => a[1])) : 1,
-)
-const maxBidAmount = computed(() =>
-  top5Bids.value.length ? Math.max(...top5Bids.value.map((b) => b[1])) : 1,
-)
+const top5Asks = computed<Level[]>(() => {
+  const a = depthData.value?.tick?.asks ?? []
+  // asks harus ASC → terbaik index 0
+  return a.slice(0, 5)
+})
+const top5Bids = computed<Level[]>(() => {
+  const b = depthData.value?.tick?.bids ?? []
+  // bids harus DESC → terbaik index 0
+  return b.slice(0, 5)
+})
+
+// ready bila minimal ada 1 level
+const depthReady = computed<boolean>(() => {
+  const asks = depthData.value?.tick?.asks ?? []
+  const bids = depthData.value?.tick?.bids ?? []
+  return asks.length > 0 || bids.length > 0
+})
+
+const maxAskAmount = computed<number>(() => {
+  const arr = top5Asks.value
+  if (!arr.length) return 1
+  const m = Math.max(...arr.map((a) => Number(a[1]) || 0))
+  return m > 0 ? m : 1
+})
+const maxBidAmount = computed<number>(() => {
+  const arr = top5Bids.value
+  if (!arr.length) return 1
+  const m = Math.max(...arr.map((b) => Number(b[1]) || 0))
+  return m > 0 ? m : 1
+})
 
 /* ──────────────────────────────────────────────────────────────────────────────
  * WEBSOCKET: KLINE + REST AWAL (UNTUK % PERUBAHAN)
  * ────────────────────────────────────────────────────────────────────────────*/
-const klineWS = ref<WebSocket | null>(null)
-const klineData = ref<KlineData | null>(null)
+// const klineWS = ref<WebSocket | null>(null)
 
 async function fetchInitialKline(pairSymbol: string) {
   try {
@@ -432,25 +595,27 @@ async function fetchInitialKline(pairSymbol: string) {
   }
 }
 
-function connectKlineWS(pairSymbol: string) {
-  klineWS.value?.close()
-  klineData.value = null
-  fetchInitialKline(pairSymbol) // ambil nilai awal
+// function connectKlineWS(pairSymbol: string) {
+//   klineWS.value?.close()
+//   klineData.value = null
+//   fetchInitialKline(pairSymbol) // ambil nilai awal
 
-  klineWS.value = new WebSocket(`wss://ledgersocketone.online/${pairSymbol}/1day`)
-  klineWS.value.onmessage = (e: MessageEvent) => {
-    try {
-      const data = JSON.parse(e.data) as KlineData
-      if (
-        data &&
-        typeof (data as KlineData).tick !== 'undefined' &&
-        (data as KlineData).ch?.includes('kline')
-      ) {
-        klineData.value = data as KlineData
-      }
-    } catch {}
-  }
-}
+//   klineWS.value = new WebSocket(
+//     `wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id/${pairSymbol}/1day`,
+//   )
+//   klineWS.value.onmessage = (e: MessageEvent) => {
+//     try {
+//       const data = JSON.parse(e.data) as KlineData
+//       if (
+//         data &&
+//         typeof (data as KlineData).tick !== 'undefined' &&
+//         (data as KlineData).ch?.includes('kline')
+//       ) {
+//         klineData.value = data as KlineData
+//       }
+//     } catch {}
+//   }
+// }
 
 /** Hitung persen perubahan harian */
 const percentChange = computed(() => {
@@ -664,8 +829,8 @@ async function getAvailable() {
  * ────────────────────────────────────────────────────────────────────────────*/
 function reconnectFor(pair: string) {
   const sym = pairToQuery(pair) // 'BTC/USDT' -> 'btcusdt'
-  connectWS(sym)
-  connectKlineWS(sym)
+  connectAggregator(sym)
+  fetchInitialKline(sym) // hanya jika mau fallback REST sekali
 }
 
 onMounted(() => {
@@ -673,11 +838,12 @@ onMounted(() => {
   const pairFromUrl = toPair(route.query.pairSymbol as string)
   selectedPair.value = pairFromUrl || 'BTC/USDT'
 
-  // Connect WS pertama kali
+  // Connect WS pertama kali (aggregator tunggal)
   reconnectFor(selectedPair.value)
 
-  // Ambil saldo
+  // Ambil saldo & open orders
   getAvailable()
+  getOpenOrders()
 })
 
 watch(
@@ -709,9 +875,7 @@ function selectPair(pair: string) {
  * ────────────────────────────────────────────────────────────────────────────*/
 onUnmounted(() => {
   ws.value?.close()
-  klineWS.value?.close()
 })
-
 const submitting = ref(false)
 const submitError = ref<string | null>(null)
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api' // sesuaikan
@@ -904,6 +1068,11 @@ async function getOpenOrders() {
   } finally {
     loadingOrders.value = false
   }
+}
+
+function formatUsd2(v: unknown): string {
+  const n = Number(v)
+  return Number.isFinite(n) ? n.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '-'
 }
 
 onMounted(() => {

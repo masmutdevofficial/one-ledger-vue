@@ -209,17 +209,43 @@ const showEmail = ref(false)
 function maskEmail(email: string | null | undefined): string {
   if (!email) return '-'
   const [local, domainRaw = ''] = email.split('@')
-  const maskedLocal =
-    local.length <= 2
-      ? '•'.repeat(local.length)
-      : `${local[0]}${'•'.repeat(local.length - 2)}${local.slice(-1)}`
-  const maskedDomain = domainRaw.replace(/[^.]/g, '•')
+
+  // Mask bagian local fix: huruf pertama + ••• + huruf terakhir
+  let maskedLocal = ''
+  if (local.length === 0) {
+    maskedLocal = '•••'
+  } else if (local.length === 1) {
+    maskedLocal = local[0] + '•••'
+  } else {
+    maskedLocal = local[0] + '•••' + local[local.length - 1]
+  }
+
+  // Mask domain fix: hanya tampilkan TLD (setelah titik terakhir)
+  const lastDotIndex = domainRaw.lastIndexOf('.')
+  let maskedDomain = '•••'
+  if (lastDotIndex !== -1) {
+    const tld = domainRaw.slice(lastDotIndex) // contoh ".com"
+    maskedDomain = '•••' + tld
+  }
+
   return `${maskedLocal}@${maskedDomain}`
 }
 
-const emailDisplay = computed(() =>
-  showEmail.value ? user.value.email : maskEmail(user.value.email),
-)
+function truncateEmail(email: string, maxLength = 5): string {
+  if (email.length <= maxLength) return email
+  const [local, domain] = email.split('@')
+  // kalau domain ada, simpan domain utuh, potong bagian local saja
+  if (domain) {
+    const truncatedLocal = local.length > maxLength ? local.slice(0, maxLength) + '...' : local
+    return `${truncatedLocal}@${domain}`
+  }
+  return email.slice(0, maxLength) + '...'
+}
+
+const emailDisplay = computed(() => {
+  if (!user.value?.email) return '-'
+  return showEmail.value ? truncateEmail(user.value.email, 5) : maskEmail(user.value.email)
+})
 
 async function copyUid(): Promise<void> {
   if (!user.value.uid) return

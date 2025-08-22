@@ -14,9 +14,9 @@ export function useCoinWebSocket(coin: string, interval: string = '1min') {
 
   // Compose endpoint URL
   function getWsUrl() {
-    // Contoh: wss://ledgersocketone.online/btcusdt/1min
+    // Contoh: wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id/btcusdt/1min
     // interval = '1min', '15min', 'depth', dst
-    return `wss://ledgersocketone.online/${coin.toLowerCase()}/${interval}`
+    return `wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id/${coin.toLowerCase()}/${interval}`
   }
 
   function connect() {

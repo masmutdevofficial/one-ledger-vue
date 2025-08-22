@@ -226,7 +226,7 @@ type AssetItem = {
 
 /** ===== Konstanta ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
-const WS_BASE = 'wss://ledgersocketone.online'
+const WS_BASE = 'wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id'
 const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
@@ -326,7 +326,6 @@ async function loadAssets() {
     if (!Array.isArray(rows) || rows.length === 0) {
       assets.value = []
       recomputeTotals()
-      ensureTickerSubscriptions() // akan menutup semua socket kalau ada
       return
     }
 
@@ -365,9 +364,6 @@ async function loadAssets() {
     mapped.sort((a, b) => b.valueUsd - a.valueUsd)
     assets.value = mapped
 
-    // 3) subscribe WS ticker untuk simbol-simbol yang ada
-    ensureTickerSubscriptions()
-
     // 4) Hitung total portfolio
     recomputeTotals()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -375,7 +371,6 @@ async function loadAssets() {
     errorAssets.value = e?.message || 'Gagal memuat assets.'
     assets.value = []
     recomputeTotals()
-    ensureTickerSubscriptions()
   } finally {
     loadingAssets.value = false
   }
@@ -395,69 +390,90 @@ function recomputeTotals() {
 }
 
 /** ===== Realtime via WebSocket (ticker) ===== */
-const sockets = new Map<string, WebSocket>()
-const reconnectTimers = new Map<string, number>() // id timer
+let aggWs: WebSocket | null = null
+let reconnectTimer: number | null = null
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseLastPrice(payload: any): number {
-  // Versi relay custom: { ch:'ticker', symbol:'btcusdt', last:123, ts:... }
-  if (payload && payload.ch === 'ticker' && 'last' in payload) {
-    const v = Number(payload.last)
-    return Number.isFinite(v) ? v : 0
-  }
-  // Versi raw Huobi: { ch:'market.btcusdt.trade.detail', tick: { data: [{ price }] } }
-  if (payload?.ch?.includes('.trade.detail')) {
-    const v = Number(payload?.tick?.data?.[0]?.price)
-    return Number.isFinite(v) ? v : 0
-  }
-  return 0
+// buffer agar tidak render tiap tick
+const pending: Record<string, { last?: number; klineClose?: number }> = {}
+let flushTimer: number | null = null
+function scheduleFlush() {
+  if (flushTimer) return
+  flushTimer = window.setTimeout(() => {
+    // apply semua update ke assets sekali jalan
+    for (const [symLower, payload] of Object.entries(pending)) {
+      const symUp = symLower.toUpperCase()
+      const a = assets.value.find((x) => x.symbol === symUp)
+      if (!a) continue
+
+      if (payload.last !== undefined) {
+        a.lastPrice = payload.last
+      }
+      if (payload.klineClose !== undefined) {
+        a.lastPrice = payload.klineClose
+      }
+
+      // hitung turunan (pakai lastPrice saja)
+      a.valueUsd = a.qty * a.lastPrice
+      a.uPnlAbs = (a.lastPrice - a.avgCost) * a.qty
+      a.uPnlPct = a.avgCost > 0 ? ((a.lastPrice - a.avgCost) / a.avgCost) * 100 : 0
+    }
+    // hitung total sekali
+    recomputeTotals()
+    // reset buffer
+    for (const k of Object.keys(pending)) delete pending[k]
+    flushTimer = null
+  }, 300) // flush tiap 300ms
 }
 
-function connectTicker(symbolUpper: string) {
-  const sym = symbolUpper.toLowerCase() // 'btcusdt'
-  const key = `${sym}-ticker`
+function connectAggregatorWs() {
+  if (aggWs)
+    try {
+      aggWs.close()
+    } catch {}
 
-  // kalau sudah ada, jangan duplikasi
-  if (sockets.has(key)) return
-
-  const url = `${WS_BASE}/${sym}/ticker`
-  const ws: WebSocket | null = new WebSocket(url)
-
-  ws.onopen = () => {
-    // console.log('ticker open', sym)
+  aggWs = new WebSocket(WS_BASE) // contoh: wss://z8gwo.../ (tanpa path)
+  aggWs.onopen = () => {
+    /* connected */
   }
 
-  ws.onmessage = (e) => {
+  aggWs.onclose = () => {
+    aggWs = null
+    if (reconnectTimer) clearTimeout(reconnectTimer)
+    reconnectTimer = window.setTimeout(connectAggregatorWs, 2000)
+  }
+
+  aggWs.onerror = () => {
     try {
-      const msg = JSON.parse(e.data as string)
-      const last = parseLastPrice(msg)
-      if (!last) return
-      // update asset terkait
-      const symbolUp = symbolUpper.toUpperCase()
-      const a = assets.value.find((x) => x.symbol === symbolUp)
-      if (!a) return
-      a.lastPrice = last
-      a.valueUsd = a.qty * last
-      a.uPnlAbs = (last - a.avgCost) * a.qty
-      a.uPnlPct = a.avgCost > 0 ? ((last - a.avgCost) / a.avgCost) * 100 : 0
-      recomputeTotals()
+      aggWs?.close()
     } catch {}
   }
 
-  ws.onclose = () => {
-    sockets.delete(key)
-    // jadwalkan reconnect kalau aset masih ada
-    if (assets.value.some((a) => a.symbol.toLowerCase() === sym)) {
-      const t = window.setTimeout(() => connectTicker(symbolUpper), 2000)
-      reconnectTimers.set(key, t)
+  aggWs.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data as string)
+      // normalisasi symbol dari server (lowercase, mis. 'btcusdt')
+      const symLower = String(msg.symbol || '').toLowerCase()
+      if (!symLower) return
+
+      if (msg.type === 'ticker' && Number.isFinite(Number(msg.last))) {
+        pending[symLower] = pending[symLower] || {}
+        pending[symLower].last = Number(msg.last)
+        scheduleFlush()
+        return
+      }
+
+      if (msg.type === 'kline' && msg.period === '1day') {
+        const close = Number(msg.close)
+        if (!Number.isFinite(close)) return
+        pending[symLower] = pending[symLower] || {}
+        pending[symLower].klineClose = close // ✅ hanya simpan close
+        scheduleFlush()
+        return
+      }
+    } catch {
+      // abaikan parsing error
     }
   }
-
-  ws.onerror = () => {
-    ws?.close()
-  }
-
-  sockets.set(key, ws)
 }
 
 function goAsset(a: { symbol: string }) {
@@ -466,42 +482,40 @@ function goAsset(a: { symbol: string }) {
   router.push({ path: '/trade', query: { symbol: sym } })
 }
 
-function ensureTickerSubscriptions() {
-  // Tutup socket yang tidak lagi dibutuhkan
-  for (const [key, sock] of sockets.entries()) {
-    const sym = key.replace('-ticker', '').toUpperCase()
-    if (!assets.value.some((a) => a.symbol === sym)) {
-      try {
-        sock.close()
-      } catch {}
-      sockets.delete(key)
-    }
-  }
-  // Buka socket untuk aset yang belum tersubscribe
-  for (const a of assets.value) {
-    connectTicker(a.symbol)
-  }
+// Buat indeks symbol → AssetItem (uppercase, mis. 'BTCUSDT')
+const assetMap = new Map<string, AssetItem>()
+
+function rebuildAssetMap() {
+  assetMap.clear()
+  for (const a of assets.value) assetMap.set(a.symbol.toUpperCase(), a)
 }
 
 onMounted(async () => {
   await loadSaldo()
   await loadAssets()
+  connectAggregatorWs() // ⬅️ setelah assets
 })
 
-// Jika nanti kamu refresh assets (mis. setelah trade), pastikan panggil loadAssets() lagi.
-// Tambah watcher untuk menjaga subscription jika daftar assets berubah manual.
-watch(assets, () => ensureTickerSubscriptions(), { deep: true })
+// ✅ watcher pengganti (tanpa subscription)
+watch(
+  assets,
+  () => {
+    rebuildAssetMap()
+    recomputeTotals()
+  },
+  { deep: true },
+)
 
 onUnmounted(() => {
-  for (const ws of sockets.values()) {
+  if (aggWs) {
     try {
-      ws.close()
+      aggWs.close()
     } catch {}
+    aggWs = null
   }
-  sockets.clear()
-  for (const t of reconnectTimers.values()) {
-    clearTimeout(t)
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
   }
-  reconnectTimers.clear()
 })
 </script>

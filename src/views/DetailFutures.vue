@@ -178,6 +178,8 @@
         <p v-if="submitError" class="text-red-500 text-xs mt-2">{{ submitError }}</p>
         <p v-if="submitSuccess" class="text-green-500 text-xs mt-2">{{ submitSuccess }}</p>
       </div>
+
+      <ChatCard v-if="showChat" />
     </template>
   </main>
 </template>
@@ -187,6 +189,7 @@ import { Icon } from '@iconify/vue'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import ChatCard from '@/components/futures/ChatCard.vue'
 
 /* =========================
    Pinia modal helpers
@@ -448,6 +451,59 @@ onMounted(fetchTakeProfit)
 type PendingTx = { id: number; expiresAt: number; amount: number; tp: number }
 const LS_KEY = 'pendingTxs'
 const TTL_MS = 5 * 60 * 1000
+
+const showChat = ref(false)
+function isValidPendingTxArray(x: unknown): x is PendingTx[] {
+  if (!Array.isArray(x)) return false
+  if (x.length === 0) return false
+  return x.every(
+    (it) =>
+      typeof it?.id === 'number' &&
+      typeof it?.expiresAt === 'number' &&
+      typeof it?.amount === 'number' &&
+      typeof it?.tp === 'number',
+  )
+}
+
+function updateFromLS() {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    if (!raw) {
+      showChat.value = false
+      return
+    }
+    const parsed = JSON.parse(raw)
+    showChat.value = isValidPendingTxArray(parsed)
+  } catch {
+    showChat.value = false
+  }
+}
+
+function onStorage(e: StorageEvent) {
+  if (e.key === LS_KEY) updateFromLS()
+}
+
+function onVisibility() {
+  if (document.visibilityState === 'visible') updateFromLS()
+}
+
+// optional: dukung event kustom untuk perubahan di tab yang sama
+function onLocalCustom() {
+  updateFromLS()
+}
+
+onMounted(() => {
+  updateFromLS()
+  window.addEventListener('storage', onStorage)
+  document.addEventListener('visibilitychange', onVisibility)
+  window.addEventListener('pendingTxs:updated', onLocalCustom as EventListener)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('storage', onStorage)
+  document.removeEventListener('visibilitychange', onVisibility)
+  window.removeEventListener('pendingTxs:updated', onLocalCustom as EventListener)
+})
 
 const pendingList = ref<PendingTx[]>([])
 
