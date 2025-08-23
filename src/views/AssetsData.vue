@@ -226,7 +226,7 @@ type AssetItem = {
 
 /** ===== Konstanta ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
-const WS_BASE = 'wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id'
+const WS_BASE = 'wss://ledgersocketone.online'
 const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 

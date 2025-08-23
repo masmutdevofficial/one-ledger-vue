@@ -439,7 +439,7 @@ const klineData = ref<KlineData | null>(null)
 
 function connectAggregatorWS() {
   aggWS.value?.close()
-  aggWS.value = new WebSocket('wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id')
+  aggWS.value = new WebSocket('wss://ledgersocketone.online')
 
   aggWS.value.onopen = () => console.log('[WS] Connected (aggregator)')
   aggWS.value.onclose = () => {

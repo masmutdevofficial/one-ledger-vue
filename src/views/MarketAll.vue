@@ -304,7 +304,7 @@ onUnmounted(() => {
 let ws: WebSocket | null = null
 
 function connectWebSockets() {
-  ws = new WebSocket('wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id')
+  ws = new WebSocket('wss://ledgersocketone.online')
 
   ws.onopen = () => {
     console.log('[WS] Connected')

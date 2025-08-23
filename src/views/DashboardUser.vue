@@ -213,7 +213,7 @@ import { Icon } from '@iconify/vue'
 
 /** ===== Konstanta ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
-const WS_BASE = 'wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id'
+const WS_BASE = 'wss://ledgersocketone.online'
 const ICON_FALLBACK = '/img/crypto/_default.svg'
 const iconPath = (s: string) => `/img/crypto/${s.toLowerCase()}.svg`
 

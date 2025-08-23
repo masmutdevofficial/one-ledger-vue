@@ -461,7 +461,7 @@ function connectAggregator(pairSymbol: string) {
   wsConnected.value = false
 
   const wanted = String(pairSymbol).toLowerCase() // 'btcusdt'
-  ws.value = new WebSocket('wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id')
+  ws.value = new WebSocket('wss://ledgersocketone.online')
 
   ws.value.onopen = () => {
     wsConnected.value = true
@@ -601,7 +601,7 @@ async function fetchInitialKline(pairSymbol: string) {
 //   fetchInitialKline(pairSymbol) // ambil nilai awal
 
 //   klineWS.value = new WebSocket(
-//     `wss://z8gwowgckssc8c8s4co444c0.masmutpanel.my.id/${pairSymbol}/1day`,
+//     `wss://ledgersocketone.online/${pairSymbol}/1day`,
 //   )
 //   klineWS.value.onmessage = (e: MessageEvent) => {
 //     try {
