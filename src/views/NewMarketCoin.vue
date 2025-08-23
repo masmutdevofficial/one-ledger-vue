@@ -320,6 +320,68 @@ interface KlineData {
   tick: KlineTick
 }
 
+// ── CACHE: orderbook & kline (per pair) ──────────────────────────────
+type ObCacheEntry = {
+  k1d?: { open: number; close: number; ts: number }
+  depth?: { bids: [number, number][]; asks: [number, number][]; ts: number }
+}
+type ObCache = Record<string, ObCacheEntry>
+
+const OB_LS_KEY = 'obCache:v1'
+const DEPTH_CACHE_TTL = 10 * 1000 // 10 detik
+const KLINE_CACHE_TTL = 5 * 60 * 1000 // 5 menit
+const DEPTH_TOP_N = 20 // simpan/restore top-N book saja
+
+let obCache: ObCache = {}
+let obSaveTimer: number | undefined
+
+function loadObCache() {
+  try {
+    const raw = localStorage.getItem(OB_LS_KEY)
+    obCache = raw ? (JSON.parse(raw) as ObCache) : {}
+  } catch {
+    obCache = {}
+  }
+}
+function saveObCacheDebounced() {
+  if (obSaveTimer) clearTimeout(obSaveTimer)
+  obSaveTimer = window.setTimeout(() => {
+    try {
+      localStorage.setItem(OB_LS_KEY, JSON.stringify(obCache))
+    } catch {}
+  }, 300)
+}
+function setObCache(key: string, patch: Partial<ObCacheEntry>) {
+  obCache[key] = { ...(obCache[key] || {}), ...patch }
+  saveObCacheDebounced()
+}
+
+/** Hydrate state dari cache untuk pair tertentu */
+function hydrateFromCache(pair: string) {
+  const key = pairToQuery(pair) // 'btcusdt'
+  const entry = obCache[key]
+  if (!entry) return
+  const now = Date.now()
+
+  if (entry.depth && now - entry.depth.ts <= DEPTH_CACHE_TTL) {
+    depthData.value = {
+      ch: `market.${key}.depth.step0`,
+      ts: entry.depth.ts,
+      tick: {
+        bids: (entry.depth.bids || []).slice(0, DEPTH_TOP_N),
+        asks: (entry.depth.asks || []).slice(0, DEPTH_TOP_N),
+      },
+    }
+  }
+  if (entry.k1d && now - entry.k1d.ts <= KLINE_CACHE_TTL) {
+    klineData.value = {
+      ch: `market.${key}.kline.1day`,
+      ts: entry.k1d.ts,
+      tick: { open: entry.k1d.open, close: entry.k1d.close },
+    }
+  }
+}
+
 /* ──────────────────────────────────────────────────────────────────────────────
  * STATE DASAR (UI)
  * ────────────────────────────────────────────────────────────────────────────*/
@@ -441,7 +503,13 @@ function connectAggregatorWS() {
   aggWS.value?.close()
   aggWS.value = new WebSocket('wss://ledgersocketone.online')
 
-  aggWS.value.onopen = () => console.log('[WS] Connected (aggregator)')
+  aggWS.value.onopen = () => {
+    console.log('[WS] Connected (aggregator)')
+    const symbol = pairToQuery(selectedPair.value) // 'btcusdt'
+    try {
+      aggWS.value!.send(JSON.stringify({ type: 'snapshot', symbols: [symbol], periods: ['1day'] }))
+    } catch {}
+  }
   aggWS.value.onclose = () => {
     console.warn('[WS] Closed, reconnecting in 5s...')
     setTimeout(connectAggregatorWS, 5000)
@@ -452,29 +520,46 @@ function connectAggregatorWS() {
     try {
       const msg = JSON.parse(e.data)
 
-      // DEPTH dari agregator: { type:'depth', symbol, bids, asks, ts }
+      // DEPTH
       if (msg.type === 'depth' && matchesSelectedPair(msg.symbol)) {
+        // trim top-N sebelum simpan
+        const bids = Array.isArray(msg.bids) ? (msg.bids as [number, number][]) : []
+        const asks = Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : []
+
         depthData.value = {
           ch: `market.${msg.symbol}.depth.step0`,
           ts: msg.ts,
           tick: {
-            bids: Array.isArray(msg.bids) ? (msg.bids as [number, number][]) : [],
-            asks: Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : [],
+            bids: [...bids].slice(0, DEPTH_TOP_N),
+            asks: [...asks].slice(0, DEPTH_TOP_N),
           },
         }
+
+        const key = pairToQuery(selectedPair.value)
+        setObCache(key, {
+          depth: {
+            bids: depthData.value.tick.bids,
+            asks: depthData.value.tick.asks,
+            ts: msg.ts,
+          },
+        })
       }
 
-      // KLINE harian dari agregator: { type:'kline', symbol, period:'1day', open, close, ts }
+      // KLINE 1day
       if (msg.type === 'kline' && msg.period === '1day' && matchesSelectedPair(msg.symbol)) {
+        const open = Number(msg.open)
+        const close = Number(msg.close)
         klineData.value = {
           ch: `market.${msg.symbol}.kline.1day`,
           ts: msg.ts,
-          tick: { open: Number(msg.open), close: Number(msg.close) },
+          tick: { open, close },
         }
+
+        const key = pairToQuery(selectedPair.value)
+        setObCache(key, { k1d: { open, close, ts: msg.ts } })
       }
 
-      // (opsional) TICKER: { type:'ticker', symbol, last, ts }
-      // if (msg.type === 'ticker' && matchesSelectedPair(msg.symbol)) { ... }
+      // (opsional) ticker bisa ikut dicache kalau diperlukan
     } catch {}
   }
 }
@@ -687,10 +772,16 @@ function rawSymbolFromRoute(): string {
 }
 
 onMounted(() => {
+  loadObCache()
+
   const pairFromUrl = toPair(rawSymbolFromRoute())
   selectedPair.value = pairFromUrl || 'BTC/USDT'
+
+  // hydrate UI dari cache biar langsung terisi
+  hydrateFromCache(selectedPair.value)
+
   connectAggregatorWS()
-  getAvailable() // tetap
+  getAvailable()
 })
 
 watch(
@@ -699,7 +790,8 @@ watch(
     const pair = toPair((sym as string) ?? (pairSym as string))
     if (pair && pair !== selectedPair.value) {
       selectedPair.value = pair
-      resetLocalData() // <— cukup reset; WS tetap 1 koneksi
+      resetLocalData()
+      hydrateFromCache(pair) // ← tambah ini
       getAvailable()
     }
   },
@@ -715,7 +807,8 @@ function selectPair(pair: string) {
   selectedPair.value = pair
   dropdownOpen.value = false
   router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } })
-  resetLocalData() // <— cukup reset; WS tetap 1 koneksi
+  resetLocalData()
+  hydrateFromCache(pair) // ← tambah ini
   getAvailable()
 }
 

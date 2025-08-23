@@ -80,6 +80,63 @@ interface Crypto {
   change: number
 }
 
+type CachedItem = { price?: number; change?: number; volume?: string; ts?: number }
+type CacheShape = Record<string, CachedItem>
+
+const LS_KEY = 'cryptoSnapshot:v1'
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 menit; setel 0 kalau tak mau TTL
+
+// map symbol UI -> id upstream (huobi) "xxxusdt"
+function toUpstreamId(sym: string) {
+  const override: Record<string, string> = {
+    OP: 'opusdt', // contoh yang perlu override
+  }
+  return override[sym] ?? sym.toLowerCase() + 'usdt'
+}
+
+// in-memory cache agar write ke localStorage bisa di-debounce
+let inMemCache: CacheShape = {}
+let saveTimer: number | undefined
+
+function saveCacheDebounced() {
+  if (saveTimer) window.clearTimeout(saveTimer)
+  saveTimer = window.setTimeout(() => {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(inMemCache))
+    } catch {}
+  }, 400)
+}
+
+function applyCacheToList(cache: CacheShape) {
+  const now = Date.now()
+  for (const row of cryptoList.value) {
+    const c = cache[row.symbol]
+    if (!c) continue
+    if (CACHE_TTL_MS && c.ts && now - c.ts > CACHE_TTL_MS) continue // kadaluarsa
+    if (typeof c.price === 'number') row.price = c.price.toFixed(6)
+    if (typeof c.change === 'number') row.change = c.change
+    if (typeof c.volume === 'string') row.volume = c.volume
+  }
+}
+
+// panggil saat startup
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    if (!raw) return
+    const cache = JSON.parse(raw) as CacheShape
+    inMemCache = cache || {}
+    applyCacheToList(inMemCache)
+  } catch {}
+}
+
+// update cache per-symbol dan debounce save
+function setCache(symUI: string, patch: CachedItem) {
+  const cur = inMemCache[symUI] || {}
+  inMemCache[symUI] = { ...cur, ...patch, ts: Date.now() }
+  saveCacheDebounced()
+}
+
 // type Crypto harus sudah ada:
 // type Crypto = { symbol: string; leverage: string; volume: string; price: string | number; change: number }
 
@@ -165,89 +222,6 @@ const cryptoList = ref<Crypto[]>([
   { symbol: 'NAKA', leverage: '5x', volume: '-', price: '-', change: 0 },
 ])
 
-// Mapping ke simbol Huobi (lowercase). DOT/TRX dihapus.
-const symbolMap: Record<string, string> = {
-  BTC: 'btc',
-  ETH: 'eth',
-  BNB: 'bnb',
-  SOL: 'sol',
-  LTC: 'ltc',
-  LINK: 'link',
-  TON: 'ton',
-  SUI: 'sui',
-  XRP: 'xrp',
-  QTUM: 'qtum',
-  THETA: 'theta',
-  ADA: 'ada',
-  RAD: 'rad',
-  BAND: 'band',
-  ALGO: 'algo',
-  POL: 'pol',
-  DOGE: 'doge',
-  LUNA: 'luna',
-  GALA: 'gala',
-  PEPE: 'pepe',
-  CFX: 'cfx',
-  TRX: 'trx',
-  TRUMP: 'trump',
-  SHIB: 'shib',
-  ARB: 'arb',
-  FIL: 'fil',
-  API3: 'api3',
-  ENA: 'ena',
-  BIO: 'bio',
-  UNI: 'uni',
-  BTT: 'btt',
-  SATS: 'sats',
-  MEME: 'meme',
-  GT: 'gt',
-  OP: 'op',
-  AAVE: 'aave',
-  SNAKES: 'snakes',
-  TIA: 'tia',
-  SOON: 'soon',
-  ONDO: 'ondo',
-  NEO: 'neo',
-  SKL: 'skl',
-  MX: 'mx',
-  FARTCOIN: 'fartcoin',
-  RATS: 'rats',
-  ETC: 'etc',
-  TRB: 'trb',
-  AVAX: 'avax',
-  BCH: 'bch',
-  BSV: 'bsv',
-  IOTA: 'iota',
-  CYBER: 'cyber',
-  WIF: 'wif',
-  CORE: 'core',
-  WLD: 'wld',
-  SEI: 'sei',
-  VIRTUAL: 'virtual',
-  RENDER: 'render',
-  MOODENG: 'moodeng',
-  JUP: 'jup',
-  PONKE: 'ponke',
-  MNT: 'mnt',
-  PNUT: 'pnut',
-  EIGEN: 'eigen',
-  GRASS: 'grass',
-  RAY: 'ray',
-  EPIC: 'epic',
-  ZRO: 'zro',
-  BERA: 'bera',
-  CA: 'ca',
-  IP: 'ip',
-  KAITO: 'kaito',
-  OMNI: 'omni',
-  A8: 'a8',
-  OBOL: 'obol',
-  SAGA: 'saga',
-  ORCA: 'orca',
-  SHELL: 'shell',
-  NAKA: 'naka',
-}
-
 // Path icon dari /public (Vite serve di root). BASE_URL jaga-jaga kalau deploy di subpath.
 const BASE = import.meta.env.BASE_URL || '/'
 const ICON_FALLBACK = `${BASE}img/crypto/default.svg` // fallback icon
@@ -290,9 +264,20 @@ function onScroll() {
 }
 
 onMounted(() => {
+  loadCache()
   updateVisibleList()
+
+  // prefill kalau konten masih pendek (langsung cek sekali)
+  requestAnimationFrame(() => onScroll())
+
+  // <-- YANG KURANG
   window.addEventListener('scroll', onScroll)
+
   connectWebSockets()
+
+  window.addEventListener('visibilitychange', () => {
+    if (document.hidden) saveCacheDebounced()
+  })
 })
 
 onUnmounted(() => {
@@ -308,16 +293,20 @@ function connectWebSockets() {
 
   ws.onopen = () => {
     console.log('[WS] Connected')
+
+    // Kirim SNAPSHOT sekali supaya server push latest untuk semua koin (period: 1day buat change/volume)
+    const symbols = cryptoList.value.map((r) => toUpstreamId(r.symbol))
+    try {
+      ws!.send(JSON.stringify({ type: 'snapshot', symbols, periods: ['1day'] }))
+    } catch {}
   }
 
   ws.onclose = () => {
     console.warn('[WS] Closed, reconnecting in 5s...')
-    setTimeout(connectWebSockets, 5000) // ✅ diperbaiki namanya
+    setTimeout(connectWebSockets, 5000)
   }
 
-  ws.onerror = (err) => {
-    console.error('[WS] Error:', err)
-  }
+  ws.onerror = (err) => console.error('[WS] Error:', err)
 
   ws.onmessage = (event) => {
     try {
@@ -325,24 +314,34 @@ function connectWebSockets() {
 
       // --- ticker (last price) ---
       if (msg.type === 'ticker') {
-        const sym = msg.symbol.toUpperCase().replace('USDT', '')
-        const target = cryptoList.value.find((c) => c.symbol === sym)
-        if (target) {
-          target.price = msg.last.toFixed(6)
+        const symUI = msg.symbol.toUpperCase().replace('USDT', '')
+        const row = cryptoList.value.find((c) => c.symbol === symUI)
+        if (row && typeof msg.last === 'number') {
+          row.price = msg.last.toFixed(6)
+          setCache(symUI, { price: msg.last }) // simpan cepat ke cache
         }
       }
 
-      // --- kline 1day ---
+      // --- kline 1day (untuk change & volume) ---
       if (msg.type === 'kline' && msg.period === '1day') {
-        const sym = msg.symbol.toUpperCase().replace('USDT', '')
-        const target = cryptoList.value.find((c) => c.symbol === sym)
-        if (target) {
-          const open = msg.open
-          const close = msg.close
-          const vol = msg.vol
-          target.price = close.toFixed(6)
-          target.volume = Number(vol).toLocaleString('en-US', { maximumFractionDigits: 2 })
-          target.change = ((close - open) / open) * 100
+        const symUI = msg.symbol.toUpperCase().replace('USDT', '')
+        const row = cryptoList.value.find((c) => c.symbol === symUI)
+        if (row) {
+          const open = Number(msg.open)
+          const close = Number(msg.close)
+          const vol = Number(msg.vol)
+          if (Number.isFinite(open) && Number.isFinite(close)) {
+            row.price = close.toFixed(6)
+            row.change = open ? ((close - open) / open) * 100 : 0
+          }
+          if (Number.isFinite(vol)) {
+            row.volume = vol.toLocaleString('en-US', { maximumFractionDigits: 2 })
+          }
+          setCache(symUI, {
+            price: Number(row.price),
+            change: row.change,
+            volume: row.volume,
+          })
         }
       }
     } catch (err) {

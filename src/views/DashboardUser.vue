@@ -232,6 +232,114 @@ const items: MenuItem[] = [
   { label: 'More', to: '/account', img: '/img/newmenu/more.png' },
 ]
 
+// ── CACHE DASHBOARD ─────────────────────────────────────────────
+type PriceEntry = { p: number; ts: number }
+type OpenEntry = { o: number; ts: number }
+type PosMini = { symbol: string; qty: number; avgCost: number }
+
+type DashCache = {
+  saldo?: { v: number; ts: number }
+  positions?: { items: PosMini[]; ts: number }
+  prices?: Record<string, PriceEntry> // key: 'btcusdt'
+  dayOpen?: Record<string, OpenEntry> // key: 'btcusdt'
+}
+
+const DASH_LS_KEY = 'dashCache:v1'
+
+// TTL: sesuaikan kebutuhan
+const SALDO_TTL = 15_000 // 15s
+const POS_TTL = 5 * 60_000 // 5m
+const PRICE_TTL = 2 * 60_000 // 2m
+const OPEN_TTL = 60 * 60_000 // 60m (open harian jarang berubah)
+
+let dcache: DashCache = { prices: {}, dayOpen: {} }
+let saveTimer: number | null = null
+
+function loadDashCache() {
+  try {
+    const raw = localStorage.getItem(DASH_LS_KEY)
+    dcache = raw ? (JSON.parse(raw) as DashCache) : { prices: {}, dayOpen: {} }
+    if (!dcache.prices) dcache.prices = {}
+    if (!dcache.dayOpen) dcache.dayOpen = {}
+  } catch {
+    dcache = { prices: {}, dayOpen: {} }
+  }
+}
+function saveDashCacheDebounced() {
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = window.setTimeout(() => {
+    try {
+      localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache))
+    } catch {}
+    saveTimer = null
+  }, 300)
+}
+
+function upsertSaldoCache(v: number) {
+  dcache.saldo = { v, ts: Date.now() }
+  saveDashCacheDebounced()
+}
+function upsertPositionsCache(items: PosMini[]) {
+  dcache.positions = { items, ts: Date.now() }
+  saveDashCacheDebounced()
+}
+function upsertPriceCache(symLower: string, price: number) {
+  dcache.prices![symLower] = { p: price, ts: Date.now() }
+  saveDashCacheDebounced()
+}
+function upsertOpenCache(symLower: string, open: number) {
+  dcache.dayOpen![symLower] = { o: open, ts: Date.now() }
+  saveDashCacheDebounced()
+}
+
+/** Hydrate UI dari cache (saldo, posisi, harga, change) */
+function hydrateFromCache() {
+  const now = Date.now()
+
+  // saldo
+  if (dcache.saldo && now - dcache.saldo.ts <= SALDO_TTL) {
+    saldo.value = Number(dcache.saldo.v) || 0
+  }
+
+  // positions
+  if (dcache.positions && now - dcache.positions.ts <= POS_TTL) {
+    // rebuild positions (sesuai tipe aslinya)
+    positions.value = dcache.positions.items.map((it) => ({
+      symbol: it.symbol,
+      qty: it.qty,
+      avg_cost: it.avgCost,
+    }))
+  }
+
+  // isi priceMap dari cache harga yang masih valid
+  if (dcache.prices) {
+    for (const [k, v] of Object.entries(dcache.prices)) {
+      if (now - v.ts <= PRICE_TTL) {
+        priceMap[k.toUpperCase()] = v.p
+      }
+    }
+  }
+
+  // isi change top coins dari open cache + priceMap (kalau tersedia)
+  if (dcache.dayOpen) {
+    for (const coin of displayedCoins) {
+      const lower = symbolMap[coin] + 'usdt'
+      const openRec = dcache.dayOpen[lower]
+      const last = priceMap[lower.toUpperCase()]
+      if (openRec && now - openRec.ts <= OPEN_TTL && Number.isFinite(last)) {
+        const row = marketData.value.find((x) => x.name === coin)
+        if (row) {
+          row.price = last
+          row.change = openRec.o ? ((last - openRec.o) / openRec.o) * 100 : null
+        }
+      }
+    }
+  }
+
+  // total (kalau saldo & posisi sudah ada)
+  recomputeTotals()
+}
+
 /** ===== Summary (saldo & PnL) ===== */
 const saldo = ref<number | null>(null)
 const totalValue = ref<number | null>(null)
@@ -314,20 +422,31 @@ async function loadSaldo() {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
   })
   const data = await res.json().catch(() => ({}))
-  saldo.value = res.ok && data?.status === 'success' ? n(data.saldo, 0) : 0
+  const val = res.ok && data?.status === 'success' ? n(data.saldo, 0) : 0
+  saldo.value = val
+  upsertSaldoCache(val) // ← simpan
 }
 
 async function loadPositions() {
   const token = localStorage.getItem('token')
   if (!token) {
     positions.value = []
+    upsertPositionsCache([]) // kosongkan cache juga
     return
   }
   const res = await fetch(`${API_BASE}/positions-all`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
   })
   const rows: PositionRow[] = res.ok ? await res.json() : []
-  positions.value = rows.filter((r) => n(r.qty, 0) > 0)
+  const filtered = rows.filter((r) => n(r.qty, 0) > 0)
+  positions.value = filtered
+
+  const mini: PosMini[] = filtered.map((r) => ({
+    symbol: String(r.symbol).toUpperCase(),
+    qty: n(r.qty, 0),
+    avgCost: n(r.avg_cost, 0),
+  }))
+  upsertPositionsCache(mini) // ← simpan
 }
 
 /** ===== WS Aggregator (satu koneksi) ===== */
@@ -350,26 +469,32 @@ function scheduleFlush() {
   if (flushTimer) return
   flushTimer = window.setTimeout(() => {
     // apply ke positions/summary
-    let touched = false
+    const touched: Array<{ up: string; px: number }> = [] // ← track simbol yang berubah
+
     for (const [symUp, px] of Object.entries(pendingPrice)) {
       priceMap[symUp] = px
-      touched = true
+      touched.push({ up: symUp, px }) // ← catat
       delete pendingPrice[symUp]
     }
     for (const [symUp, close] of Object.entries(pendingKlineClose)) {
       priceMap[symUp] = close
-      touched = true
+      touched.push({ up: symUp, px: close }) // ← catat
       delete pendingKlineClose[symUp]
     }
-    if (touched) recomputeTotals()
+
+    // (OPSIONAL) sinkronkan cache dari priceMap:
+    // ini yang dimaksud di komen "opsional..."
+    for (const { up, px } of touched) {
+      upsertPriceCache(up.toLowerCase(), px) // ← DI SINI
+    }
+
+    if (touched.length) recomputeTotals()
 
     // apply ke marketData (top coins)
     for (const item of marketData.value) {
-      const lower = (symbolMap[item.name] + 'usdt').toUpperCase()
-      const last = priceMap[lower] ?? null
-      if (last !== null && last !== undefined) item.price = Number(last)
-      // change dihitung hanya saat terima kline (close/open). Kita gunakan priceMap untuk last,
-      // dan simpan open harian per coin jika perlu. Agar simpel: change akan terisi saat kline 1d diterima.
+      const upper = (symbolMap[item.name] + 'usdt').toUpperCase()
+      const last = priceMap[upper]
+      if (last !== undefined) item.price = Number(last)
     }
 
     flushTimer = null
@@ -386,11 +511,18 @@ function handleKline1d(symLower: string, open: number, close: number) {
   const symUp = symLower.toUpperCase()
   dayOpen[symUp] = open
   pendingKlineClose[symUp] = close
-  // update change untuk marketData top coins
+
+  // cache open & close (close dianggap harga terakhir juga)
+  upsertOpenCache(symLower, open)
+  upsertPriceCache(symLower, close)
+
   const coin = displayedCoins.find((c) => symbolMap[c] + 'usdt' === symLower)
   if (coin && open) {
     const row = marketData.value.find((x) => x.name === coin)
-    if (row) row.change = ((close - open) / open) * 100
+    if (row) {
+      row.price = close
+      row.change = ((close - open) / open) * 100
+    }
   }
   scheduleFlush()
 }
@@ -398,9 +530,10 @@ function handleKline1d(symLower: string, open: number, close: number) {
 function handleTicker(symLower: string, last: number) {
   const symUp = symLower.toUpperCase()
   pendingPrice[symUp] = last
+  // cache harga (lowercase jadi key)
+  upsertPriceCache(symLower, last)
   scheduleFlush()
 }
-
 function connectAggregator() {
   if (wsAgg)
     try {
@@ -467,17 +600,21 @@ const modal = useApiAlertStore()
 
 /** ===== Lifecycle ===== */
 onMounted(async () => {
+  loadDashCache()
+  hydrateFromCache() // ← tampilkan dari cache dulu
+
   await Promise.all([loadSaldo(), loadPositions()])
 
-  // init price map & market placeholders
-  for (const p of positions.value) priceMap[String(p.symbol).toUpperCase()] = 0
+  // init price map utk simbol posisi (kalau belum ada)
+  for (const p of positions.value)
+    priceMap[String(p.symbol).toUpperCase()] = priceMap[String(p.symbol).toUpperCase()] ?? 0
+
   rebuildActiveLower()
   recomputeTotals()
 
-  // connect single WS aggregator
   connectAggregator()
 
-  // load news
+  // load news (tak perlu cache di sini)
   const token = localStorage.getItem('token')
   if (!token) {
     modal.open('Unauthorized', 'Token tidak ditemukan.')
