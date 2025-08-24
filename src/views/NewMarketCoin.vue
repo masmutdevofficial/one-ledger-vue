@@ -116,7 +116,7 @@
       <p class="text-[10px] text-gray-400">Bid</p>
       <p class="text-[10px] text-gray-400">Ask</p>
       <div class="w-[40px] flex justify-center items-center bg-gray-100 rounded-sm text-gray-400">
-        <p class="text-[10px] ml-1">7</p>
+        <p class="text-[10px] ml-1">12</p>
         <Icon icon="tabler:chevron-down" class="text-gray-700 w-3 h-3" />
       </div>
     </div>
@@ -124,7 +124,7 @@
     <div v-if="showChart" class="flex w-full justify-between items-center">
       <!-- BIDS -->
       <div class="space-y-1 w-full" v-if="depthData">
-        <div v-for="bid in top7Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
+        <div v-for="bid in top12Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
           style="height: 17.5px">
           <div class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
             :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }" />
@@ -139,7 +139,7 @@
 
       <!-- ASKS -->
       <div class="space-y-1 w-full" v-if="depthData">
-        <div v-for="ask in top7Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
+        <div v-for="ask in top12Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
           style="height: 17.5px">
           <div class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
             :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }" />
@@ -180,7 +180,7 @@
 
         <!-- ASKS -->
         <div class="space-y-1" v-if="depthData">
-          <div v-for="ask in top7Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
+          <div v-for="ask in top12Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
             style="height: 17.5px">
             <div class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
               :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }" />
@@ -209,7 +209,7 @@
 
         <!-- BIDS -->
         <div class="space-y-1" v-if="depthData">
-          <div v-for="bid in top7Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
+          <div v-for="bid in top12Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
             style="height: 17.5px">
             <div class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
               :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }" />
@@ -400,8 +400,8 @@ function hydrateFromCache(pair: string) {
         asks: [...(entry.depth.asks || [])].slice(0, DEPTH_TOP_N).sort((a, b) => a[0] - b[0]),
       },
     }
-    asksTop.value = depthData.value.tick.asks.slice(0, 7)
-    bidsTop.value = depthData.value.tick.bids.slice(0, 7)
+    asksTop.value = depthData.value.tick.asks.slice(0, 12)
+    bidsTop.value = depthData.value.tick.bids.slice(0, 12)
   }
   if (entry.k1d && now - entry.k1d.ts <= KLINE_CACHE_TTL) {
     klineDailyOHLC.value = { open: entry.k1d.open, close: entry.k1d.close, ts: entry.k1d.ts }
@@ -597,8 +597,8 @@ function scheduleFlush() {
           bids: bidsDesc.slice(0, DEPTH_TOP_N),
         },
       }
-      asksTop.value = asksAsc.slice(0, 7)
-      bidsTop.value = bidsDesc.slice(0, 7)
+      asksTop.value = asksAsc.slice(0, 12)
+      bidsTop.value = bidsDesc.slice(0, 12)
 
       setObCache(curPairKey, {
         depth: { asks: depthData.value.tick.asks, bids: depthData.value.tick.bids, ts: pendingDepth.ts },
@@ -753,10 +753,10 @@ function connectAggregatorWS() {
 }
 
 /* ===== Derivatives for template ===== */
-const top7Asks = computed(() => asksTop.value)
-const top7Bids = computed(() => bidsTop.value)
-const maxAskAmount = computed(() => top7Asks.value.length ? Math.max(...top7Asks.value.map(a => a[1])) : 1)
-const maxBidAmount = computed(() => top7Bids.value.length ? Math.max(...top7Bids.value.map(b => b[1])) : 1)
+const top12Asks = computed(() => asksTop.value)
+const top12Bids = computed(() => bidsTop.value)
+const maxAskAmount = computed(() => top12Asks.value.length ? Math.max(...top12Asks.value.map(a => a[1])) : 1)
+const maxBidAmount = computed(() => top12Bids.value.length ? Math.max(...top12Bids.value.map(b => b[1])) : 1)
 const percentChange = computed(() => {
   const k = klineDailyOHLC.value
   if (!k || !k.open) return null
