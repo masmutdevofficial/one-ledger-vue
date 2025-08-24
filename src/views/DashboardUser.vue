@@ -30,35 +30,24 @@
           </div>
         </div>
 
-        <RouterLink
-          to="/add-funds"
-          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-white rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-[100px] text-center"
-        >
+        <RouterLink to="/add-funds"
+          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-white rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-[100px] text-center">
           Add Funds
         </RouterLink>
       </div>
       <div class="text-xs flex items-center text-black mb-4">
         Unrealized PnL
-        <span
-          class="font-semibold ml-1"
-          :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'"
-        >
+        <span class="font-semibold ml-1" :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'">
           {{ signedMoneyId(portfolioUpnlAbs, 2) }}
           ({{ signedPercent(portfolioUpnlPct) }})
         </span>
         <Icon icon="tabler:chevron-right" class="ml-1 text-gray-400 w-4 h-4" />
       </div>
       <div class="grid grid-cols-4 gap-x-6 gap-y-6 mt-5">
-        <RouterLink
-          v-for="item in items"
-          :key="item.to"
-          :to="item.to"
-          class="group flex flex-col items-center"
-          aria-label="item.label"
-        >
+        <RouterLink v-for="item in items" :key="item.to" :to="item.to" class="group flex flex-col items-center"
+          aria-label="item.label">
           <div
-            class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shadow-sm ring-1 ring-gray-200/60 hover:ring-gray-300 transition group-active:scale-95"
-          >
+            class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shadow-sm ring-1 ring-gray-200/60 hover:ring-gray-300 transition group-active:scale-95">
             <img :src="item.img" :alt="item.label" class="w-7 h-7 object-contain" />
           </div>
           <span class="mt-2 text-xs text-gray-700 text-center font-semibold">{{ item.label }}</span>
@@ -89,21 +78,12 @@
         </div>
 
         <div class="space-y-4">
-          <RouterLink
-            :to="`/trade?symbol=${item.name.toLowerCase()}usdt`"
+          <RouterLink :to="`/trade?symbol=${item.name.toLowerCase()}usdt`"
             class="grid grid-cols-[1fr_1fr_1fr] items-center hover:bg-gray-50 transition-colors duration-150 rounded-lg px-2 py-1"
-            v-for="item in filteredMarketData"
-            :key="item.name"
-          >
+            v-for="item in filteredMarketData" :key="item.name">
             <div class="flex items-center space-x-1 font-semibold text-[14px] text-black">
-              <img
-                :src="item.icon"
-                :alt="item.name + ' icon'"
-                class="w-3.5 h-3.5"
-                width="14"
-                height="14"
-                @error="item.icon = ICON_FALLBACK"
-              />
+              <img :src="item.icon" :alt="item.name + ' icon'" class="w-3.5 h-3.5" width="14" height="14"
+                @error="item.icon = ICON_FALLBACK" />
               <span>{{ item.name }}</span>
             </div>
             <div class="text-right">
@@ -115,35 +95,28 @@
               </div>
             </div>
             <div class="text-right">
-              <button
-                :class="[
-                  'text-white text-[12px] font-semibold rounded-md px-3 py-1 ml-auto inline-block',
-                  item.change === null
-                    ? 'bg-slate-500'
-                    : item.change > 0
-                      ? 'bg-green-500'
-                      : item.change < 0
-                        ? 'bg-red-500'
-                        : 'bg-slate-500',
-                ]"
-              >
+              <button :class="[
+                'text-white text-[12px] font-semibold rounded-md px-3 py-1 ml-auto inline-block',
+                item.change === null
+                  ? 'bg-slate-500'
+                  : item.change > 0
+                    ? 'bg-green-500'
+                    : item.change < 0
+                      ? 'bg-red-500'
+                      : 'bg-slate-500',
+              ]">
                 {{
                   item.change === null
                     ? '...'
-                    : (item.change > 0 ? '+' : item.change < 0 ? '-' : '') +
-                      Math.abs(item.change).toFixed(2) +
-                      '%'
-                }}
-              </button>
+                    : (item.change > 0 ? '+' : item.change < 0 ? '-' : '') + Math.abs(item.change).toFixed(2) + '%' }}
+                  </button>
             </div>
           </RouterLink>
         </div>
 
         <!-- View More -->
-        <RouterLink
-          to="/market"
-          class="block text-center text-[12px] text-[#9ca3af] font-normal cursor-pointer select-none hover:underline"
-        >
+        <RouterLink to="/market"
+          class="block text-center text-[12px] text-[#9ca3af] font-normal cursor-pointer select-none hover:underline">
           View more
         </RouterLink>
       </div>
@@ -157,12 +130,8 @@
         No Data Available
       </div>
 
-      <div
-        v-else
-        v-for="(news, index) in newsList"
-        :key="index"
-        class="bg-white rounded-2xl p-5 flex flex-col space-y-3 hover:bg-gray-50 transition-colors duration-150"
-      >
+      <div v-else v-for="(news, index) in newsList" :key="index"
+        class="bg-white rounded-2xl p-5 flex flex-col space-y-3 hover:bg-gray-50 transition-colors duration-150">
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-1 text-gray-900 font-semibold text-sm">
             <span class="text-[10px] leading-none">•</span>
@@ -176,12 +145,8 @@
         </div>
 
         <div class="flex items-start space-x-4">
-          <img
-            v-if="news && news.image"
-            :src="`https://one-ledger.masmutpanel.my.id${news.image}`"
-            alt="News Image"
-            class="w-24 h-16 object-cover rounded-lg"
-          />
+          <img v-if="news && news.image" :src="`https://one-ledger.masmutpanel.my.id${news.image}`" alt="News Image"
+            class="w-24 h-16 object-cover rounded-lg" />
           <div class="flex-1 space-y-1">
             <div class="font-extrabold text-black text-sm leading-[1.1]">
               {{ news.title }}
@@ -193,10 +158,7 @@
         </div>
 
         <div class="flex justify-end">
-          <RouterLink
-            :to="`/news/${news.slug}`"
-            class="text-[#3ABBA3] text-xs font-semibold hover:underline"
-          >
+          <RouterLink :to="`/news/${news.slug}`" class="text-[#3ABBA3] text-xs font-semibold hover:underline">
             Read more
           </RouterLink>
         </div>
@@ -219,11 +181,7 @@ const iconPath = (s: string) => `/img/crypto/${s.toLowerCase()}.svg`
 const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 
 /** ===== Menu ===== */
-interface MenuItem {
-  label: string
-  to: string
-  img: string
-}
+interface MenuItem { label: string; to: string; img: string }
 const items: MenuItem[] = [
   { label: 'Arbitrage', to: '/smart-arbitrage', img: '/img/robot-logo.png' },
   { label: 'Hub reward', to: '/hub-rewards', img: '/img/newmenu/hub-reward.png' },
@@ -240,14 +198,14 @@ type PosMini = { symbol: string; qty: number; avgCost: number }
 type DashCache = {
   saldo?: { v: number; ts: number }
   positions?: { items: PosMini[]; ts: number }
-  prices?: Record<string, PriceEntry> // key: 'btcusdt'
-  dayOpen?: Record<string, OpenEntry> // key: 'btcusdt'
+  prices?: Record<string, PriceEntry>
+  dayOpen?: Record<string, OpenEntry>
 }
 const DASH_LS_KEY = 'dashCache:v1'
-const SALDO_TTL = 15_000 // 15s
-const POS_TTL = 5 * 60_000 // 5m
-const PRICE_TTL = 2 * 60_000 // 2m
-const OPEN_TTL = 60 * 60_000 // 60m
+const SALDO_TTL = 15_000
+const POS_TTL = 5 * 60_000
+const PRICE_TTL = 2 * 60_000
+const OPEN_TTL = 60 * 60_000
 
 let dcache: DashCache = { prices: {}, dayOpen: {} }
 let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -267,31 +225,16 @@ function saveDashCacheDebounced() {
   if (!isBrowser()) return
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = window.setTimeout(() => {
-    try {
-      localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache))
-    } catch {}
+    try { localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache)) } catch { }
     saveTimer = null
   }, 250)
 }
+function upsertSaldoCache(v: number) { dcache.saldo = { v, ts: Date.now() }; saveDashCacheDebounced() }
+function upsertPositionsCache(items: PosMini[]) { dcache.positions = { items, ts: Date.now() }; saveDashCacheDebounced() }
+function upsertPriceCache(symLower: string, price: number) { (dcache.prices ||= {})[symLower] = { p: price, ts: Date.now() }; saveDashCacheDebounced() }
+function upsertOpenCache(symLower: string, open: number) { (dcache.dayOpen ||= {})[symLower] = { o: open, ts: Date.now() }; saveDashCacheDebounced() }
 
-function upsertSaldoCache(v: number) {
-  dcache.saldo = { v, ts: Date.now() }
-  saveDashCacheDebounced()
-}
-function upsertPositionsCache(items: PosMini[]) {
-  dcache.positions = { items, ts: Date.now() }
-  saveDashCacheDebounced()
-}
-function upsertPriceCache(symLower: string, price: number) {
-  ;(dcache.prices ||= {})[symLower] = { p: price, ts: Date.now() }
-  saveDashCacheDebounced()
-}
-function upsertOpenCache(symLower: string, open: number) {
-  ;(dcache.dayOpen ||= {})[symLower] = { o: open, ts: Date.now() }
-  saveDashCacheDebounced()
-}
-
-/** Hydrate UI dari cache (saldo, posisi, harga, change) */
+/** Hydrate UI dari cache */
 function hydrateFromCache() {
   const now = Date.now()
 
@@ -341,20 +284,9 @@ const positions = ref<PositionRow[]>([])
 const priceMap = reactive<Record<string, number>>({}) // { BTCUSDT: price }
 
 /** ===== Market small table (top coins) ===== */
-interface MarketItem {
-  name: string
-  price: number | null
-  change: number | null
-  icon: string
-}
+interface MarketItem { name: string; price: number | null; change: number | null; icon: string }
 const displayedCoins = ['BNB', 'BTC', 'ETH', 'SOL', 'XRP'] as const
-const symbolMap: Record<string, string> = {
-  BNB: 'bnb',
-  BTC: 'btc',
-  ETH: 'eth',
-  SOL: 'sol',
-  XRP: 'xrp',
-}
+const symbolMap: Record<string, string> = { BNB: 'bnb', BTC: 'btc', ETH: 'eth', SOL: 'sol', XRP: 'xrp' }
 const marketData = ref<MarketItem[]>(
   displayedCoins.map((c) => ({ name: c, price: null, change: null, icon: iconPath(c) })),
 )
@@ -363,34 +295,23 @@ const marketData = ref<MarketItem[]>(
 const nfIdCache = new Map<string, Intl.NumberFormat>()
 const nfId = (min: number, max: number) => {
   const key = `${min}-${max}`
-  if (!nfIdCache.has(key))
-    nfIdCache.set(
-      key,
-      new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }),
-    )
+  if (!nfIdCache.has(key)) nfIdCache.set(key, new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }))
   return nfIdCache.get(key)!
 }
 const n = (v: unknown, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d)
-const formatNumberId = (nu: number, digits = 2) =>
-  Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0'
+const formatNumberId = (nu: number, digits = 2) => Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0'
 const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
-const signedPercent = (pct: number) =>
-  (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
-const signedMoneyId = (nu: number, digits = 2) =>
-  (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
-const truncate = (text: string, limit: number): string =>
-  text.length > limit ? text.substring(0, limit) + '...' : text
+const signedPercent = (pct: number) => (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
+const signedMoneyId = (nu: number, digits = 2) => (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
+const truncate = (text: string, limit: number): string => text.length > limit ? text.substring(0, limit) + '...' : text
 
 /** ===== Totals ===== */
 let totalsScheduled = false
 function recomputeTotals() {
-  // jadwalkan sekali per frame agar hemat
   if (totalsScheduled) return
   totalsScheduled = true
   requestAnimationFrame(() => {
-    let sumValue = 0,
-      sumUpnl = 0,
-      sumCost = 0
+    let sumValue = 0, sumUpnl = 0, sumCost = 0
     for (const p of positions.value) {
       const sym = String(p.symbol).toUpperCase()
       const last = n(priceMap[sym], 0)
@@ -410,10 +331,7 @@ function recomputeTotals() {
 /** ===== Loader (API, wajib Bearer) ===== */
 async function loadSaldo() {
   const token = isBrowser() ? localStorage.getItem('token') : ''
-  if (!token) {
-    saldo.value = 0
-    return
-  }
+  if (!token) { saldo.value = 0; return }
   const res = await fetch(`${API_BASE}/saldo`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     credentials: 'include',
@@ -423,14 +341,9 @@ async function loadSaldo() {
   saldo.value = val
   upsertSaldoCache(val)
 }
-
 async function loadPositions() {
   const token = isBrowser() ? localStorage.getItem('token') : ''
-  if (!token) {
-    positions.value = []
-    upsertPositionsCache([])
-    return
-  }
+  if (!token) { positions.value = []; upsertPositionsCache([]); return }
   const res = await fetch(`${API_BASE}/positions-all`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     credentials: 'include',
@@ -438,16 +351,11 @@ async function loadPositions() {
   const rows: PositionRow[] = res.ok ? await res.json().catch(() => []) : []
   const filtered = rows.filter((r) => n(r.qty, 0) > 0)
   positions.value = filtered
-
-  const mini: PosMini[] = filtered.map((r) => ({
-    symbol: String(r.symbol).toUpperCase(),
-    qty: n(r.qty, 0),
-    avgCost: n(r.avg_cost, 0),
-  }))
+  const mini: PosMini[] = filtered.map((r) => ({ symbol: String(r.symbol).toUpperCase(), qty: n(r.qty, 0), avgCost: n(r.avg_cost, 0) }))
   upsertPositionsCache(mini)
 }
 
-/** ===== WS Aggregator (satu koneksi + batching) ===== */
+/** ===== WS (routing per-klien, on-demand subscribe) ===== */
 let activeLower = new Set<string>()
 function rebuildActiveLower() {
   const s = new Set<string>()
@@ -455,11 +363,11 @@ function rebuildActiveLower() {
   for (const c of displayedCoins) s.add(symbolMap[c] + 'usdt')
   activeLower = s
 }
-watch(positions, rebuildActiveLower, { deep: true })
+watch(positions, () => { rebuildActiveLower(); scheduleResubscribe() }, { deep: true })
 
 // buffer update
-const pendingPrice: Record<string, number> = {} // 'BTCUSDT' -> last
-const pendingKlineClose: Record<string, number> = {} // 'BTCUSDT' -> close 1d
+const pendingPrice: Record<string, number> = {}             // 'BTCUSDT' -> last
+const pendingKlineClose: Record<string, number> = {}        // 'BTCUSDT' -> close(1d)
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
 function scheduleFlush() {
@@ -468,28 +376,17 @@ function scheduleFlush() {
     const touched: string[] = []
 
     for (const [symUp, px] of Object.entries(pendingPrice)) {
-      if (priceMap[symUp] !== px) {
-        priceMap[symUp] = px
-        touched.push(symUp)
-      }
+      if (priceMap[symUp] !== px) { priceMap[symUp] = px; touched.push(symUp) }
       delete pendingPrice[symUp]
     }
     for (const [symUp, close] of Object.entries(pendingKlineClose)) {
-      if (priceMap[symUp] !== close) {
-        priceMap[symUp] = close
-        touched.push(symUp)
-      }
+      if (priceMap[symUp] !== close) { priceMap[symUp] = close; touched.push(symUp) }
       delete pendingKlineClose[symUp]
     }
 
-    // sinkron cache
-    for (const symUp of touched) {
-      upsertPriceCache(symUp.toLowerCase(), priceMap[symUp])
-    }
-
+    for (const symUp of touched) upsertPriceCache(symUp.toLowerCase(), priceMap[symUp])
     if (touched.length) recomputeTotals()
 
-    // update marketData (top coins)
     for (const item of marketData.value) {
       const upper = (symbolMap[item.name] + 'usdt').toUpperCase()
       const last = priceMap[upper]
@@ -503,6 +400,7 @@ function scheduleFlush() {
 let wsAgg: WebSocket | null = null
 let wsTimer: ReturnType<typeof setTimeout> | null = null
 
+/** kline 1d open/close untuk %change harian */
 const dayOpen: Record<string, number> = {} // 'BTCUSDT' -> open
 
 function handleKline1d(symLower: string, open: number, close: number) {
@@ -530,16 +428,58 @@ function handleTicker(symLower: string, last: number) {
   scheduleFlush()
 }
 
-function connectAggregator() {
-  if (wsAgg) {
-    try {
-      wsAgg.close()
-    } catch {}
+/** ===== Subscribe Helpers ===== */
+const KLINE_PERIODS = ['1day'] as const
+let subscribedLower = new Set<string>()
+let resubTimer: ReturnType<typeof setTimeout> | null = null
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function wsSend(obj: any) {
+  if (wsAgg && wsAgg.readyState === WebSocket.OPEN) {
+    try { wsAgg.send(JSON.stringify(obj)) } catch { }
   }
+}
+function doSubscribe(symbolsLower: string[]) {
+  if (!symbolsLower.length) return
+  wsSend({ type: 'subscribe', channels: ['ticker', 'kline'], symbols: symbolsLower, periods: KLINE_PERIODS })
+}
+function doUnsubscribe(symbolsLower: string[]) {
+  if (!symbolsLower.length) return
+  wsSend({ type: 'unsubscribe', channels: ['ticker', 'kline'], symbols: symbolsLower, periods: KLINE_PERIODS })
+}
+function requestSnapshot(symbolsLower: string[]) {
+  if (!symbolsLower.length) return
+  wsSend({ type: 'snapshot', symbols: symbolsLower, periods: KLINE_PERIODS })
+}
+function scheduleResubscribe() {
+  if (resubTimer) return
+  resubTimer = window.setTimeout(() => {
+    resubTimer = null
+    if (!wsAgg || wsAgg.readyState !== WebSocket.OPEN) return
+
+    const want = new Set(activeLower)
+    const current = new Set(subscribedLower)
+
+    const toSub: string[] = []
+    const toUnsub: string[] = []
+
+    for (const s of want) if (!current.has(s)) toSub.push(s)
+    for (const s of current) if (!want.has(s)) toUnsub.push(s)
+
+    if (toUnsub.length) { doUnsubscribe(toUnsub); for (const s of toUnsub) subscribedLower.delete(s) }
+    if (toSub.length) { doSubscribe(toSub); requestSnapshot(toSub); for (const s of toSub) subscribedLower.add(s) }
+  }, 200)
+}
+
+/** ===== Connect WS ===== */
+function connectAggregator() {
+  if (wsAgg) { try { wsAgg.close() } catch { } }
   wsAgg = new WebSocket(WS_BASE)
 
   wsAgg.onopen = () => {
-    /* connected */
+    // initial subscribe + snapshot
+    subscribedLower = new Set()
+    scheduleResubscribe()
   }
 
   wsAgg.onclose = () => {
@@ -549,14 +489,28 @@ function connectAggregator() {
   }
 
   wsAgg.onerror = () => {
-    try {
-      wsAgg?.close()
-    } catch {}
+    try { wsAgg?.close() } catch { }
   }
 
   wsAgg.onmessage = (e) => {
     try {
       const msg = JSON.parse(e.data as string)
+
+      // snapshot batched
+      if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
+        for (const it of msg.items) {
+          const symLower = String(it.symbol || '').toLowerCase()
+          if (!symLower || !activeLower.has(symLower)) continue
+          if (it.type === 'ticker' && Number.isFinite(Number(it.last))) {
+            handleTicker(symLower, Number(it.last))
+          } else if (it.type === 'kline' && it.period === '1day') {
+            const o = Number(it.open), c = Number(it.close)
+            if (Number.isFinite(o) && Number.isFinite(c)) handleKline1d(symLower, o, c)
+          }
+        }
+        return
+      }
+
       const symLower = String(msg.symbol || '').toLowerCase()
       if (!symLower || !activeLower.has(symLower)) return
 
@@ -564,61 +518,43 @@ function connectAggregator() {
         handleTicker(symLower, Number(msg.last))
         return
       }
-      if (msg.type === 'kline' && msg.period === '1min') {
-        const open = Number(msg.open),
-          close = Number(msg.close)
+      if (msg.type === 'kline' && msg.period === '1day') {
+        const open = Number(msg.open), close = Number(msg.close)
         if (Number.isFinite(open) && Number.isFinite(close)) handleKline1d(symLower, open, close)
         return
       }
-    } catch {
-      /* ignore */
-    }
+      // depth diabaikan untuk komponen ini
+    } catch { /* ignore */ }
   }
 }
 
 /** ===== News ===== */
-interface ApiNewsItem {
-  id: number
-  title: string
-  slug: string
-  content: string
-  image: string
-  published_at: string
-}
-interface NewsItem extends ApiNewsItem {
-  date: string
-  time: string
-}
+interface ApiNewsItem { id: number; title: string; slug: string; content: string; image: string; published_at: string }
+interface NewsItem extends ApiNewsItem { date: string; time: string }
 const newsList = ref<NewsItem[]>([])
 const loading = ref(true)
 const modal = useApiAlertStore()
 
-/** ===== Infinite Scroll (untuk news atau section panjang) ===== */
+/** ===== Infinite Scroll (news) ===== */
 const filteredMarketData = computed(
-  () =>
-    displayedCoins
-      .map((coin) => marketData.value.find((item) => item.name === coin))
-      .filter(Boolean) as MarketItem[],
+  () => displayedCoins.map((coin) => marketData.value.find((item) => item.name === coin)).filter(Boolean) as MarketItem[],
 )
 const onScroll = () => {
   const bottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100
   if (!bottom) return
-  // kalau mau pagination untuk newsList / section lain, tambah di sini.
+  // pagination news kalau perlu
 }
 
-/** ===== Visibility handler (TOP-LEVEL, di luar onMounted) ===== */
-const visHandler = () => {
-  if (document.hidden) saveDashCacheDebounced()
-}
+/** ===== Visibility handler ===== */
+const visHandler = () => { if (document.hidden) saveDashCacheDebounced() }
 
 /** ===== Lifecycle ===== */
 onMounted(async () => {
   loadDashCache()
-  hydrateFromCache() // tampilkan dari cache dulu
+  hydrateFromCache()
 
   await Promise.all([loadSaldo(), loadPositions()])
 
-  // init price map utk simbol posisi (kalau belum ada)
   for (const p of positions.value) {
     const key = String(p.symbol).toUpperCase()
     priceMap[key] = priceMap[key] ?? 0
@@ -629,13 +565,9 @@ onMounted(async () => {
 
   connectAggregator()
 
-  // listener scroll (passive)
   window.addEventListener('scroll', onScroll, { passive: true })
-
-  // pre-check untuk halaman pendek
   requestAnimationFrame(() => onScroll())
 
-  // load news
   const token = isBrowser() ? localStorage.getItem('token') : ''
   if (!token) {
     modal.open('Unauthorized', 'Token tidak ditemukan.')
@@ -651,61 +583,34 @@ onMounted(async () => {
           const d = new Date(item.published_at)
           return {
             ...item,
-            date: d.toLocaleDateString('en-US', {
-              month: 'short',
-              day: '2-digit',
-              year: 'numeric',
-            }),
-            time: d.toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false,
-            }),
+            date: d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+            time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
           }
         })
       } else {
         modal.open('Error', data?.message || 'Gagal memuat berita.')
       }
     } catch (e: unknown) {
-      modal.open(
-        'Error',
-        `Gagal terhubung ke server. ${e instanceof Error ? e.message : JSON.stringify(e)}`,
-      )
+      modal.open('Error', `Gagal terhubung ke server. ${e instanceof Error ? e.message : JSON.stringify(e)}`)
     } finally {
       loading.value = false
     }
   }
 
-  // pasang visibility handler DI SINI (pemasangan event boleh di onMounted)
-  if (isBrowser()) {
-    document.addEventListener('visibilitychange', visHandler, { passive: true })
-  }
+  if (isBrowser()) document.addEventListener('visibilitychange', visHandler, { passive: true })
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
+  if (isBrowser()) document.removeEventListener('visibilitychange', visHandler)
 
-  if (isBrowser()) {
-    document.removeEventListener('visibilitychange', visHandler)
-  }
+  if (wsAgg) { try { wsAgg.close() } catch { }; wsAgg = null }
+  if (wsTimer) { clearTimeout(wsTimer); wsTimer = null }
 
-  if (wsAgg) {
-    try {
-      wsAgg.close()
-    } catch {}
-    wsAgg = null
-  }
-  if (wsTimer) {
-    clearTimeout(wsTimer)
-    wsTimer = null
-  }
-
-  // flush terakhir
-  try {
-    if (isBrowser()) localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache))
-  } catch {}
+  try { if (isBrowser()) localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache)) } catch { }
 })
 </script>
+
 
 <style scoped>
 /* optional */

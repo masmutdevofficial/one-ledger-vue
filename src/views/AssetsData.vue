@@ -215,7 +215,6 @@ const WS_BASE = 'wss://ledgersocketone.online'
 const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
-// Lengkapi sesuai kebutuhan kamu
 const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote }> = {
   BTC: { name: 'Bitcoin', logoUrl: localLogo('btc'), quote: 'USDT' },
   ETH: { name: 'Ethereum', logoUrl: localLogo('eth'), quote: 'USDT' },
@@ -412,24 +411,18 @@ function rebuildAssetMap() {
 const loadingAssets = ref(false)
 const errorAssets = ref<string | null>(null)
 
-/** ===== Formatters (cache Intl) ===== */
+/** ===== Formatters ===== */
 const nfCache = new Map<string, Intl.NumberFormat>()
 const nfId = (min: number, max: number) => {
   const k = `${min}-${max}`
   if (!nfCache.has(k))
-    nfCache.set(
-      k,
-      new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }),
-    )
+    nfCache.set(k, new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }))
   return nfCache.get(k)!
 }
-const formatNumberId = (nu: number, digits = 2) =>
-  Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0'
+const formatNumberId = (nu: number, digits = 2) => (Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0')
 const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
-const signedPercent = (pct: number) =>
-  (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
-const signedMoneyId = (nu: number, digits = 2) =>
-  (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
+const signedPercent = (pct: number) => (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
+const signedMoneyId = (nu: number, digits = 2) => (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
 /** ===== Helpers ===== */
 function splitSymbol(sym: string): { base: string; quote: Quote } {
   const s = sym.toUpperCase()
@@ -452,9 +445,7 @@ async function loadSaldo() {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       credentials: 'include',
     })
-    const data: SaldoResponse = await res
-      .json()
-      .catch(() => ({ status: 'error', saldo: 0, koin: 0 }))
+    const data: SaldoResponse = await res.json().catch(() => ({ status: 'error', saldo: 0, koin: 0 }))
     if (res.ok && data?.status === 'success') {
       const v = Number(data.saldo) || 0
       saldoAwal.value = v
@@ -506,7 +497,7 @@ async function loadAssets() {
         }
       })
 
-    // overlay harga dari cache harga (kalau fresh)
+    // overlay cache harga (jika fresh)
     const now = Date.now()
     const prices = portfCache.prices || {}
     for (const a of mapped) {
@@ -531,13 +522,10 @@ async function loadAssets() {
       lastPrice: a.lastPrice,
     }))
     upsertPositionsCache(posItems)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
-    const errorAssets = ref<string>('')
     errorAssets.value = e?.message || 'Gagal memuat assets.'
     assets.value = []
     recomputeTotals()
-
     modal.open('Error', errorAssets.value)
   } finally {
     loadingAssets.value = false
@@ -550,9 +538,7 @@ function recomputeTotals() {
   if (totalsScheduled) return
   totalsScheduled = true
   requestAnimationFrame(() => {
-    let sumValue = 0,
-      sumUpnl = 0,
-      cost = 0
+    let sumValue = 0, sumUpnl = 0, cost = 0
     for (const a of assets.value) {
       sumValue += a.valueUsd || 0
       sumUpnl += a.uPnlAbs || 0
@@ -565,11 +551,56 @@ function recomputeTotals() {
   })
 }
 
-/** ===== Realtime via WebSocket (ticker + kline close) ===== */
+/** ===== Realtime via WebSocket (ticker + kline 1day) ===== */
+/* Sesuai server terbaru: client WAJIB subscribe/unsubscribe + snapshot batched */
 let aggWs: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
-// buffer agar tidak render tiap tick
+const KLINE_PERIODS = ['1day'] as const
+let subscribedLower = new Set<string>()
+let resubTimer: ReturnType<typeof setTimeout> | null = null
+
+function currentActiveSymbolsLower(): string[] {
+  return Array.from(new Set(assets.value.map(a => a.symbol.toLowerCase())))
+}
+function wsSend(obj: unknown) {
+  if (aggWs && aggWs.readyState === WebSocket.OPEN) {
+    try { aggWs.send(JSON.stringify(obj)) } catch {}
+  }
+}
+function doSubscribe(symbolsLower: string[]) {
+  if (!symbolsLower.length) return
+  wsSend({ type: 'subscribe', channels: ['ticker', 'kline'], symbols: symbolsLower, periods: KLINE_PERIODS })
+}
+function doUnsubscribe(symbolsLower: string[]) {
+  if (!symbolsLower.length) return
+  wsSend({ type: 'unsubscribe', channels: ['ticker', 'kline'], symbols: symbolsLower, periods: KLINE_PERIODS })
+}
+function requestSnapshot(symbolsLower: string[]) {
+  if (!symbolsLower.length) return
+  wsSend({ type: 'snapshot', symbols: symbolsLower, periods: KLINE_PERIODS })
+}
+function scheduleResubscribe() {
+  if (resubTimer) return
+  resubTimer = window.setTimeout(() => {
+    resubTimer = null
+    if (!aggWs || aggWs.readyState !== WebSocket.OPEN) return
+
+    const want = new Set(currentActiveSymbolsLower())
+    const curr = new Set(subscribedLower)
+
+    const toSub: string[] = []
+    const toUnsub: string[] = []
+
+    for (const s of want) if (!curr.has(s)) toSub.push(s)
+    for (const s of curr) if (!want.has(s)) toUnsub.push(s)
+
+    if (toUnsub.length) { doUnsubscribe(toUnsub); for (const s of toUnsub) subscribedLower.delete(s) }
+    if (toSub.length)   { doSubscribe(toSub); requestSnapshot(toSub); for (const s of toSub) subscribedLower.add(s) }
+  }, 200)
+}
+
+// buffer render
 const pending: Record<string, { last?: number; klineClose?: number }> = {}
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -578,11 +609,10 @@ function scheduleFlush() {
   flushTimer = window.setTimeout(() => {
     const touched: string[] = []
 
-    // pakai assetMap untuk O(1) lookup
     for (const [symLower, payload] of Object.entries(pending)) {
       const symUp = symLower.toUpperCase()
       const a = assetMap.get(symUp)
-      if (!a) continue
+      if (!a) { delete pending[symLower]; continue }
 
       let changed = false
       if (payload.last !== undefined && a.lastPrice !== payload.last) {
@@ -616,15 +646,15 @@ function scheduleFlush() {
 
 function connectAggregatorWs() {
   if (aggWs) {
-    try {
-      aggWs.close()
-    } catch {}
+    try { aggWs.close() } catch {}
     aggWs = null
   }
 
   aggWs = new WebSocket(WS_BASE)
+
   aggWs.onopen = () => {
-    /* connected */
+    subscribedLower = new Set()
+    scheduleResubscribe()
   }
 
   aggWs.onclose = () => {
@@ -634,14 +664,30 @@ function connectAggregatorWs() {
   }
 
   aggWs.onerror = () => {
-    try {
-      aggWs?.close()
-    } catch {}
+    try { aggWs?.close() } catch {}
   }
 
   aggWs.onmessage = (e) => {
     try {
       const msg = JSON.parse(e.data as string)
+
+      // snapshot batched
+      if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
+        for (const it of msg.items) {
+          const symLower = String(it.symbol || '').toLowerCase()
+          if (!symLower) continue
+          if (it.type === 'ticker' && Number.isFinite(Number(it.last))) {
+            ;(pending[symLower] ||= {}).last = Number(it.last)
+          } else if (it.type === 'kline' && it.period === '1day') {
+            const c = Number(it.close)
+            if (Number.isFinite(c)) (pending[symLower] ||= {}).klineClose = c
+          }
+        }
+        scheduleFlush()
+        return
+      }
+
+      // event individual
       const symLower = String(msg.symbol || '').toLowerCase()
       if (!symLower) return
 
@@ -658,9 +704,7 @@ function connectAggregatorWs() {
         }
         return
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }
 }
 
@@ -672,61 +716,39 @@ function goAsset(a: { symbol: string }) {
 }
 
 /** ===== Lifecycle ===== */
-
-// simpan remover untuk beforeunload agar bisa dilepas saat unmount
 let removeBeforeUnload: (() => void) | null = null
 
 onMounted(() => {
   loadPortfolioCache()
   hydrateFromCache()
 
-  // register beforeunload listener SEBELUM ada await
+  // beforeunload listener
   if (isBrowser()) {
     const flush = () => {
-      try {
-        localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache))
-      } catch {}
+      try { localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache)) } catch {}
     }
     window.addEventListener('beforeunload', flush)
     removeBeforeUnload = () => window.removeEventListener('beforeunload', flush)
   }
 
-  // kerjakan tugas async TANPA membuat onMounted async
+  // async tasks
   ;(async () => {
     await loadSaldo()
     await loadAssets()
     connectAggregatorWs() // connect setelah assets terisi
-  })().catch(() => {
-    // optional: swallow/log error kalau perlu
-  })
+  })().catch(() => {})
 })
 
-// rebuild map & totals saat assets berubah
-watch(
-  assets,
-  () => {
-    rebuildAssetMap()
-    recomputeTotals()
-  },
-  { deep: true },
-)
+// resubscribe kalau daftar aset berubah
+watch(assets, () => {
+  rebuildAssetMap()
+  recomputeTotals()
+  scheduleResubscribe()
+}, { deep: true })
 
 onUnmounted(() => {
-  // lepas beforeunload listener
-  if (removeBeforeUnload) {
-    removeBeforeUnload()
-    removeBeforeUnload = null
-  }
-
-  if (aggWs) {
-    try {
-      aggWs.close()
-    } catch {}
-    aggWs = null
-  }
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer)
-    reconnectTimer = null
-  }
+  if (removeBeforeUnload) { removeBeforeUnload(); removeBeforeUnload = null }
+  if (aggWs) { try { aggWs.close() } catch {}; aggWs = null }
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
 })
 </script>

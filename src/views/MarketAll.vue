@@ -70,11 +70,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 /** ==================== Types ==================== */
 interface Crypto {
-  symbol: string
+  symbol: string // UI symbol (BTC, ETH, ...)
   leverage: string
   volume: string
   price: string
@@ -86,8 +86,9 @@ type CacheShape = Record<string, CachedItem>
 
 /** ==================== Const ==================== */
 const LS_KEY = 'cryptoSnapshot:v1'
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 menit; setel 0 kalau tak mau TTL
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 menit; set 0 kalau tak mau TTL
 const PAGE_SIZE = 10
+const WS_BASE = 'wss://ledgersocketone.online'
 
 // Path icon dari /public (Vite serve di root). BASE_URL jaga-jaga kalau deploy di subpath.
 const BASE = import.meta.env.BASE_URL || '/'
@@ -98,16 +99,16 @@ function isBrowser() {
   return typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 }
 
-function toUpstreamId(sym: string) {
+function toUpstreamId(symUI: string) {
   const override: Record<string, string> = {
     OP: 'opusdt',
   }
-  return override[sym] ?? sym.toLowerCase() + 'usdt'
+  return override[symUI] ?? symUI.toLowerCase() + 'usdt'
 }
 
-function toUISymbol(fromUpstream: string) {
-  // contoh: btcusdt -> BTC
-  return fromUpstream.replace(/usdt$/i, '').toUpperCase()
+function toUISymbol(fromUp: string) {
+  // btcusdt -> BTC
+  return fromUp.replace(/usdt$/i, '').toUpperCase()
 }
 
 function iconPath(symbol: string) {
@@ -127,9 +128,7 @@ function saveCacheDebounced() {
   if (!isBrowser()) return
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify(inMemCache))
-    } catch {}
+    try { localStorage.setItem(LS_KEY, JSON.stringify(inMemCache)) } catch {}
   }, 400)
 }
 
@@ -166,7 +165,7 @@ function setCache(symUI: string, patch: CachedItem) {
 }
 
 /** ==================== State ==================== */
-// Gunakan shallowRef untuk list agar update item tidak deep-reactive mahal.
+// List statis (UI)
 const cryptoList = ref<Crypto[]>([
   { symbol: 'BTC', leverage: '10x', volume: '-', price: '-', change: 0 },
   { symbol: 'ETH', leverage: '10x', volume: '-', price: '-', change: 0 },
@@ -253,11 +252,15 @@ const visibleCount = ref(PAGE_SIZE)
 const visibleList = ref<Crypto[]>([])
 const isLoadingMore = ref(false)
 
+function updateVisibleList() {
+  visibleList.value = cryptoList.value.slice(0, visibleCount.value)
+  scheduleResubscribe() // sinkronkan subscription saat halaman bertambah
+}
+
 /** ==================== Prefill dari Cache ==================== */
 function applyCacheToList(cache: CacheShape) {
   const now = Date.now()
   if (!cryptoList.value.length) return
-  // clone array agar 1x commit perubahan
   const next = cryptoList.value.slice()
   for (const row of next) {
     const c = cache[row.symbol]
@@ -268,10 +271,7 @@ function applyCacheToList(cache: CacheShape) {
     if (typeof c.volume === 'string') row.volume = c.volume
   }
   cryptoList.value = next
-}
-
-function updateVisibleList() {
-  visibleList.value = cryptoList.value.slice(0, visibleCount.value)
+  updateVisibleList()
 }
 
 /** ==================== Infinite Scroll ==================== */
@@ -280,42 +280,88 @@ function onScroll() {
   if (bottom && !isLoadingMore.value) {
     if (visibleCount.value < cryptoList.value.length) {
       isLoadingMore.value = true
-      // Simulasi loading; bisa dipercepat jika mau
       setTimeout(() => {
         visibleCount.value += PAGE_SIZE
         updateVisibleList()
         isLoadingMore.value = false
-      }, 400)
+      }, 300)
     }
   }
 }
 
-/** ==================== WebSocket (dengan batching) ==================== */
+/** ==================== WebSocket (subscribe + snapshot + batching) ==================== */
 let ws: WebSocket | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
-type Tick = {
-  symbol: string
-  last?: number
-  open?: number
-  close?: number
-  vol?: number
-  changePct?: number
+// set simbol yang sedang disubscribe ke server (pakai upstream id: btcusdt, ethusdt, ...)
+let subscribed = new Set<string>()
+let resubTimer: ReturnType<typeof setTimeout> | null = null
+
+function currentVisibleUpstreamIds(): string[] {
+  return Array.from(new Set(visibleList.value.map(r => toUpstreamId(r.symbol))))
 }
+
+function wsSend(obj: unknown) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    try { ws.send(JSON.stringify(obj)) } catch {}
+  }
+}
+
+function doSubscribe(ids: string[]) {
+  if (!ids.length) return
+  wsSend({ type: 'subscribe', channels: ['ticker', 'kline'], symbols: ids, periods: ['1day'] })
+}
+function doUnsubscribe(ids: string[]) {
+  if (!ids.length) return
+  wsSend({ type: 'unsubscribe', channels: ['ticker', 'kline'], symbols: ids, periods: ['1day'] })
+}
+function requestSnapshot(ids: string[]) {
+  if (!ids.length) return
+  wsSend({ type: 'snapshot', symbols: ids, periods: ['1day'] })
+}
+
+function scheduleResubscribe() {
+  if (resubTimer) return
+  resubTimer = setTimeout(() => {
+    resubTimer = null
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+
+    const want = new Set(currentVisibleUpstreamIds())
+    const curr = new Set(subscribed)
+
+    const toSub: string[] = []
+    const toUnsub: string[] = []
+
+    for (const id of want) if (!curr.has(id)) toSub.push(id)
+    for (const id of curr) if (!want.has(id)) toUnsub.push(id)
+
+    if (toUnsub.length) {
+      doUnsubscribe(toUnsub)
+      for (const id of toUnsub) subscribed.delete(id)
+    }
+    if (toSub.length) {
+      doSubscribe(toSub)
+      requestSnapshot(toSub)
+      for (const id of toSub) subscribed.add(id)
+    }
+  }, 150)
+}
+
+// ---- batching render ----
+type Tick = { symbol: string; last?: number; open?: number; close?: number; vol?: number; changePct?: number }
 const tickQueue = new Map<string, Tick>()
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
 function enqueueTick(t: Tick) {
-  // Keep latest per symbol
   tickQueue.set(t.symbol, { ...(tickQueue.get(t.symbol) || {}), ...t })
   if (flushTimer) return
-  flushTimer = setTimeout(flushTicks, 100) // batch tiap 100ms
+  flushTimer = setTimeout(flushTicks, 100)
 }
 
 function flushTicks() {
   flushTimer = null
   if (!tickQueue.size) return
 
-  // 1x clone array → minimal patch
   const next = cryptoList.value.slice()
   const indexBySymbol = new Map(next.map((r, i) => [r.symbol, i]))
 
@@ -324,26 +370,21 @@ function flushTicks() {
     if (idx == null) continue
     const row = next[idx]
 
-    // last/close -> price
-    const priceNum = Number.isFinite(t.last)
-      ? t.last!
-      : Number.isFinite(t.close)
-        ? t.close!
-        : undefined
+    // price dari ticker.last atau kline.close
+    const priceNum = Number.isFinite(t.last) ? t.last! : (Number.isFinite(t.close) ? t.close! : undefined)
     if (typeof priceNum === 'number') {
-      // hanya format kalau berubah
       const newText = priceNum.toFixed(6)
       if (row.price !== newText) row.price = newText
       setCache(t.symbol, { price: priceNum })
     }
 
-    // changePct kalau sudah dihitung
+    // change harian dari kline 1day (open vs close)
     if (typeof t.changePct === 'number') {
       if (row.change !== t.changePct) row.change = t.changePct
       setCache(t.symbol, { change: row.change })
     }
 
-    // volume
+    // volume (ambil dari kline 1day.vol bila ada)
     if (typeof t.vol === 'number') {
       const volText = t.vol.toLocaleString('en-US', { maximumFractionDigits: 2 })
       if (row.volume !== volText) row.volume = volText
@@ -353,98 +394,139 @@ function flushTicks() {
 
   tickQueue.clear()
   cryptoList.value = next
-  // visibleList ikut slice ulang agar sinkron
   updateVisibleList()
 }
 
-function connectWebSockets() {
-  ws = new WebSocket('wss://ledgersocketone.online')
+function connectWS() {
+  if (ws) {
+    try { ws.close() } catch {}
+    ws = null
+  }
+
+  ws = new WebSocket(WS_BASE)
 
   ws.onopen = () => {
-    // Minta snapshot awal untuk semua symbol di list
-    const symbols = cryptoList.value.map((r) => toUpstreamId(r.symbol))
-    try {
-      ws!.send(JSON.stringify({ type: 'snapshot', symbols, periods: ['1day'] }))
-    } catch {}
+    subscribed = new Set()
+    // subscribe untuk simbol yang terlihat sekarang + snapshot awal
+    const ids = currentVisibleUpstreamIds()
+    if (ids.length) {
+      doSubscribe(ids)
+      requestSnapshot(ids)
+      for (const id of ids) subscribed.add(id)
+    }
   }
 
   ws.onclose = () => {
-    // Reconnect sederhana
-    setTimeout(connectWebSockets, 5000)
+    ws = null
+    if (reconnectTimer) clearTimeout(reconnectTimer)
+    reconnectTimer = setTimeout(connectWS, 2000)
   }
 
-  ws.onerror = (err) => console.error('[WS] Error:', err)
+  ws.onerror = () => {
+    try { ws?.close() } catch {}
+  }
 
   ws.onmessage = (event) => {
     try {
-      const msg = JSON.parse(event.data)
-      // --- ticker (last price) ---
-      if (msg.type === 'ticker') {
-        const symUI = toUISymbol(msg.symbol)
-        if (typeof msg.last === 'number') {
-          enqueueTick({ symbol: symUI, last: msg.last })
+      const msg = JSON.parse(event.data as string)
+
+      // snapshot batched: { type: 'snapshot', items: [...] }
+      if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
+        for (const it of msg.items) {
+          const ui = toUISymbol(String(it.symbol || ''))
+          if (!ui) continue
+          if (it.type === 'ticker' && Number.isFinite(Number(it.last))) {
+            enqueueTick({ symbol: ui, last: Number(it.last) })
+          } else if (it.type === 'kline' && it.period === '1day') {
+            const open = Number(it.open)
+            const close = Number(it.close)
+            const vol = Number(it.vol)
+            const changePct = Number.isFinite(open) && open !== 0 ? ((close - open) / open) * 100 : 0
+            enqueueTick({
+              symbol: ui,
+              close: Number.isFinite(close) ? close : undefined,
+              vol: Number.isFinite(vol) ? vol : undefined,
+              changePct,
+            })
+          }
         }
+        return
       }
 
-      // --- kline 1day (untuk change & volume) ---
-      if (msg.type === 'kline' && msg.period === '1min') {
-        const symUI = toUISymbol(msg.symbol)
+      // event individual
+      if (msg.type === 'ticker') {
+        const ui = toUISymbol(String(msg.symbol || ''))
+        if (ui && typeof msg.last === 'number') enqueueTick({ symbol: ui, last: msg.last })
+        return
+      }
+
+      if (msg.type === 'kline' && msg.period === '1day') {
+        const ui = toUISymbol(String(msg.symbol || ''))
+        if (!ui) return
         const open = Number(msg.open)
         const close = Number(msg.close)
         const vol = Number(msg.vol)
         const changePct = Number.isFinite(open) && open !== 0 ? ((close - open) / open) * 100 : 0
         enqueueTick({
-          symbol: symUI,
+          symbol: ui,
           close: Number.isFinite(close) ? close : undefined,
           vol: Number.isFinite(vol) ? vol : undefined,
           changePct,
         })
+        return
       }
+      // depth diabaikan di komponen ini
     } catch (err) {
       console.error('WS parse error:', err)
     }
   }
 }
 
-function disconnectWebSockets() {
+function disconnectWS() {
   if (ws) {
     try {
+      // Unsubscribe semua sebelum tutup (opsional)
+      const ids = Array.from(subscribed)
+      if (ids.length) doUnsubscribe(ids)
       ws.close()
     } catch {}
     ws = null
+    subscribed.clear()
   }
 }
 
 /** ==================== Lifecycle ==================== */
+function onVisibilityChange() {
+  if (document.hidden) saveCacheDebounced()
+}
 
-// simpan handler di scope setup, supaya bisa di-remove saat unmounted
+// simpan handler supaya bisa dilepas
 let visHandler: (() => void) | null = null
 
 onMounted(() => {
-  // 1) Hydrate dari cache SEDINI mungkin (kurangi frame kosong)
+  // Hydrate dari cache sedini mungkin
   const cache = loadCache()
   if (Object.keys(cache).length) applyCacheToList(cache)
+  else updateVisibleList()
 
-  // 2) Siapkan visible list awal
-  updateVisibleList()
-
-  // 3) Prefill jika konten masih pendek
+  // Prefill jika konten masih pendek
   requestAnimationFrame(() => onScroll())
 
-  // 4) Scroll listener (passive)
+  // Scroll listener (passive)
   window.addEventListener('scroll', onScroll, { passive: true })
 
-  // 5) Connect WS
-  connectWebSockets()
+  // Connect WS
+  connectWS()
 
-  // 6) Flush cache saat tab disembunyikan
+  // Visibility
   if (isBrowser()) {
-    visHandler = () => {
-      if (document.hidden) saveCacheDebounced()
-    }
+    visHandler = onVisibilityChange
     document.addEventListener('visibilitychange', visHandler, { passive: true })
   }
 })
+
+// resubscribe saat jumlah visible berubah
+watch(visibleCount, () => updateVisibleList())
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
@@ -452,7 +534,7 @@ onUnmounted(() => {
     document.removeEventListener('visibilitychange', visHandler)
     visHandler = null
   }
-  disconnectWebSockets()
+  disconnectWS()
   try {
     if (isBrowser()) localStorage.setItem(LS_KEY, JSON.stringify(inMemCache))
   } catch {}
