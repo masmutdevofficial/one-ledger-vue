@@ -216,6 +216,7 @@ const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 const WS_BASE = 'wss://ledgersocketone.online'
 const ICON_FALLBACK = '/img/crypto/_default.svg'
 const iconPath = (s: string) => `/img/crypto/${s.toLowerCase()}.svg`
+const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 
 /** ===== Menu ===== */
 interface MenuItem {
@@ -232,47 +233,45 @@ const items: MenuItem[] = [
   { label: 'More', to: '/account', img: '/img/newmenu/more.png' },
 ]
 
-// ── CACHE DASHBOARD ─────────────────────────────────────────────
+/** ===== Cache Dashboard ===== */
 type PriceEntry = { p: number; ts: number }
 type OpenEntry = { o: number; ts: number }
 type PosMini = { symbol: string; qty: number; avgCost: number }
-
 type DashCache = {
   saldo?: { v: number; ts: number }
   positions?: { items: PosMini[]; ts: number }
   prices?: Record<string, PriceEntry> // key: 'btcusdt'
   dayOpen?: Record<string, OpenEntry> // key: 'btcusdt'
 }
-
 const DASH_LS_KEY = 'dashCache:v1'
-
-// TTL: sesuaikan kebutuhan
 const SALDO_TTL = 15_000 // 15s
 const POS_TTL = 5 * 60_000 // 5m
 const PRICE_TTL = 2 * 60_000 // 2m
-const OPEN_TTL = 60 * 60_000 // 60m (open harian jarang berubah)
+const OPEN_TTL = 60 * 60_000 // 60m
 
 let dcache: DashCache = { prices: {}, dayOpen: {} }
-let saveTimer: number | null = null
+let saveTimer: ReturnType<typeof setTimeout> | null = null
 
 function loadDashCache() {
+  if (!isBrowser()) return
   try {
     const raw = localStorage.getItem(DASH_LS_KEY)
     dcache = raw ? (JSON.parse(raw) as DashCache) : { prices: {}, dayOpen: {} }
-    if (!dcache.prices) dcache.prices = {}
-    if (!dcache.dayOpen) dcache.dayOpen = {}
+    dcache.prices ||= {}
+    dcache.dayOpen ||= {}
   } catch {
     dcache = { prices: {}, dayOpen: {} }
   }
 }
 function saveDashCacheDebounced() {
+  if (!isBrowser()) return
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = window.setTimeout(() => {
     try {
       localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache))
     } catch {}
     saveTimer = null
-  }, 300)
+  }, 250)
 }
 
 function upsertSaldoCache(v: number) {
@@ -284,11 +283,11 @@ function upsertPositionsCache(items: PosMini[]) {
   saveDashCacheDebounced()
 }
 function upsertPriceCache(symLower: string, price: number) {
-  dcache.prices![symLower] = { p: price, ts: Date.now() }
+  ;(dcache.prices ||= {})[symLower] = { p: price, ts: Date.now() }
   saveDashCacheDebounced()
 }
 function upsertOpenCache(symLower: string, open: number) {
-  dcache.dayOpen![symLower] = { o: open, ts: Date.now() }
+  ;(dcache.dayOpen ||= {})[symLower] = { o: open, ts: Date.now() }
   saveDashCacheDebounced()
 }
 
@@ -296,14 +295,9 @@ function upsertOpenCache(symLower: string, open: number) {
 function hydrateFromCache() {
   const now = Date.now()
 
-  // saldo
-  if (dcache.saldo && now - dcache.saldo.ts <= SALDO_TTL) {
-    saldo.value = Number(dcache.saldo.v) || 0
-  }
+  if (dcache.saldo && now - dcache.saldo.ts <= SALDO_TTL) saldo.value = Number(dcache.saldo.v) || 0
 
-  // positions
   if (dcache.positions && now - dcache.positions.ts <= POS_TTL) {
-    // rebuild positions (sesuai tipe aslinya)
     positions.value = dcache.positions.items.map((it) => ({
       symbol: it.symbol,
       qty: it.qty,
@@ -311,16 +305,12 @@ function hydrateFromCache() {
     }))
   }
 
-  // isi priceMap dari cache harga yang masih valid
   if (dcache.prices) {
     for (const [k, v] of Object.entries(dcache.prices)) {
-      if (now - v.ts <= PRICE_TTL) {
-        priceMap[k.toUpperCase()] = v.p
-      }
+      if (now - v.ts <= PRICE_TTL) priceMap[k.toUpperCase()] = v.p
     }
   }
 
-  // isi change top coins dari open cache + priceMap (kalau tersedia)
   if (dcache.dayOpen) {
     for (const coin of displayedCoins) {
       const lower = symbolMap[coin] + 'usdt'
@@ -336,7 +326,6 @@ function hydrateFromCache() {
     }
   }
 
-  // total (kalau saldo & posisi sudah ada)
   recomputeTotals()
 }
 
@@ -358,7 +347,7 @@ interface MarketItem {
   change: number | null
   icon: string
 }
-const displayedCoins = ['BNB', 'BTC', 'ETH', 'SOL', 'XRP']
+const displayedCoins = ['BNB', 'BTC', 'ETH', 'SOL', 'XRP'] as const
 const symbolMap: Record<string, string> = {
   BNB: 'bnb',
   BTC: 'btc',
@@ -371,10 +360,17 @@ const marketData = ref<MarketItem[]>(
 )
 
 /** ===== Helpers ===== */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const n = (v: any, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d)
-const nfId = (min: number, max: number) =>
-  new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max })
+const nfIdCache = new Map<string, Intl.NumberFormat>()
+const nfId = (min: number, max: number) => {
+  const key = `${min}-${max}`
+  if (!nfIdCache.has(key))
+    nfIdCache.set(
+      key,
+      new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }),
+    )
+  return nfIdCache.get(key)!
+}
+const n = (v: unknown, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d)
 const formatNumberId = (nu: number, digits = 2) =>
   Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0'
 const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
@@ -384,60 +380,62 @@ const signedMoneyId = (nu: number, digits = 2) =>
   (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
 const truncate = (text: string, limit: number): string =>
   text.length > limit ? text.substring(0, limit) + '...' : text
-// const splitSym = (s: string) => {
-//   const up = s.toUpperCase()
-//   if (up.endsWith('USDT')) return { base: up.slice(0, -4), quote: 'USDT' as const }
-//   if (up.endsWith('USDC')) return { base: up.slice(0, -4), quote: 'USDC' as const }
-//   if (up.endsWith('USD')) return { base: up.slice(0, -3), quote: 'USD' as const }
-//   return { base: up, quote: 'USDT' as const }
-// }
 
 /** ===== Totals ===== */
+let totalsScheduled = false
 function recomputeTotals() {
-  let sumValue = 0,
-    sumUpnl = 0,
-    sumCost = 0
-  for (const p of positions.value) {
-    const sym = String(p.symbol).toUpperCase()
-    const last = n(priceMap[sym], 0)
-    const qty = n(p.qty, 0)
-    const avg = n(p.avg_cost, 0)
-    sumValue += qty * last
-    sumUpnl += (last - avg) * qty
-    sumCost += avg * qty
-  }
-  portfolioUpnlAbs.value = sumUpnl
-  portfolioUpnlPct.value = sumCost > 0 ? (sumUpnl / sumCost) * 100 : 0
-  totalValue.value = (saldo.value ?? 0) + sumValue
+  // jadwalkan sekali per frame agar hemat
+  if (totalsScheduled) return
+  totalsScheduled = true
+  requestAnimationFrame(() => {
+    let sumValue = 0,
+      sumUpnl = 0,
+      sumCost = 0
+    for (const p of positions.value) {
+      const sym = String(p.symbol).toUpperCase()
+      const last = n(priceMap[sym], 0)
+      const qty = n(p.qty, 0)
+      const avg = n(p.avg_cost, 0)
+      sumValue += qty * last
+      sumUpnl += (last - avg) * qty
+      sumCost += avg * qty
+    }
+    portfolioUpnlAbs.value = sumUpnl
+    portfolioUpnlPct.value = sumCost > 0 ? (sumUpnl / sumCost) * 100 : 0
+    totalValue.value = (saldo.value ?? 0) + sumValue
+    totalsScheduled = false
+  })
 }
 
-/** ===== Loader ===== */
+/** ===== Loader (API, wajib Bearer) ===== */
 async function loadSaldo() {
-  const token = localStorage.getItem('token')
+  const token = isBrowser() ? localStorage.getItem('token') : ''
   if (!token) {
     saldo.value = 0
     return
   }
   const res = await fetch(`${API_BASE}/saldo`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    credentials: 'include',
   })
   const data = await res.json().catch(() => ({}))
   const val = res.ok && data?.status === 'success' ? n(data.saldo, 0) : 0
   saldo.value = val
-  upsertSaldoCache(val) // ← simpan
+  upsertSaldoCache(val)
 }
 
 async function loadPositions() {
-  const token = localStorage.getItem('token')
+  const token = isBrowser() ? localStorage.getItem('token') : ''
   if (!token) {
     positions.value = []
-    upsertPositionsCache([]) // kosongkan cache juga
+    upsertPositionsCache([])
     return
   }
   const res = await fetch(`${API_BASE}/positions-all`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    credentials: 'include',
   })
-  const rows: PositionRow[] = res.ok ? await res.json() : []
+  const rows: PositionRow[] = res.ok ? await res.json().catch(() => []) : []
   const filtered = rows.filter((r) => n(r.qty, 0) > 0)
   positions.value = filtered
 
@@ -446,11 +444,10 @@ async function loadPositions() {
     qty: n(r.qty, 0),
     avgCost: n(r.avg_cost, 0),
   }))
-  upsertPositionsCache(mini) // ← simpan
+  upsertPositionsCache(mini)
 }
 
-/** ===== WS Aggregator (satu koneksi) ===== */
-// aktifkan filter supaya hanya proses simbol yang dipakai (positions + displayedCoins)
+/** ===== WS Aggregator (satu koneksi + batching) ===== */
 let activeLower = new Set<string>()
 function rebuildActiveLower() {
   const s = new Set<string>()
@@ -460,37 +457,39 @@ function rebuildActiveLower() {
 }
 watch(positions, rebuildActiveLower, { deep: true })
 
-// buffer update agar render hemat
+// buffer update
 const pendingPrice: Record<string, number> = {} // 'BTCUSDT' -> last
 const pendingKlineClose: Record<string, number> = {} // 'BTCUSDT' -> close 1d
-let flushTimer: number | null = null
+let flushTimer: ReturnType<typeof setTimeout> | null = null
 
 function scheduleFlush() {
   if (flushTimer) return
   flushTimer = window.setTimeout(() => {
-    // apply ke positions/summary
-    const touched: Array<{ up: string; px: number }> = [] // ← track simbol yang berubah
+    const touched: string[] = []
 
     for (const [symUp, px] of Object.entries(pendingPrice)) {
-      priceMap[symUp] = px
-      touched.push({ up: symUp, px }) // ← catat
+      if (priceMap[symUp] !== px) {
+        priceMap[symUp] = px
+        touched.push(symUp)
+      }
       delete pendingPrice[symUp]
     }
     for (const [symUp, close] of Object.entries(pendingKlineClose)) {
-      priceMap[symUp] = close
-      touched.push({ up: symUp, px: close }) // ← catat
+      if (priceMap[symUp] !== close) {
+        priceMap[symUp] = close
+        touched.push(symUp)
+      }
       delete pendingKlineClose[symUp]
     }
 
-    // (OPSIONAL) sinkronkan cache dari priceMap:
-    // ini yang dimaksud di komen "opsional..."
-    for (const { up, px } of touched) {
-      upsertPriceCache(up.toLowerCase(), px) // ← DI SINI
+    // sinkron cache
+    for (const symUp of touched) {
+      upsertPriceCache(symUp.toLowerCase(), priceMap[symUp])
     }
 
     if (touched.length) recomputeTotals()
 
-    // apply ke marketData (top coins)
+    // update marketData (top coins)
     for (const item of marketData.value) {
       const upper = (symbolMap[item.name] + 'usdt').toUpperCase()
       const last = priceMap[upper]
@@ -502,17 +501,14 @@ function scheduleFlush() {
 }
 
 let wsAgg: WebSocket | null = null
-let wsTimer: number | null = null
+let wsTimer: ReturnType<typeof setTimeout> | null = null
 
-// simpan open harian untuk hitung change
 const dayOpen: Record<string, number> = {} // 'BTCUSDT' -> open
 
 function handleKline1d(symLower: string, open: number, close: number) {
   const symUp = symLower.toUpperCase()
   dayOpen[symUp] = open
   pendingKlineClose[symUp] = close
-
-  // cache open & close (close dianggap harga terakhir juga)
   upsertOpenCache(symLower, open)
   upsertPriceCache(symLower, close)
 
@@ -530,15 +526,16 @@ function handleKline1d(symLower: string, open: number, close: number) {
 function handleTicker(symLower: string, last: number) {
   const symUp = symLower.toUpperCase()
   pendingPrice[symUp] = last
-  // cache harga (lowercase jadi key)
   upsertPriceCache(symLower, last)
   scheduleFlush()
 }
+
 function connectAggregator() {
-  if (wsAgg)
+  if (wsAgg) {
     try {
       wsAgg.close()
     } catch {}
+  }
   wsAgg = new WebSocket(WS_BASE)
 
   wsAgg.onopen = () => {
@@ -567,12 +564,10 @@ function connectAggregator() {
         handleTicker(symLower, Number(msg.last))
         return
       }
-      if (msg.type === 'kline' && msg.period === '1day') {
+      if (msg.type === 'kline' && msg.period === '1min') {
         const open = Number(msg.open),
           close = Number(msg.close)
-        if (Number.isFinite(open) && Number.isFinite(close)) {
-          handleKline1d(symLower, open, close)
-        }
+        if (Number.isFinite(open) && Number.isFinite(close)) handleKline1d(symLower, open, close)
         return
       }
     } catch {
@@ -598,32 +593,59 @@ const newsList = ref<NewsItem[]>([])
 const loading = ref(true)
 const modal = useApiAlertStore()
 
+/** ===== Infinite Scroll (untuk news atau section panjang) ===== */
+const filteredMarketData = computed(
+  () =>
+    displayedCoins
+      .map((coin) => marketData.value.find((item) => item.name === coin))
+      .filter(Boolean) as MarketItem[],
+)
+const onScroll = () => {
+  const bottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100
+  if (!bottom) return
+  // kalau mau pagination untuk newsList / section lain, tambah di sini.
+}
+
+/** ===== Visibility handler (TOP-LEVEL, di luar onMounted) ===== */
+const visHandler = () => {
+  if (document.hidden) saveDashCacheDebounced()
+}
+
 /** ===== Lifecycle ===== */
 onMounted(async () => {
   loadDashCache()
-  hydrateFromCache() // ← tampilkan dari cache dulu
+  hydrateFromCache() // tampilkan dari cache dulu
 
   await Promise.all([loadSaldo(), loadPositions()])
 
   // init price map utk simbol posisi (kalau belum ada)
-  for (const p of positions.value)
-    priceMap[String(p.symbol).toUpperCase()] = priceMap[String(p.symbol).toUpperCase()] ?? 0
+  for (const p of positions.value) {
+    const key = String(p.symbol).toUpperCase()
+    priceMap[key] = priceMap[key] ?? 0
+  }
 
   rebuildActiveLower()
   recomputeTotals()
 
   connectAggregator()
 
-  // load news (tak perlu cache di sini)
-  const token = localStorage.getItem('token')
+  // listener scroll (passive)
+  window.addEventListener('scroll', onScroll, { passive: true })
+
+  // pre-check untuk halaman pendek
+  requestAnimationFrame(() => onScroll())
+
+  // load news
+  const token = isBrowser() ? localStorage.getItem('token') : ''
   if (!token) {
     modal.open('Unauthorized', 'Token tidak ditemukan.')
   } else {
     try {
       const res = await fetch(`${API_BASE}/news`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (res.ok && data?.status === 'success') {
         newsList.value = (data.data as ApiNewsItem[]).map((item) => {
           const d = new Date(item.published_at)
@@ -653,9 +675,20 @@ onMounted(async () => {
       loading.value = false
     }
   }
+
+  // pasang visibility handler DI SINI (pemasangan event boleh di onMounted)
+  if (isBrowser()) {
+    document.addEventListener('visibilitychange', visHandler, { passive: true })
+  }
 })
 
 onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
+
+  if (isBrowser()) {
+    document.removeEventListener('visibilitychange', visHandler)
+  }
+
   if (wsAgg) {
     try {
       wsAgg.close()
@@ -666,15 +699,12 @@ onUnmounted(() => {
     clearTimeout(wsTimer)
     wsTimer = null
   }
-})
 
-/** ===== Market order sesuai displayedCoins ===== */
-const filteredMarketData = computed(
-  () =>
-    displayedCoins
-      .map((coin) => marketData.value.find((item) => item.name === coin))
-      .filter(Boolean) as MarketItem[],
-)
+  // flush terakhir
+  try {
+    if (isBrowser()) localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache))
+  } catch {}
+})
 </script>
 
 <style scoped>

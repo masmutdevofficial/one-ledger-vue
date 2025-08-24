@@ -156,19 +156,23 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
+import { useApiAlertStore } from '@/stores/apiAlert'
 
 const router = useRouter()
+const modal = useApiAlertStore()
 
+/** ===== Utils ===== */
+const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
+
+/** ===== Saldo ringkas (header) ===== */
 interface SaldoResponse {
-  status: string
+  status: 'success' | 'error' | string
   saldo: number
   koin: number
 }
 
 const saldoAwal = ref<number | null>(null)
 const koinAwal = ref<number | null>(null)
-
-// pakai file lokal agar stabil: simpan logo di public/img/usdt.svg
 const USDT_ICON = '/img/crypto/usdt.svg'
 
 const saldoText = computed(() =>
@@ -180,31 +184,12 @@ const saldoText = computed(() =>
     : '...',
 )
 
-onMounted(async () => {
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) throw new Error('Token tidak ada')
-    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/saldo', {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-    })
-    const data: SaldoResponse = await res.json()
-    if (res.ok && data.status === 'success') {
-      saldoAwal.value = Number(data.saldo) || 0
-      koinAwal.value = Number(data.koin) || 0
-    } else {
-      console.error('Gagal ambil saldo:', data)
-    }
-  } catch (err) {
-    console.error('Fetch error:', err)
-  }
-})
-
-/** ===== Types ===== */
+/** ===== Types Portfolio ===== */
 type Quote = 'USDT' | 'USDC' | 'USD'
 type PositionRow = {
   id: number
   id_users: number
-  symbol: string // e.g. BTCUSDT
+  symbol: string // BTCUSDT
   qty: string | number
   avg_cost: string | number
   realized_pnl: string | number
@@ -230,6 +215,7 @@ const WS_BASE = 'wss://ledgersocketone.online'
 const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
+// Lengkapi sesuai kebutuhan kamu
 const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote }> = {
   BTC: { name: 'Bitcoin', logoUrl: localLogo('btc'), quote: 'USDT' },
   ETH: { name: 'Ethereum', logoUrl: localLogo('eth'), quote: 'USDT' },
@@ -311,7 +297,8 @@ const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote 
   SHELL: { name: 'Shell', logoUrl: localLogo('shell'), quote: 'USDT' },
   NAKA: { name: 'Nakamoto Games', logoUrl: localLogo('naka'), quote: 'USDT' },
 }
-// ── CACHE: saldo + positions + last prices ─────────────────────────────
+
+/** ===== Cache: saldo + positions + last prices ===== */
 type PriceCacheEntry = { p: number; ts: number }
 type PositionsCacheItem = { symbol: string; qty: number; avgCost: number; lastPrice?: number }
 type PortfolioCache = {
@@ -320,33 +307,34 @@ type PortfolioCache = {
   positions?: { items: PositionsCacheItem[]; ts: number }
   prices?: Record<string, PriceCacheEntry> // key: 'btcusdt'
 }
-
 const PORTF_LS_KEY = 'portfolioCache:v1'
-const SALDO_TTL = 15 * 1000 // 15s
-const POS_TTL = 5 * 60 * 1000 // 5m
-const PRICE_TTL = 2 * 60 * 1000 // 2m
+const SALDO_TTL = 15_000
+const POS_TTL = 5 * 60_000
+const PRICE_TTL = 2 * 60_000
 
 let portfCache: PortfolioCache = { ts: 0, prices: {} }
-let portfSaveTimer: number | null = null
+let portfSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 function loadPortfolioCache() {
+  if (!isBrowser()) return
   try {
     const raw = localStorage.getItem(PORTF_LS_KEY)
     portfCache = raw ? (JSON.parse(raw) as PortfolioCache) : { ts: 0, prices: {} }
-    if (!portfCache.prices) portfCache.prices = {}
+    portfCache.prices ||= {}
   } catch {
     portfCache = { ts: 0, prices: {} }
   }
 }
 function savePortfolioCacheDebounced() {
+  if (!isBrowser()) return
   if (portfSaveTimer) clearTimeout(portfSaveTimer)
   portfSaveTimer = window.setTimeout(() => {
     try {
       localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache))
     } catch {}
-  }, 300)
+    portfSaveTimer = null
+  }, 250)
 }
-
 function upsertSaldoCache(v: number) {
   portfCache.saldo = { v, ts: Date.now() }
   savePortfolioCacheDebounced()
@@ -356,34 +344,25 @@ function upsertPositionsCache(items: PositionsCacheItem[]) {
   savePortfolioCacheDebounced()
 }
 function upsertPriceCache(symLower: string, price: number) {
-  if (!portfCache.prices) portfCache.prices = {}
-  portfCache.prices[symLower] = { p: price, ts: Date.now() }
+  ;(portfCache.prices ||= {})[symLower] = { p: price, ts: Date.now() }
   savePortfolioCacheDebounced()
 }
 
 /** Hydrate saldo + assets dari cache */
 function hydrateFromCache() {
   const now = Date.now()
-
-  // saldo
   if (portfCache.saldo && now - portfCache.saldo.ts <= SALDO_TTL) {
     saldo.value = Number(portfCache.saldo.v) || 0
   }
 
-  // positions -> assets (pakai meta/logo)
   if (portfCache.positions && now - portfCache.positions.ts <= POS_TTL) {
     const list: AssetItem[] = (portfCache.positions.items || []).map((it) => {
-      const sym = String(it.symbol).toUpperCase() // e.g. BTCUSDT
+      const sym = String(it.symbol).toUpperCase()
       const { base, quote } = splitSymbol(sym)
-      const meta = SYMBOL_META[base] ?? {
-        name: base,
-        logoUrl: 'https://placehold.co/20x20/777/fff/png?text=?',
-        quote,
-      }
-      const lastCached = it.lastPrice ?? 0
-      const qty = Number(it.qty) || 0
-      const avg = Number(it.avgCost) || 0
-      const last = Number(lastCached) || 0
+      const meta = SYMBOL_META[base] ?? { name: base, logoUrl: localLogo(base), quote }
+      const qty = normalizeNum(it.qty)
+      const avg = normalizeNum(it.avgCost)
+      const last = normalizeNum(it.lastPrice)
       return {
         symbol: sym,
         base,
@@ -398,11 +377,10 @@ function hydrateFromCache() {
       }
     })
 
-    // overlay last price dari cache harga jika lebih fresh
+    // overlay harga dari cache harga jika lebih fresh
     const prices = portfCache.prices || {}
     for (const a of list) {
-      const key = a.symbol.toLowerCase()
-      const pe = prices[key]
+      const pe = prices[a.symbol.toLowerCase()]
       if (pe && now - pe.ts <= PRICE_TTL) {
         a.lastPrice = pe.p
         a.valueUsd = a.qty * a.lastPrice
@@ -411,41 +389,48 @@ function hydrateFromCache() {
       }
     }
 
-    // urutkan & set
     list.sort((a, b) => b.valueUsd - a.valueUsd)
     assets.value = list
+    rebuildAssetMap()
     recomputeTotals()
   }
 }
 
 /** ===== State saldo & portfolio ===== */
 const saldo = ref<number | null>(null)
-const totalValue = ref<number | null>(null) // saldo + sum(asset value)
+const totalValue = ref<number | null>(null)
 const portfolioUpnlAbs = ref<number>(0)
 const portfolioUpnlPct = ref<number>(0)
 
 /** ===== State assets ===== */
 const assets = ref<AssetItem[]>([])
+const assetMap = new Map<string, AssetItem>() // UPPER symbol -> AssetItem
+function rebuildAssetMap() {
+  assetMap.clear()
+  for (const a of assets.value) assetMap.set(a.symbol.toUpperCase(), a)
+}
 const loadingAssets = ref(false)
 const errorAssets = ref<string | null>(null)
 
+/** ===== Formatters (cache Intl) ===== */
+const nfCache = new Map<string, Intl.NumberFormat>()
+const nfId = (min: number, max: number) => {
+  const k = `${min}-${max}`
+  if (!nfCache.has(k))
+    nfCache.set(
+      k,
+      new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }),
+    )
+  return nfCache.get(k)!
+}
+const formatNumberId = (nu: number, digits = 2) =>
+  Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0'
+const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
+const signedPercent = (pct: number) =>
+  (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
+const signedMoneyId = (nu: number, digits = 2) =>
+  (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
 /** ===== Helpers ===== */
-const nfId = (min: number, max: number) =>
-  new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max })
-function formatNumberId(n: number, digits = 2): string {
-  return Number.isFinite(n) ? nfId(digits, digits).format(n) : '0'
-}
-function moneyId(n: number, digits = 2): string {
-  return `$${formatNumberId(n, digits)}`
-}
-function signedPercent(pct: number): string {
-  const sign = pct >= 0 ? '+' : ''
-  return sign + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
-}
-function signedMoneyId(n: number, digits = 2): string {
-  const sign = n >= 0 ? '+' : '-'
-  return sign + moneyId(Math.abs(n), digits)
-}
 function splitSymbol(sym: string): { base: string; quote: Quote } {
   const s = sym.toUpperCase()
   if (s.endsWith('USDT')) return { base: s.slice(0, -4), quote: 'USDT' }
@@ -455,57 +440,55 @@ function splitSymbol(sym: string): { base: string; quote: Quote } {
 }
 function normalizeNum(v: string | number | null | undefined): number {
   if (v === null || v === undefined) return 0
-  if (typeof v === 'number') return v
-  return Number(String(v)) || 0
+  return typeof v === 'number' ? v : Number(v) || 0
 }
 
 /** ===== Loaders ===== */
 async function loadSaldo() {
-  const token = localStorage.getItem('token')
+  const token = isBrowser() ? localStorage.getItem('token') : ''
   if (!token) return
-  const res = await fetch(`${API_BASE}/saldo`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-  })
-  const data = await res.json().catch(() => ({}))
-  if (res.ok && data?.status === 'success') {
-    const v = Number(data.saldo) || 0
-    saldo.value = v
-    upsertSaldoCache(v) // ← simpan ke cache
-  } else {
-    saldo.value = 0
+  try {
+    const res = await fetch(`${API_BASE}/saldo`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      credentials: 'include',
+    })
+    const data: SaldoResponse = await res
+      .json()
+      .catch(() => ({ status: 'error', saldo: 0, koin: 0 }))
+    if (res.ok && data?.status === 'success') {
+      const v = Number(data.saldo) || 0
+      saldoAwal.value = v
+      koinAwal.value = Number(data.koin) || 0
+      saldo.value = v
+      upsertSaldoCache(v)
+    } else {
+      modal.open('Error', 'Gagal mengambil saldo.')
+    }
+  } catch (e: unknown) {
+    modal.open('Error', `Gagal terhubung ke server saldo. ${e instanceof Error ? e.message : ''}`)
   }
 }
+
 async function loadAssets() {
   loadingAssets.value = true
   errorAssets.value = null
   try {
-    const token = localStorage.getItem('token')
+    const token = isBrowser() ? localStorage.getItem('token') : ''
     if (!token) throw new Error('Token tidak ada.')
 
     const res = await fetch(`${API_BASE}/positions-all`, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      credentials: 'include',
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const rows: PositionRow[] = await res.json()
 
-    if (!Array.isArray(rows) || rows.length === 0) {
-      assets.value = []
-      upsertPositionsCache([]) // ← kosongkan cache positions juga
-      recomputeTotals()
-      return
-    }
-
-    // map → AssetItem
     const mapped: AssetItem[] = rows
       .filter((r) => normalizeNum(r.qty) > 0)
       .map((r) => {
         const sym = String(r.symbol).toUpperCase()
         const { base, quote } = splitSymbol(sym)
-        const meta = SYMBOL_META[base] ?? {
-          name: base,
-          logoUrl: 'https://placehold.co/20x20/777/fff/png?text=?',
-          quote,
-        }
+        const meta = SYMBOL_META[base] ?? { name: base, logoUrl: localLogo(base), quote }
         const qty = normalizeNum(r.qty)
         const avg = normalizeNum(r.avg_cost)
         const last = 0
@@ -527,8 +510,7 @@ async function loadAssets() {
     const now = Date.now()
     const prices = portfCache.prices || {}
     for (const a of mapped) {
-      const key = a.symbol.toLowerCase()
-      const pe = prices[key]
+      const pe = prices[a.symbol.toLowerCase()]
       if (pe && now - pe.ts <= PRICE_TTL) {
         a.lastPrice = pe.p
         a.valueUsd = a.qty * a.lastPrice
@@ -539,97 +521,108 @@ async function loadAssets() {
 
     mapped.sort((a, b) => b.valueUsd - a.valueUsd)
     assets.value = mapped
+    rebuildAssetMap()
     recomputeTotals()
 
-    // simpan positions ke cache (tanpa harga; kecil & bersih)
     const posItems: PositionsCacheItem[] = mapped.map((a) => ({
       symbol: a.symbol,
       qty: a.qty,
       avgCost: a.avgCost,
-      // boleh simpan lastPrice juga agar hydrate lebih cepat walau price cache kosong
       lastPrice: a.lastPrice,
     }))
     upsertPositionsCache(posItems)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
+    const errorAssets = ref<string>('')
     errorAssets.value = e?.message || 'Gagal memuat assets.'
     assets.value = []
     recomputeTotals()
+
+    modal.open('Error', errorAssets.value)
   } finally {
     loadingAssets.value = false
   }
 }
 
-/** Hitung total value & portfolio uPNL */
+/** ===== Totals (per-frame) ===== */
+let totalsScheduled = false
 function recomputeTotals() {
-  const sumValue = assets.value.reduce((acc, a) => acc + (a.valueUsd || 0), 0)
-  const sumUpnl = assets.value.reduce((acc, a) => acc + (a.uPnlAbs || 0), 0)
-  const cost = assets.value.reduce((acc, a) => acc + a.avgCost * a.qty, 0)
-
-  portfolioUpnlAbs.value = sumUpnl
-  portfolioUpnlPct.value = cost > 0 ? (sumUpnl / cost) * 100 : 0
-
-  const s = saldo.value ?? 0
-  totalValue.value = s + sumValue
+  if (totalsScheduled) return
+  totalsScheduled = true
+  requestAnimationFrame(() => {
+    let sumValue = 0,
+      sumUpnl = 0,
+      cost = 0
+    for (const a of assets.value) {
+      sumValue += a.valueUsd || 0
+      sumUpnl += a.uPnlAbs || 0
+      cost += a.avgCost * a.qty
+    }
+    portfolioUpnlAbs.value = sumUpnl
+    portfolioUpnlPct.value = cost > 0 ? (sumUpnl / cost) * 100 : 0
+    totalValue.value = (saldo.value ?? 0) + sumValue
+    totalsScheduled = false
+  })
 }
 
-/** ===== Realtime via WebSocket (ticker) ===== */
+/** ===== Realtime via WebSocket (ticker + kline close) ===== */
 let aggWs: WebSocket | null = null
-let reconnectTimer: number | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
 // buffer agar tidak render tiap tick
 const pending: Record<string, { last?: number; klineClose?: number }> = {}
-let flushTimer: number | null = null
+let flushTimer: ReturnType<typeof setTimeout> | null = null
+
 function scheduleFlush() {
   if (flushTimer) return
   flushTimer = window.setTimeout(() => {
     const touched: string[] = []
 
+    // pakai assetMap untuk O(1) lookup
     for (const [symLower, payload] of Object.entries(pending)) {
       const symUp = symLower.toUpperCase()
-      const a = assets.value.find((x) => x.symbol === symUp)
+      const a = assetMap.get(symUp)
       if (!a) continue
 
-      let priceUpdated = false
-      if (payload.last !== undefined) {
+      let changed = false
+      if (payload.last !== undefined && a.lastPrice !== payload.last) {
         a.lastPrice = payload.last
-        priceUpdated = true
+        changed = true
       }
-      if (payload.klineClose !== undefined) {
+      if (payload.klineClose !== undefined && a.lastPrice !== payload.klineClose) {
         a.lastPrice = payload.klineClose
-        priceUpdated = true
+        changed = true
       }
-
-      if (priceUpdated) {
+      if (changed) {
         a.valueUsd = a.qty * a.lastPrice
         a.uPnlAbs = (a.lastPrice - a.avgCost) * a.qty
         a.uPnlPct = a.avgCost > 0 ? ((a.lastPrice - a.avgCost) / a.avgCost) * 100 : 0
         touched.push(symLower)
       }
+      delete pending[symLower]
     }
 
-    // total sekali
-    recomputeTotals()
-
-    // update cache harga untuk simbol yang tersentuh
-    for (const k of touched) {
-      const a = assets.value.find((x) => x.symbol.toLowerCase() === k)
-      if (a && Number.isFinite(a.lastPrice)) upsertPriceCache(k, a.lastPrice)
+    if (touched.length) {
+      recomputeTotals()
+      for (const k of touched) {
+        const a = assetMap.get(k.toUpperCase())
+        if (a && Number.isFinite(a.lastPrice)) upsertPriceCache(k, a.lastPrice)
+      }
     }
 
-    // reset buffer
-    for (const k of Object.keys(pending)) delete pending[k]
     flushTimer = null
   }, 300)
 }
 
 function connectAggregatorWs() {
-  if (aggWs)
+  if (aggWs) {
     try {
       aggWs.close()
     } catch {}
+    aggWs = null
+  }
 
-  aggWs = new WebSocket(WS_BASE) // contoh: wss://z8gwo.../ (tanpa path)
+  aggWs = new WebSocket(WS_BASE)
   aggWs.onopen = () => {
     /* connected */
   }
@@ -649,55 +642,66 @@ function connectAggregatorWs() {
   aggWs.onmessage = (e) => {
     try {
       const msg = JSON.parse(e.data as string)
-      // normalisasi symbol dari server (lowercase, mis. 'btcusdt')
       const symLower = String(msg.symbol || '').toLowerCase()
       if (!symLower) return
 
       if (msg.type === 'ticker' && Number.isFinite(Number(msg.last))) {
-        pending[symLower] = pending[symLower] || {}
-        pending[symLower].last = Number(msg.last)
+        ;(pending[symLower] ||= {}).last = Number(msg.last)
         scheduleFlush()
         return
       }
-
       if (msg.type === 'kline' && msg.period === '1day') {
         const close = Number(msg.close)
-        if (!Number.isFinite(close)) return
-        pending[symLower] = pending[symLower] || {}
-        pending[symLower].klineClose = close // ✅ hanya simpan close
-        scheduleFlush()
+        if (Number.isFinite(close)) {
+          ;(pending[symLower] ||= {}).klineClose = close
+          scheduleFlush()
+        }
         return
       }
     } catch {
-      // abaikan parsing error
+      /* ignore */
     }
   }
 }
 
+/** ===== Navigasi ===== */
 function goAsset(a: { symbol: string }) {
-  const sym = String(a.symbol || '').toLowerCase() // e.g. BTCUSDT -> btcusdt
+  const sym = String(a.symbol || '').toLowerCase() // BTCUSDT -> btcusdt
   if (!sym) return
   router.push({ path: '/trade', query: { symbol: sym } })
 }
 
-// Buat indeks symbol → AssetItem (uppercase, mis. 'BTCUSDT')
-const assetMap = new Map<string, AssetItem>()
+/** ===== Lifecycle ===== */
 
-function rebuildAssetMap() {
-  assetMap.clear()
-  for (const a of assets.value) assetMap.set(a.symbol.toUpperCase(), a)
-}
+// simpan remover untuk beforeunload agar bisa dilepas saat unmount
+let removeBeforeUnload: (() => void) | null = null
 
-onMounted(async () => {
+onMounted(() => {
   loadPortfolioCache()
-  hydrateFromCache() // ← isi UI dulu dari cache (jika valid)
+  hydrateFromCache()
 
-  await loadSaldo() // ← tetap fetch, akan overwrite & update cache
-  await loadAssets() // ← tetap fetch, akan overwrite & update cache
-  connectAggregatorWs() // ← setelah assets terisi
+  // register beforeunload listener SEBELUM ada await
+  if (isBrowser()) {
+    const flush = () => {
+      try {
+        localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache))
+      } catch {}
+    }
+    window.addEventListener('beforeunload', flush)
+    removeBeforeUnload = () => window.removeEventListener('beforeunload', flush)
+  }
+
+  // kerjakan tugas async TANPA membuat onMounted async
+  ;(async () => {
+    await loadSaldo()
+    await loadAssets()
+    connectAggregatorWs() // connect setelah assets terisi
+  })().catch(() => {
+    // optional: swallow/log error kalau perlu
+  })
 })
 
-// ✅ watcher pengganti (tanpa subscription)
+// rebuild map & totals saat assets berubah
 watch(
   assets,
   () => {
@@ -708,6 +712,12 @@ watch(
 )
 
 onUnmounted(() => {
+  // lepas beforeunload listener
+  if (removeBeforeUnload) {
+    removeBeforeUnload()
+    removeBeforeUnload = null
+  }
+
   if (aggWs) {
     try {
       aggWs.close()

@@ -1,35 +1,46 @@
 <template>
   <div>
     <div class="flex items-center justify-between max-w-md mx-4 mt-4">
-      <div class="relative inline-block">
-        <!-- Trigger Dropdown -->
-        <div
-          class="flex items-center space-x-1 cursor-pointer"
-          @click="dropdownOpen = !dropdownOpen"
+      <div class="flex flex-row justify-center items-center">
+        <button
+          v-if="showChart"
+          class="rounded-lg pr-2 py-1 text-black"
+          @click="showChart = false"
+          :aria-pressed="false"
         >
-          <span class="font-semibold text-black text-base">{{ selectedPair }}</span>
-          <Icon icon="tabler:chevron-down" class="text-black text-base" />
-        </div>
+          <Icon icon="tabler:arrow-left" class="w-5 h-5" />
+        </button>
+        <div class="relative inline-block">
+          <!-- Trigger Dropdown -->
+          <div
+            class="flex items-center space-x-1 cursor-pointer"
+            @click="dropdownOpen = !dropdownOpen"
+          >
+            <span class="font-semibold text-black text-base">{{ selectedPair }}</span>
+            <Icon icon="tabler:chevron-down" class="text-black text-base" />
+          </div>
 
-        <!-- Dropdown -->
-        <div
-          v-if="dropdownOpen"
-          class="absolute z-50 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md"
-        >
-          <ul class="max-h-64 overflow-auto">
-            <li
-              v-for="pair in tradingPairs"
-              :key="pair"
-              @click="selectPair(pair)"
-              class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
-            >
-              {{ pair }}
-            </li>
-          </ul>
+          <!-- Dropdown -->
+          <div
+            v-if="dropdownOpen"
+            class="absolute z-50 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md"
+          >
+            <ul class="max-h-64 overflow-auto">
+              <li
+                v-for="pair in tradingPairs"
+                :key="pair"
+                @click="selectPair(pair)"
+                class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
+              >
+                {{ pair }}
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
+
       <div class="flex items-center space-x-4 text-gray-400 text-lg">
-        <Icon icon="tabler:chart-bar" />
+        <Icon @click="showChart = true" icon="tabler:chart-bar" />
         <Icon icon="tabler:dots" />
       </div>
     </div>
@@ -47,7 +58,77 @@
       </span>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-4">
+    <div v-if="showChart" class="grid grid-cols-[50px_1fr] gap-2 items-stretch w-full relative">
+      <aside class="rounded-xl border border-white/10 p-2 sm:row-span-1">
+        <div class="flex flex-col gap-2 text-xs">
+          <!-- tombol tipe chart -->
+          <button
+            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+            :class="{
+              'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
+              'hover:bg-white/5': kind !== 'candlestick',
+            }"
+            :aria-pressed="kind === 'candlestick'"
+            @click="kind = 'candlestick'"
+          >
+            <Icon icon="tabler:chart-candle" class="w-5 h-5" />
+          </button>
+
+          <button
+            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+            :class="{
+              'bg-teal-500 text-white border-teal-500': kind === 'line',
+              'hover:bg-white/5': kind !== 'line',
+            }"
+            :aria-pressed="kind === 'line'"
+            @click="kind = 'line'"
+          >
+            <Icon icon="tabler:chart-line" class="w-5 h-5" />
+          </button>
+
+          <button
+            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+            :class="{
+              'bg-teal-500 text-white border-teal-500': kind === 'area',
+              'hover:bg-white/5': kind !== 'area',
+            }"
+            :aria-pressed="kind === 'area'"
+            @click="kind = 'area'"
+          >
+            <Icon icon="tabler:chart-area" class="w-5 h-5" />
+          </button>
+        </div>
+      </aside>
+
+      <section class="rounded-2xl min-w-0 overflow-hidden">
+        <LightChart
+          class="block w-full min-w-0"
+          :series-type="kind"
+          :candle-data="dataForChart.candleData"
+          :data="dataForChart.data"
+          :options="chartOptions"
+          :series-options="seriesOptions"
+          :fit="true"
+        />
+      </section>
+      <div class="flex flex-row justify-between items-center absolute -top-7 right-4 space-x-2">
+        <button
+          v-for="t in tfs"
+          :key="t"
+          class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors"
+          :class="{
+            'bg-teal-500 text-white border-teal-500': tf === t,
+            'hover:bg-white/5': tf !== t,
+          }"
+          :aria-pressed="tf === t"
+          @click="tf = t"
+        >
+          {{ t }}
+        </button>
+      </div>
+    </div>
+
+    <div v-else class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-4">
       <!-- KIRI: SELL + BUY LIST -->
       <div>
         <!-- SELL LIST -->
@@ -296,7 +377,20 @@ import { Icon } from '@iconify/vue'
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import LightChart from '@/components/trade/LightChart.vue'
+import type { CandlestickData, LineData, AreaData, UTCTimestamp } from 'lightweight-charts'
+
+const showChart = ref(false)
+
+type SeriesKind = 'candlestick' | 'line' | 'area'
+const kind = ref<SeriesKind>('candlestick')
+const tfs = ['1m', '1h', '1d', '30d'] as const
+type TF = (typeof tfs)[number]
+const tf = ref<TF>('1h') // default
+
 const modal = useApiAlertStore()
+
+const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 
 /** Orderbook depth tick */
 interface DepthTick {
@@ -333,9 +427,10 @@ const KLINE_CACHE_TTL = 5 * 60 * 1000 // 5 menit
 const DEPTH_TOP_N = 20 // simpan/restore top-N book saja
 
 let obCache: ObCache = {}
-let obSaveTimer: number | undefined
+let obSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 function loadObCache() {
+  if (!isBrowser()) return
   try {
     const raw = localStorage.getItem(OB_LS_KEY)
     obCache = raw ? (JSON.parse(raw) as ObCache) : {}
@@ -344,16 +439,24 @@ function loadObCache() {
   }
 }
 function saveObCacheDebounced() {
+  if (!isBrowser()) return
   if (obSaveTimer) clearTimeout(obSaveTimer)
   obSaveTimer = window.setTimeout(() => {
     try {
       localStorage.setItem(OB_LS_KEY, JSON.stringify(obCache))
     } catch {}
-  }, 300)
+    obSaveTimer = null
+  }, 250)
 }
 function setObCache(key: string, patch: Partial<ObCacheEntry>) {
   obCache[key] = { ...(obCache[key] || {}), ...patch }
   saveObCacheDebounced()
+}
+function flushObCacheNow() {
+  if (!isBrowser()) return
+  try {
+    localStorage.setItem(OB_LS_KEY, JSON.stringify(obCache))
+  } catch {}
 }
 
 /** Hydrate state dari cache untuk pair tertentu */
@@ -368,14 +471,19 @@ function hydrateFromCache(pair: string) {
       ch: `market.${key}.depth.step0`,
       ts: entry.depth.ts,
       tick: {
-        bids: (entry.depth.bids || []).slice(0, DEPTH_TOP_N),
-        asks: (entry.depth.asks || []).slice(0, DEPTH_TOP_N),
+        // simpan top-N + pastikan urutan sesuai rendering:
+        // bids DESC, asks ASC (best di index 0)
+        bids: [...(entry.depth.bids || [])].slice(0, DEPTH_TOP_N).sort((a, b) => b[0] - a[0]),
+        asks: [...(entry.depth.asks || [])].slice(0, DEPTH_TOP_N).sort((a, b) => a[0] - b[0]),
       },
     }
+    // sinkronkan turunan cache (top arrays)
+    asksTop.value = depthData.value.tick.asks.slice(0, 7) // ASC, best=0
+    bidsTop.value = depthData.value.tick.bids.slice(0, 7) // DESC, best=0
   }
   if (entry.k1d && now - entry.k1d.ts <= KLINE_CACHE_TTL) {
     klineData.value = {
-      ch: `market.${key}.kline.1day`,
+      ch: `market.${key}.kline.1min`,
       ts: entry.k1d.ts,
       tick: { open: entry.k1d.open, close: entry.k1d.close },
     }
@@ -494,104 +602,150 @@ function pairToApiSymbol(pair: string): string {
 const baseAsset = computed(() => selectedPair.value.split('/')[0])
 
 /* ──────────────────────────────────────────────────────────────────────────────
- * WEBSOCKET: DEPTH ORDERBOOK
+ * WEBSOCKET: DEPTH + KLINE (via aggregator)
  * ────────────────────────────────────────────────────────────────────────────*/
 const depthData = ref<DepthData | null>(null)
 const klineData = ref<KlineData | null>(null)
 
+// turunan siap render tanpa sort ulang di computed
+const asksTop = ref<[number, number][]>([]) // ASC, best=0
+const bidsTop = ref<[number, number][]>([]) // DESC, best=0
+
+const aggWS = ref<WebSocket | null>(null)
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+
+// buffer update agar tidak render tiap tick
+let flushTimer: ReturnType<typeof setTimeout> | null = null
+let pendingDepth: {
+  ts: number
+  asks: [number, number][]
+  bids: [number, number][]
+  sym: string
+} | null = null
+let pendingKline: { ts: number; open: number; close: number; sym: string } | null = null
+
+function scheduleFlush() {
+  if (flushTimer) return
+  flushTimer = window.setTimeout(() => {
+    const curPairKey = pairToQuery(selectedPair.value)
+
+    // apply depth
+    if (pendingDepth && pendingDepth.sym === curPairKey) {
+      const asksAsc = [...pendingDepth.asks].sort((a, b) => a[0] - b[0]) // best ask di index 0
+      const bidsDesc = [...pendingDepth.bids].sort((a, b) => b[0] - a[0]) // best bid di index 0
+
+      depthData.value = {
+        ch: `market.${curPairKey}.depth.step0`,
+        ts: pendingDepth.ts,
+        tick: {
+          asks: asksAsc.slice(0, DEPTH_TOP_N),
+          bids: bidsDesc.slice(0, DEPTH_TOP_N),
+        },
+      }
+
+      // turunan top7 untuk render (tanpa sort lagi)
+      asksTop.value = asksAsc.slice(0, 7)
+      bidsTop.value = bidsDesc.slice(0, 7)
+
+      // cache
+      setObCache(curPairKey, {
+        depth: {
+          asks: depthData.value.tick.asks,
+          bids: depthData.value.tick.bids,
+          ts: pendingDepth.ts,
+        },
+      })
+      pendingDepth = null
+    }
+
+    // apply kline
+    if (pendingKline && pendingKline.sym === curPairKey) {
+      klineData.value = {
+        ch: `market.${curPairKey}.kline.1day`,
+        ts: pendingKline.ts,
+        tick: { open: pendingKline.open, close: pendingKline.close },
+      }
+      setObCache(curPairKey, {
+        k1d: { open: pendingKline.open, close: pendingKline.close, ts: pendingKline.ts },
+      })
+      pendingKline = null
+    }
+
+    flushTimer = null
+  }, 100) // 100ms cukup halus
+}
+
+function sendSnapshotForPair() {
+  const ws = aggWS.value
+  if (!ws || ws.readyState !== WebSocket.OPEN) return
+  const symbol = pairToQuery(selectedPair.value) // 'btcusdt'
+  try {
+    ws.send(JSON.stringify({ type: 'snapshot', symbols: [symbol], periods: ['1day'] }))
+  } catch {}
+}
+
 function connectAggregatorWS() {
-  aggWS.value?.close()
+  try {
+    aggWS.value?.close()
+  } catch {}
   aggWS.value = new WebSocket('wss://ledgersocketone.online')
 
   aggWS.value.onopen = () => {
-    console.log('[WS] Connected (aggregator)')
-    const symbol = pairToQuery(selectedPair.value) // 'btcusdt'
-    try {
-      aggWS.value!.send(JSON.stringify({ type: 'snapshot', symbols: [symbol], periods: ['1day'] }))
-    } catch {}
+    sendSnapshotForPair()
   }
   aggWS.value.onclose = () => {
-    console.warn('[WS] Closed, reconnecting in 5s...')
-    setTimeout(connectAggregatorWS, 5000)
+    if (reconnectTimer) clearTimeout(reconnectTimer)
+    reconnectTimer = window.setTimeout(connectAggregatorWS, 2000)
   }
-  aggWS.value.onerror = (err) => console.error('[WS] Error:', err)
+  aggWS.value.onerror = () => {
+    try {
+      aggWS.value?.close()
+    } catch {}
+  }
 
   aggWS.value.onmessage = (e: MessageEvent) => {
     try {
       const msg = JSON.parse(e.data)
+      const symLower = String(msg.symbol || '').toLowerCase()
+      if (!symLower) return
 
-      // DEPTH
-      if (msg.type === 'depth' && matchesSelectedPair(msg.symbol)) {
-        // trim top-N sebelum simpan
+      const want = pairToQuery(selectedPair.value)
+
+      if (msg.type === 'depth' && symLower === want) {
         const bids = Array.isArray(msg.bids) ? (msg.bids as [number, number][]) : []
         const asks = Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : []
-
-        depthData.value = {
-          ch: `market.${msg.symbol}.depth.step0`,
-          ts: msg.ts,
-          tick: {
-            bids: [...bids].slice(0, DEPTH_TOP_N),
-            asks: [...asks].slice(0, DEPTH_TOP_N),
-          },
-        }
-
-        const key = pairToQuery(selectedPair.value)
-        setObCache(key, {
-          depth: {
-            bids: depthData.value.tick.bids,
-            asks: depthData.value.tick.asks,
-            ts: msg.ts,
-          },
-        })
+        pendingDepth = { ts: msg.ts, asks, bids, sym: symLower }
+        scheduleFlush()
+        return
       }
 
-      // KLINE 1day
-      if (msg.type === 'kline' && msg.period === '1day' && matchesSelectedPair(msg.symbol)) {
+      if (msg.type === 'kline' && msg.period === '1day' && symLower === want) {
         const open = Number(msg.open)
         const close = Number(msg.close)
-        klineData.value = {
-          ch: `market.${msg.symbol}.kline.1day`,
-          ts: msg.ts,
-          tick: { open, close },
+        if (Number.isFinite(open) && Number.isFinite(close)) {
+          pendingKline = { ts: msg.ts, open, close, sym: symLower }
+          scheduleFlush()
         }
-
-        const key = pairToQuery(selectedPair.value)
-        setObCache(key, { k1d: { open, close, ts: msg.ts } })
+        return
       }
-
-      // (opsional) ticker bisa ikut dicache kalau diperlukan
-    } catch {}
+    } catch {
+      /* ignore parse error */
+    }
   }
 }
 
 /** Turunan tampilan */
-// Aman + sesuai urutan buku
-const top7Asks = computed(() => {
-  if (!depthData.value) return []
-  const asks = [...depthData.value.tick.asks].sort((a, b) => a[0] - b[0]) // ASC
-  return asks.slice(0, 7).reverse()
-})
-
-const top7Bids = computed(() => {
-  if (!depthData.value) return []
-  const bids = [...depthData.value.tick.bids].sort((a, b) => b[0] - a[0]) // DESC
-  return bids.slice(0, 7)
-})
+const top7Asks = computed(() => asksTop.value) // ASC, best=0
+const top7Bids = computed(() => bidsTop.value) // DESC, best=0
 
 const maxAskAmount = computed(() =>
   top7Asks.value.length ? Math.max(...top7Asks.value.map((a) => a[1])) : 1,
 )
-
 const maxBidAmount = computed(() =>
   top7Bids.value.length ? Math.max(...top7Bids.value.map((b) => b[1])) : 1,
 )
 
-/* ──────────────────────────────────────────────────────────────────────────────
- * WEBSOCKET: KLINE + REST AWAL (UNTUK % PERUBAHAN)
- * ────────────────────────────────────────────────────────────────────────────*/
-// SATU WS agregator untuk semua event (depth, kline, ticker)
-const aggWS = ref<WebSocket | null>(null)
-
+/** Persentase perubahan */
 const percentChange = computed(() => {
   if (!klineData.value) return null
   const { open, close } = klineData.value.tick
@@ -599,15 +753,13 @@ const percentChange = computed(() => {
   return ((close - open) / open) * 100
 })
 
-function matchesSelectedPair(msgSymbol: string) {
-  // msgSymbol: 'btcusdt'
-  const want = pairToQuery(selectedPair.value) // 'btcusdt'
-  return msgSymbol?.toLowerCase() === want
-}
-
 function resetLocalData() {
   depthData.value = null
   klineData.value = null
+  asksTop.value = []
+  bidsTop.value = []
+  pendingDepth = null
+  pendingKline = null
 }
 
 /* ──────────────────────────────────────────────────────────────────────────────
@@ -675,13 +827,9 @@ function onInput(v: number) {
   const s = available.value
   totalAmount.value = roundTo((s * v) / 100, 8)
   if (!isEditingAmount.value) {
-    totalAmountInput.value =
-      activeTab.value === 'buy'
-        ? formatLocaleDecimal(totalAmount.value)
-        : formatLocaleDecimal(totalAmount.value)
+    totalAmountInput.value = formatLocaleDecimal(totalAmount.value)
   }
 }
-
 function commitSnap() {
   if (!canSlide.value) return
   amountPercent.value = snapToNearestMark(rawPercent.value)
@@ -705,12 +853,11 @@ function handlePointerUp() {
   isDragging.value = false
   commitSnap()
 }
-// --- tambahkan di script ---
+// input formatting
 const amountInputEl = ref<HTMLInputElement | null>(null)
 const isEditingAmount = ref(false)
 const dp = computed(() => (activeTab.value === 'buy' ? 2 : 8))
 
-// format ke "id-ID" → 20,00
 function formatLocaleDecimal(num: number): string {
   if (!Number.isFinite(num)) return ''
   return num.toLocaleString('id-ID', {
@@ -718,61 +865,51 @@ function formatLocaleDecimal(num: number): string {
     maximumFractionDigits: dp.value,
   })
 }
-
-// parse dari string "20,00" / "20.000,00" ke number 20
 function parseLocaleDecimal(str: string): number {
   if (!str) return NaN
-  // buang spasi, buang pemisah ribuan (.)
   const cleaned = str.replace(/\s/g, '').replace(/\./g, '').replace(',', '.')
   return Number(cleaned)
 }
-
-// fokus: kalau nilai 0 → kosongkan, select agar langsung ketik
 function onAmountFocus(e: FocusEvent) {
   isEditingAmount.value = true
   if (!totalAmount.value) totalAmountInput.value = ''
   requestAnimationFrame(() => (e.target as HTMLInputElement).select())
 }
-
-// saat ketik: filter karakter, JANGAN format di sini
 function onAmountTyping() {
-  // izinkan hanya angka, koma, titik
   totalAmountInput.value = totalAmountInput.value.replace(/[^\d.,]/g, '')
 }
-
-// commit (enter) = blur
 function onAmountCommit() {
   amountInputEl.value?.blur()
 }
-
-// blur: parse → clamp → round → simpan → format tampilan
 function onAmountBlur() {
   isEditingAmount.value = false
-
   const raw = (totalAmountInput.value || '').trim()
   let v = parseLocaleDecimal(raw)
-
   if (!Number.isFinite(v)) v = 0
   if (v < 0) v = 0
   const a = available.value
   if (a > 0 && v > a) v = a
-
-  v = roundTo(v, dp.value) // fungsi roundTo milikmu
+  v = roundTo(v, dp.value)
   totalAmount.value = v
   totalAmountInput.value = v ? formatLocaleDecimal(v) : ''
   syncPercentFromTotal()
 }
 
 /* ──────────────────────────────────────────────────────────────────────────────
- * SYNC DARI URL + RECONNECT WS
+ * SYNC DARI URL + SNAPSHOT WS SAAT PAIR BERUBAH
  * ────────────────────────────────────────────────────────────────────────────*/
-
 function rawSymbolFromRoute(): string {
   return (route.query.symbol as string) ?? (route.query.pairSymbol as string) ?? ''
 }
 
 onMounted(() => {
   loadObCache()
+  // flush cache on exit
+  if (isBrowser()) {
+    const flush = () => flushObCacheNow()
+    window.addEventListener('beforeunload', flush)
+    onUnmounted(() => window.removeEventListener('beforeunload', flush))
+  }
 
   const pairFromUrl = toPair(rawSymbolFromRoute())
   selectedPair.value = pairFromUrl || 'BTC/USDT'
@@ -781,6 +918,7 @@ onMounted(() => {
   hydrateFromCache(selectedPair.value)
 
   connectAggregatorWS()
+  sendSnapshotForPair() // segera minta snapshot awal
   getAvailable()
 })
 
@@ -791,7 +929,8 @@ watch(
     if (pair && pair !== selectedPair.value) {
       selectedPair.value = pair
       resetLocalData()
-      hydrateFromCache(pair) // ← tambah ini
+      hydrateFromCache(pair)
+      sendSnapshotForPair() // kirim permintaan snapshot untuk pair baru
       getAvailable()
     }
   },
@@ -803,12 +942,12 @@ function selectPair(pair: string) {
     dropdownOpen.value = false
     return
   }
-
   selectedPair.value = pair
   dropdownOpen.value = false
   router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } })
   resetLocalData()
-  hydrateFromCache(pair) // ← tambah ini
+  hydrateFromCache(pair)
+  sendSnapshotForPair()
   getAvailable()
 }
 
@@ -816,7 +955,13 @@ function selectPair(pair: string) {
  * CLEANUP
  * ────────────────────────────────────────────────────────────────────────────*/
 onUnmounted(() => {
-  aggWS.value?.close()
+  try {
+    aggWS.value?.close()
+  } catch {}
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
 })
 
 /* ──────────────────────────────────────────────────────────────────────────────
@@ -833,7 +978,7 @@ function bestBid(): number {
 }
 function bestAsk(): number {
   const asks = depthData.value?.tick?.asks
-  // Huobi: asks ascending → best ask = index 0  ✅
+  // Huobi: asks ascending → best ask = index 0
   return Array.isArray(asks) && asks.length ? Number(asks[0][0]) : 0
 }
 
@@ -852,14 +997,15 @@ async function getAvailable() {
   availableLoading.value = true
   availableError.value = false
   try {
-    const token = localStorage.getItem('token')
+    const token = isBrowser() ? localStorage.getItem('token') : ''
     if (!token) throw new Error('No token')
 
     if (activeTab.value === 'buy') {
       const res = await fetch(`${API_BASE}/saldo`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        credentials: 'include',
       })
-      if (!res.ok) throw new Error()
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       const s = Number(data?.saldo ?? 0)
       saldo.value = Number.isFinite(s) ? s : 0
@@ -868,8 +1014,9 @@ async function getAvailable() {
       const sym = pairToApiSymbol(selectedPair.value) // "BTCUSDT"
       const res = await fetch(`${API_BASE}/positions/${sym}`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        credentials: 'include',
       })
-      if (!res.ok) throw new Error()
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json() // { qty, avg_cost, ... }
       const t = Number(data?.qty ?? 0)
       coinTotal.value = Number.isFinite(t) ? t : 0
@@ -884,10 +1031,13 @@ async function getAvailable() {
     } else {
       if (totalAmount.value > a) totalAmount.value = a
       totalAmountInput.value =
-        activeTab.value === 'buy' ? totalAmount.value.toFixed(2) : totalAmount.value.toFixed(8)
+        activeTab.value === 'buy'
+          ? (totalAmount.value || 0).toFixed(2)
+          : (totalAmount.value || 0).toFixed(8)
       syncPercentFromTotal()
     }
-  } catch {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e: unknown) {
     availableError.value = true
     if (activeTab.value === 'buy') saldo.value = null
     if (activeTab.value === 'sell') coinTotal.value = null
@@ -904,13 +1054,13 @@ async function getAvailable() {
 const PENDING_LS_KEY = 'pendingTxs'
 
 function hasPendingTxs(): boolean {
+  if (!isBrowser()) return false
   const raw = localStorage.getItem(PENDING_LS_KEY)
   if (!raw) return false
   try {
     const arr = JSON.parse(raw)
-    return Array.isArray(arr) && arr.length > 0 // ada nilai -> blok
+    return Array.isArray(arr) && arr.length > 0
   } catch {
-    // kalau format rusak, anggap tidak ada pending (atau ubah ke true jika ingin lebih ketat)
     return false
   }
 }
@@ -920,7 +1070,7 @@ async function submitTrade() {
   submitError.value = ''
 
   if (hasPendingTxs()) {
-    modal?.open?.(
+    modal.open(
       'Error',
       'You already have a pending copy trade. Please wait until it completes before placing a new order.',
     )
@@ -930,7 +1080,7 @@ async function submitTrade() {
   try {
     submitting.value = true
 
-    const token = localStorage.getItem('token')
+    const token = isBrowser() ? localStorage.getItem('token') : ''
     if (!token) throw new Error('No token')
 
     const side = activeTab.value === 'buy' ? 'BUY' : 'SELL'
@@ -939,14 +1089,12 @@ async function submitTrade() {
     let price = marketPrice.value
     if (!price || price <= 0) throw new Error('Harga market tidak tersedia')
 
-    // sanity: spread wajar (opsional, tapi bagus buat cegah data depth aneh)
+    // sanity: spread wajar
     const bid = bestBid()
     const ask = bestAsk()
     if (bid > 0 && ask > 0) {
       const spreadPct = ((ask - bid) / bid) * 100
-      if (spreadPct > 2) {
-        throw new Error(`Spread terlalu lebar (${spreadPct.toFixed(2)}%).`)
-      }
+      if (spreadPct > 2) throw new Error(`Spread terlalu lebar (${spreadPct.toFixed(2)}%).`)
       if (side === 'BUY' && price !== ask) price = ask
       if (side === 'SELL' && price !== bid) price = bid
     }
@@ -965,7 +1113,6 @@ async function submitTrade() {
       qty = Math.min(qty, Math.max(0, maxQty - EPS))
       qty = Math.floor(qty * 1e8) / 1e8
     } else {
-      // BUY: floor juga aman (lebih konservatif)
       qty = Math.floor(qty * 1e8) / 1e8
     }
 
@@ -986,6 +1133,7 @@ async function submitTrade() {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(payload),
     })
 
@@ -995,7 +1143,7 @@ async function submitTrade() {
     }
 
     await res.json()
-    modal?.open?.('Success', 'Order Created')
+    modal.open('Success', 'Order Created')
 
     // refresh saldo/posisi & reset input
     await getAvailable()
@@ -1006,9 +1154,50 @@ async function submitTrade() {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Gagal kirim order'
     submitError.value = msg
-    modal?.open?.('error', msg)
+    modal.open('Error', msg)
   } finally {
     submitting.value = false
   }
 }
+
+// ====== Generator data dummy ======
+function genCandles(days: number, startUnixSec: number): CandlestickData[] {
+  const out: CandlestickData[] = []
+  let lastClose = 100
+  for (let i = 0; i < days; i++) {
+    const t = (startUnixSec + i * 86400) as UTCTimestamp // 1 hari
+    const open = lastClose * (1 + (Math.random() - 0.5) / 50)
+    const high = open * (1 + Math.random() / 100)
+    const low = open * (1 - Math.random() / 100)
+    const close = open * (1 + (Math.random() - 0.5) / 25)
+    out.push({ time: t, open, high, low, close })
+    lastClose = close
+  }
+  return out
+}
+function candlesToLine(c: CandlestickData[]): LineData[] {
+  return c.map((k) => ({ time: k.time, value: k.close }))
+}
+function candlesToArea(c: CandlestickData[]): AreaData[] {
+  return c.map((k) => ({ time: k.time, value: k.close }))
+}
+
+// data awal
+const start = Math.floor(Date.now() / 1000) - 86400 * 60 // 60 hari ke belakang
+const candles = ref<CandlestickData[]>(genCandles(60, start))
+const line = ref<LineData[]>(candlesToLine(candles.value))
+const area = ref<AreaData[]>(candlesToArea(candles.value))
+
+// opsi chart (opsional)
+const chartOptions = {
+  timeScale: { timeVisible: true, secondsVisible: false },
+}
+const seriesOptions = {} // bisa isi style per-series kalau perlu
+
+// pilih data berdasarkan tipe aktif
+const dataForChart = computed(() => {
+  if (kind.value === 'candlestick') return { candleData: candles.value, data: [] }
+  if (kind.value === 'line') return { candleData: [], data: line.value }
+  return { candleData: [], data: area.value }
+})
 </script>
