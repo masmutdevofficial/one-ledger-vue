@@ -169,7 +169,7 @@ const saldoAwal = ref<number | null>(null)
 const koinAwal = ref<number | null>(null)
 
 // pakai file lokal agar stabil: simpan logo di public/img/usdt.svg
-const USDT_ICON = '/img/crypto/usdt.png'
+const USDT_ICON = '/img/crypto/usdt.svg'
 
 const saldoText = computed(() =>
   saldoAwal.value !== null
