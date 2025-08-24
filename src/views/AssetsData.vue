@@ -29,10 +29,7 @@
 
       <div class="text-xs flex items-center text-black mb-4">
         Unrealized PnL
-        <span
-          class="font-semibold ml-1"
-          :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'"
-        >
+        <span class="font-semibold ml-1" :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'">
           {{ signedMoneyId(portfolioUpnlAbs, 2) }}
           ({{ signedPercent(portfolioUpnlPct) }})
         </span>
@@ -40,22 +37,16 @@
       </div>
 
       <div class="grid grid-cols-3 gap-3">
-        <RouterLink
-          to="/add-funds"
-          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-black rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-full text-center"
-        >
+        <RouterLink to="/add-funds"
+          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-black rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-full text-center">
           Add Funds
         </RouterLink>
-        <RouterLink
-          to="/send"
-          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center"
-        >
+        <RouterLink to="/send"
+          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center">
           Send
         </RouterLink>
-        <RouterLink
-          to="/transfer"
-          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center"
-        >
+        <RouterLink to="/transfer"
+          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center">
           Transfer
         </RouterLink>
       </div>
@@ -80,13 +71,9 @@
         No Data Available
       </div>
 
-      <section
-        v-else
-        v-for="a in assets"
-        :key="a.symbol"
+      <section v-else v-for="a in assets" :key="a.symbol"
         class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md bg-white cursor-pointer hover:ring-2 hover:ring-teal-200 transition"
-        @click="goAsset(a)"
-      >
+        @click="goAsset(a)">
         <div class="flex justify-between items-center">
           <p class="text-gray-500 text-[10px] font-normal">Asset</p>
           <Icon icon="tabler:adjustments-horizontal" class="text-gray-400 text-[10px]" />
@@ -94,13 +81,7 @@
 
         <div class="flex justify-between items-center text-[10px]">
           <div class="flex items-center space-x-2">
-            <img
-              :alt="`${a.base} logo`"
-              class="rounded-full"
-              :src="a.logoUrl"
-              width="20"
-              height="20"
-            />
+            <img :alt="`${a.base} logo`" class="rounded-full" :src="a.logoUrl" width="20" height="20" />
             <p class="font-bold text-black text-xs leading-4">
               {{ a.base }}
               <span class="font-normal text-gray-400 text-[10px]">/{{ a.quote }}</span>
@@ -113,11 +94,8 @@
         </div>
 
         <!-- Unrealized PnL -->
-        <div
-          v-if="a.lastPrice > 0"
-          class="flex justify-between items-center space-x-4 font-semibold text-xs leading-4"
-          :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'"
-        >
+        <div v-if="a.lastPrice > 0" class="flex justify-between items-center space-x-4 font-semibold text-xs leading-4"
+          :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'">
           <p>{{ signedMoneyId(a.uPnlAbs, 2) }}</p>
           <p>{{ signedPercent(a.uPnlPct) }}</p>
         </div>
@@ -178,9 +156,9 @@ const USDT_ICON = '/img/crypto/usdt.svg'
 const saldoText = computed(() =>
   saldoAwal.value !== null
     ? saldoAwal.value.toLocaleString('id-ID', {
-        minimumFractionDigits: 6,
-        maximumFractionDigits: 6,
-      })
+      minimumFractionDigits: 6,
+      maximumFractionDigits: 6,
+    })
     : '...',
 )
 
@@ -330,7 +308,7 @@ function savePortfolioCacheDebounced() {
   portfSaveTimer = window.setTimeout(() => {
     try {
       localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache))
-    } catch {}
+    } catch { }
     portfSaveTimer = null
   }, 250)
 }
@@ -343,7 +321,7 @@ function upsertPositionsCache(items: PositionsCacheItem[]) {
   savePortfolioCacheDebounced()
 }
 function upsertPriceCache(symLower: string, price: number) {
-  ;(portfCache.prices ||= {})[symLower] = { p: price, ts: Date.now() }
+  ; (portfCache.prices ||= {})[symLower] = { p: price, ts: Date.now() }
   savePortfolioCacheDebounced()
 }
 
@@ -408,8 +386,7 @@ function rebuildAssetMap() {
   assetMap.clear()
   for (const a of assets.value) assetMap.set(a.symbol.toUpperCase(), a)
 }
-const loadingAssets = ref(false)
-const errorAssets = ref<string | null>(null)
+
 
 /** ===== Formatters ===== */
 const nfCache = new Map<string, Intl.NumberFormat>()
@@ -460,6 +437,9 @@ async function loadSaldo() {
   }
 }
 
+const loadingAssets = ref(false)
+const errorAssets = ref<string | null>(null)
+
 async function loadAssets() {
   loadingAssets.value = true
   errorAssets.value = null
@@ -472,6 +452,7 @@ async function loadAssets() {
       credentials: 'include',
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
     const rows: PositionRow[] = await res.json()
 
     const mapped: AssetItem[] = rows
@@ -522,15 +503,22 @@ async function loadAssets() {
       lastPrice: a.lastPrice,
     }))
     upsertPositionsCache(posItems)
-  } catch (e: any) {
-    errorAssets.value = e?.message || 'Gagal memuat assets.'
+
+  } catch (e: unknown) {
+    const msg: string =
+      e instanceof Error ? e.message : 'Gagal memuat assets.'
+    errorAssets.value = msg
+
     assets.value = []
     recomputeTotals()
-    modal.open('Error', errorAssets.value)
+
+    // <<< penting: kirim string, bukan string|null
+    modal.open('Error', msg)
   } finally {
     loadingAssets.value = false
   }
 }
+
 
 /** ===== Totals (per-frame) ===== */
 let totalsScheduled = false
@@ -565,7 +553,7 @@ function currentActiveSymbolsLower(): string[] {
 }
 function wsSend(obj: unknown) {
   if (aggWs && aggWs.readyState === WebSocket.OPEN) {
-    try { aggWs.send(JSON.stringify(obj)) } catch {}
+    try { aggWs.send(JSON.stringify(obj)) } catch { }
   }
 }
 function doSubscribe(symbolsLower: string[]) {
@@ -596,7 +584,7 @@ function scheduleResubscribe() {
     for (const s of curr) if (!want.has(s)) toUnsub.push(s)
 
     if (toUnsub.length) { doUnsubscribe(toUnsub); for (const s of toUnsub) subscribedLower.delete(s) }
-    if (toSub.length)   { doSubscribe(toSub); requestSnapshot(toSub); for (const s of toSub) subscribedLower.add(s) }
+    if (toSub.length) { doSubscribe(toSub); requestSnapshot(toSub); for (const s of toSub) subscribedLower.add(s) }
   }, 200)
 }
 
@@ -646,7 +634,7 @@ function scheduleFlush() {
 
 function connectAggregatorWs() {
   if (aggWs) {
-    try { aggWs.close() } catch {}
+    try { aggWs.close() } catch { }
     aggWs = null
   }
 
@@ -664,7 +652,7 @@ function connectAggregatorWs() {
   }
 
   aggWs.onerror = () => {
-    try { aggWs?.close() } catch {}
+    try { aggWs?.close() } catch { }
   }
 
   aggWs.onmessage = (e) => {
@@ -677,7 +665,7 @@ function connectAggregatorWs() {
           const symLower = String(it.symbol || '').toLowerCase()
           if (!symLower) continue
           if (it.type === 'ticker' && Number.isFinite(Number(it.last))) {
-            ;(pending[symLower] ||= {}).last = Number(it.last)
+            ; (pending[symLower] ||= {}).last = Number(it.last)
           } else if (it.type === 'kline' && it.period === '1day') {
             const c = Number(it.close)
             if (Number.isFinite(c)) (pending[symLower] ||= {}).klineClose = c
@@ -692,14 +680,14 @@ function connectAggregatorWs() {
       if (!symLower) return
 
       if (msg.type === 'ticker' && Number.isFinite(Number(msg.last))) {
-        ;(pending[symLower] ||= {}).last = Number(msg.last)
+        ; (pending[symLower] ||= {}).last = Number(msg.last)
         scheduleFlush()
         return
       }
       if (msg.type === 'kline' && msg.period === '1day') {
         const close = Number(msg.close)
         if (Number.isFinite(close)) {
-          ;(pending[symLower] ||= {}).klineClose = close
+          ; (pending[symLower] ||= {}).klineClose = close
           scheduleFlush()
         }
         return
@@ -725,18 +713,18 @@ onMounted(() => {
   // beforeunload listener
   if (isBrowser()) {
     const flush = () => {
-      try { localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache)) } catch {}
+      try { localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache)) } catch { }
     }
     window.addEventListener('beforeunload', flush)
     removeBeforeUnload = () => window.removeEventListener('beforeunload', flush)
   }
 
   // async tasks
-  ;(async () => {
+  ; (async () => {
     await loadSaldo()
     await loadAssets()
     connectAggregatorWs() // connect setelah assets terisi
-  })().catch(() => {})
+  })().catch(() => { })
 })
 
 // resubscribe kalau daftar aset berubah
@@ -748,7 +736,7 @@ watch(assets, () => {
 
 onUnmounted(() => {
   if (removeBeforeUnload) { removeBeforeUnload(); removeBeforeUnload = null }
-  if (aggWs) { try { aggWs.close() } catch {}; aggWs = null }
+  if (aggWs) { try { aggWs.close() } catch { }; aggWs = null }
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
 })
 </script>
