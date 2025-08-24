@@ -46,7 +46,10 @@ const baseOptions = computed<DeepPartial<TimeChartOptions>>(() => ({
     textColor: '#9aa0a6',
     background: { type: ColorType.Solid, color: 'transparent' }, // ✅ enum, bukan 'solid'
   },
-  grid: { vertLines: { color: '#2b2f36' }, horzLines: { color: '#2b2f36' } },
+  grid: {
+    vertLines: { color: 'rgba(42,46,57,0.5)', style: 1, visible: true },
+    horzLines: { color: 'rgba(42,46,57,0.5)', style: 1, visible: true },
+  },
   timeScale: { timeVisible: true, secondsVisible: false },
   rightPriceScale: { borderVisible: false },
   ...props.options,
@@ -141,3 +144,9 @@ watch(
   <!-- Wajib ada tinggi -->
   <div ref="root" class="w-full min-w-0 h-64 md:h-96 rounded-2xl border border-white/10"></div>
 </template>
+
+<style scoped>
+/* :global(#tv-attr-logo) {
+  display: none !important;
+} */
+</style>

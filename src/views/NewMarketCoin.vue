@@ -40,13 +40,44 @@
       </div>
 
       <div class="flex items-center space-x-4 text-gray-400 text-lg">
-        <Icon @click="showChart = true" icon="tabler:chart-bar" />
-        <Icon icon="tabler:dots" />
+        <Icon
+          :icon="showChart ? 'tabler:brand-databricks' : 'tabler:chart-bar'"
+          class="w-5 h-5 cursor-pointer"
+          :aria-pressed="showChart"
+          @click="showChart = !showChart"
+        />
       </div>
     </div>
 
     <div class="max-w-md mx-4 mt-1">
+      <div class="text-start" v-if="depthData && showChart">
+        <p class="text-teal-500 font-semibold text-[20px]">
+          {{
+            depthData.tick.bids[0]?.[0]?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ??
+            '-'
+          }}
+        </p>
+        <div class="flex flex-row justify-start items-center">
+          <p class="text-[#7F7F7F] text-[10px]">
+            ≈ ${{
+              depthData.tick.bids[0]?.[0]?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ??
+              '-'
+            }}
+          </p>
+          <span
+            class="ml-1 text-[10px] font-semibold"
+            :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+          >
+            {{
+              percentChange !== null
+                ? (percentChange > 0 ? '+' : '') + percentChange.toFixed(2) + '%'
+                : '-'
+            }}
+          </span>
+        </div>
+      </div>
       <span
+        v-if="!showChart"
         class="text-sm font-semibold"
         :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
       >
@@ -111,7 +142,8 @@
           :fit="true"
         />
       </section>
-      <div class="flex flex-row justify-between items-center absolute -top-7 right-4 space-x-2">
+
+      <div class="flex flex-row justify-between items-center absolute -top-8.5 right-4 space-x-2">
         <button
           v-for="t in tfs"
           :key="t"
@@ -124,6 +156,81 @@
           @click="tf = t"
         >
           {{ t }}
+        </button>
+      </div>
+    </div>
+
+    <div v-if="showChart" class="flex flex-row justify-between items-center mx-4 mb-1">
+      <p class="text-[10px] text-gray-400">Bid</p>
+      <p class="text-[10px] text-gray-400">Ask</p>
+      <div
+        class="w-[40px] flex flex-row justify-center items-center bg-gray-100 rounded-sm text-gray-400"
+      >
+        <p class="text-[10px] ml-1">7</p>
+        <Icon icon="tabler:chevron-down" class="text-gray-700 w-3 h-3" />
+      </div>
+    </div>
+    <div v-if="showChart" class="flex flex-row w-full justify-between items-center">
+      <!-- BIDS (BUY, hijau) -->
+      <div class="space-y-1 w-full" v-if="depthData">
+        <div
+          v-for="bid in top7Bids"
+          :key="bid[0]"
+          class="relative flex justify-between overflow-hidden rounded"
+          style="height: 17.5px"
+        >
+          <!-- BG bar -->
+          <div
+            class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+            :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+          ></div>
+          <!-- Data -->
+
+          <p class="text-black text-[10px] text-start z-10 px-2 w-1/2">
+            {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+          </p>
+          <p class="text-[#2DBE87] text-[10px] text-right z-10 px-2 w-1/2">
+            {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+          </p>
+        </div>
+      </div>
+
+      <!-- ASKS (SELL, merah) -->
+      <div class="space-y-1 w-full" v-if="depthData">
+        <div
+          v-for="ask in top7Asks"
+          :key="ask[0]"
+          class="relative flex justify-between overflow-hidden rounded"
+          style="height: 17.5px"
+        >
+          <!-- BG bar -->
+          <div
+            class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+            :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+          ></div>
+          <!-- Data -->
+          <p class="text-pink-400 text-[10px] text-start z-10 px-2 w-1/2">
+            {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+          </p>
+          <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
+            {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+          </p>
+        </div>
+      </div>
+    </div>
+    <div v-if="showChart" class="flex flex-row justify-between items-center mx-4 mb-1 my-2">
+      <div class="w-full flex items-center gap-2">
+        <button
+          class="w-full flex items-center justify-center gap-1 rounded-lg text-center px-3 py-1.5 bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+          @click="showChart = false"
+        >
+          Buy
+        </button>
+        <button
+          class="w-full flex items-center justify-center gap-1 rounded-lg text-center px-3 py-1.5 bg-red-500 text-white hover:bg-red-600 transition-colors"
+          @click="showChart = false"
+        >
+          Sell
         </button>
       </div>
     </div>
