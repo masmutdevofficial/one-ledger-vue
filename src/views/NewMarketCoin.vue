@@ -231,6 +231,10 @@
             :class="[activeTab === 'buy' ? 'bg-teal-500 text-white' : 'text-gray-400']" @click="activeTab = 'buy'">
             Buy
           </button>
+          <button class="flex-1 py-1.5 px-4 transition-colors"
+            :class="[activeTab === 'sell' ? 'bg-red-500 text-white' : 'text-gray-400']" @click="activeTab = 'sell'">
+            Sell
+          </button>
         </div>
 
         <!-- MARKET -->
