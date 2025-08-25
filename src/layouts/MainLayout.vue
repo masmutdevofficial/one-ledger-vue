@@ -44,6 +44,7 @@ function isActive(path: string): boolean {
 
 const noHeaderPaths = ['/account'] // bisa ditambah: '/account/settings', dll
 const hideHeader = computed(() => noHeaderPaths.some((p) => route.path.startsWith(p)))
+const hideBottomNav = computed(() => route.name === 'cs-chat' || route.path.includes('/cs-chat'))
 
 const teal600Filter = {
   filter:
@@ -416,6 +417,7 @@ onBeforeUnmount(() => {
 
           <!-- Bottom Navigation -->
           <div
+            v-if="!hideBottomNav"
             class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50"
           >
             <div class="flex justify-around items-center py-2">

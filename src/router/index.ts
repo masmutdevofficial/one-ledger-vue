@@ -71,6 +71,10 @@ const routes = [
         component: () => import('@/views/NotificationTransactions.vue'),
       },
       {
+        path: 'cs-chat',
+        component: () => import('@/views/CustomerService.vue'),
+      },
+      {
         path: 'transfer',
         component: () => import('@/views/TransferUSDT.vue'),
       },
