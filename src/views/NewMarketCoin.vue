@@ -486,7 +486,9 @@ const showChart = ref(false)
 
 type SeriesKind = 'candlestick' | 'line' | 'area'
 const kind = ref<SeriesKind>('candlestick')
-const tfs = ['1m', '1h', '1d', '30d'] as const
+
+// ===== TF yang dipakai klien =====
+const tfs = ['5m', '15m', '1h', '1d'] as const
 type TF = (typeof tfs)[number]
 const tf = ref<TF>('1h')
 
@@ -503,7 +505,8 @@ interface DepthData {
   tick: DepthTick
 }
 
-type OriginPeriod = '1min' | '15min' | '30min' | '60min' | '1day'
+// include 60min utk 1h
+type OriginPeriod = '5min' | '15min' | '30min' | '60min' | '1day'
 
 type ObCacheEntry = {
   k1d?: { open: number; close: number; ts: number }
@@ -685,8 +688,8 @@ function pairToApiSymbol(pair: string): string {
 const baseAsset = computed(() => selectedPair.value.split('/')[0])
 
 const depthData = ref<DepthData | null>(null)
-const asksTop = ref<[number, number][]>([]) // ASC, best=0
-const bidsTop = ref<[number, number][]>([]) // DESC, best=0
+const asksTop = ref<[number, number][]>([])
+const bidsTop = ref<[number, number][]>([])
 
 const aggWS = ref<WebSocket | null>(null)
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -709,21 +712,21 @@ type CandleBuf = {
   close: number
   vol: number
 }
-const buf1m = new Map<number, CandleBuf>()
+const buf5m = new Map<number, CandleBuf>()
 const buf15m = new Map<number, CandleBuf>()
-const buf30m = new Map<number, CandleBuf>()
+const buf30m = new Map<number, CandleBuf>() // (dipertahankan bila sewaktu-waktu dipakai)
 const buf60m = new Map<number, CandleBuf>()
 const buf1d = new Map<number, CandleBuf>()
 
 function mapForPeriod(p: OriginPeriod) {
-  if (p === '1min') return buf1m
+  if (p === '5min') return buf5m
   if (p === '15min') return buf15m
   if (p === '30min') return buf30m
   if (p === '60min') return buf60m
   return buf1d
 }
 function periodMs(p: OriginPeriod) {
-  if (p === '1min') return 60_000
+  if (p === '5min') return 60_000
   if (p === '15min') return 900_000
   if (p === '30min') return 1_800_000
   if (p === '60min') return 3_600_000
@@ -751,17 +754,17 @@ function upsertCandleBuffer(
   }
 }
 
-/* ============ TF → OriginPeriod + limit (minimal 60 bar) ============ */
+/* ============ TF → OriginPeriod + limit (300 bar) ============ */
 function tfPlan(x: TF): { base: OriginPeriod; baseLimit: number; dailyLimit: number } {
-  if (x === '1m') return { base: '1min', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
+  if (x === '5m') return { base: '5min', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
+  if (x === '15m') return { base: '15min', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
   if (x === '1h') return { base: '60min', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
-  if (x === '30d') return { base: '1day', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
   // '1d'
   return { base: '1day', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
 }
 function needPeriodsForTF(x: TF): OriginPeriod[] {
   const { base } = tfPlan(x)
-  const set = new Set<OriginPeriod>([base, '1day']) // selalu minta 1day utk % change
+  const set = new Set<OriginPeriod>([base, '1day']) // 1day utk % change
   return Array.from(set)
 }
 
@@ -801,9 +804,9 @@ function doUnsubscribe(symLower: string, periods: OriginPeriod[]) {
 /*
   Resubscribe strategy:
   - Unsub yang tidak dibutuhkan (jika ganti symbol / TF)
-  - Sub base period dgn limit sesuai tfPlan + depth/ticker sekali
-  - Sub 1day (kalau beda dari base) dgn limit 60, hanya kline
-  - Kirim snapshot terpisah per grup agar limit-nya tepat
+  - Sub base period dengan limit sesuai tfPlan + depth/ticker sekali
+  - Sub 1day (kalau beda dari base) dengan limit 300, hanya kline
+  - Kirim snapshot per grup agar limit-nya pas
 */
 function scheduleResubscribe() {
   if (resubTimer) return
@@ -816,12 +819,12 @@ function scheduleResubscribe() {
     const plan = tfPlan(tf.value)
     const wantPeriods = new Set<OriginPeriod>(needPeriodsForTF(tf.value))
 
-    // jika ganti symbol: lepas semua lama
+    // ganti symbol ⇒ lepas semua lama
     if (subscribedSym && subscribedSym !== sym) {
       if (subscribedPeriods.size) doUnsubscribe(subscribedSym, Array.from(subscribedPeriods))
       subscribedPeriods.clear()
     } else if (subscribedSym === sym) {
-      // masih symbol sama: lepas period yang tak dibutuhkan
+      // symbol sama ⇒ lepas period yang tak dibutuhkan
       const toUnsub: OriginPeriod[] = []
       for (const p of subscribedPeriods) if (!wantPeriods.has(p)) toUnsub.push(p)
       if (toUnsub.length) doUnsubscribe(sym, toUnsub)
@@ -830,20 +833,18 @@ function scheduleResubscribe() {
 
     const needBook = !subscribedSym || subscribedSym !== sym || subscribedPeriods.size === 0
 
-    // SUB base (dengan depth/ticker jika perlu)
+    // SUB base
     if (!subscribedPeriods.has(plan.base)) {
       subscribeFor(sym, [plan.base], plan.baseLimit, needBook)
       snapshotFor(sym, [plan.base], plan.baseLimit)
       subscribedPeriods.add(plan.base)
     }
 
-    // SUB 1day utk % (kecuali base=1day sudah dicakup)
-    if (!subscribedPeriods.has('1day')) {
-      if (plan.base !== '1day') {
-        subscribeFor(sym, ['1day'], plan.dailyLimit, false)
-        snapshotFor(sym, ['1day'], plan.dailyLimit)
-        subscribedPeriods.add('1day')
-      }
+    // SUB 1day utk % (jika base ≠ 1day)
+    if (!subscribedPeriods.has('1day') && plan.base !== '1day') {
+      subscribeFor(sym, ['1day'], plan.dailyLimit, false)
+      snapshotFor(sym, ['1day'], plan.dailyLimit)
+      subscribedPeriods.add('1day')
     }
 
     subscribedSym = sym
@@ -889,10 +890,18 @@ const chartArea = ref<AreaData[]>([])
 let chartFlushTimer: ReturnType<typeof setTimeout> | null = null
 
 function seriesFromBufferForTF(): CandlestickData[] {
-  if (tf.value === '1m') {
-    const keys = Array.from(buf1m.keys()).sort((a, b) => a - b)
+  if (tf.value === '5m') {
+    const keys = Array.from(buf5m.keys()).sort((a, b) => a - b)
     const data = keys.map((k) => {
-      const c = buf1m.get(k)!
+      const c = buf5m.get(k)!
+      return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }
+    })
+    return data.slice(-WANT_BARS)
+  }
+  if (tf.value === '15m') {
+    const keys = Array.from(buf15m.keys()).sort((a, b) => a - b)
+    const data = keys.map((k) => {
+      const c = buf15m.get(k)!
       return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }
     })
     return data.slice(-WANT_BARS)
@@ -905,7 +914,7 @@ function seriesFromBufferForTF(): CandlestickData[] {
     })
     return data.slice(-WANT_BARS)
   }
-  // '1d' & '30d' keduanya harian; 30d sekarang min 60 bar
+  // '1d'
   const keys = Array.from(buf1d.keys()).sort((a, b) => a - b)
   const data = keys.map((k) => {
     const c = buf1d.get(k)!
@@ -950,7 +959,6 @@ function connectAggregatorWS() {
     try {
       const msg = JSON.parse(e.data as string)
 
-      // snapshot batched
       if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
         const want = pairToQuery(selectedPair.value)
         for (const it of msg.items) {
@@ -1038,14 +1046,15 @@ function resetLocalData() {
   bidsTop.value = []
   pendingDepth = null
   klineDailyOHLC.value = null
-  buf1m.clear()
+  buf5m.clear()
   buf15m.clear()
   buf30m.clear()
+  buf60m.clear()
   buf1d.clear()
   scheduleChartFlush()
 }
 
-/* ===== Slider & saldo (unchanged) ===== */
+/* ===== Slider & saldo (tetap) ===== */
 const amountPercent = ref<number>(0)
 const rawPercent = ref<number>(0)
 const isDragging = ref<boolean>(false)
@@ -1226,11 +1235,10 @@ onUnmounted(() => {
   }
 })
 
-/* ===== Order submit ===== */
+/* ===== Order submit (tetap) ===== */
 const submitting = ref(false)
 const submitError = ref<string>('')
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
-
 function bestBid(): number {
   const bids = depthData.value?.tick?.bids
   return Array.isArray(bids) && bids.length ? Number(bids[0][0]) : 0
@@ -1240,7 +1248,6 @@ function bestAsk(): number {
   return Array.isArray(asks) && asks.length ? Number(asks[0][0]) : 0
 }
 const marketPrice = computed<number>(() => (activeTab.value === 'buy' ? bestAsk() : bestBid()))
-
 watch(activeTab, () => {
   totalAmount.value = 0
   totalAmountInput.value = ''
@@ -1322,7 +1329,6 @@ function hasPendingTxs(): boolean {
 async function submitTrade() {
   if (submitting.value) return
   submitError.value = ''
-
   if (hasPendingTxs()) {
     modal.open(
       'Error',
@@ -1330,10 +1336,8 @@ async function submitTrade() {
     )
     return
   }
-
   try {
     submitting.value = true
-
     const token = isBrowser() ? localStorage.getItem('token') : ''
     if (!token) throw new Error('No token')
 
@@ -1400,8 +1404,6 @@ async function submitTrade() {
 }
 
 /* ===== Chart props ===== */
-// const chartOptions = { timeScale: { timeVisible: true, secondsVisible: false } }
-// const seriesOptions = {}
 const dataForChart = computed(() => {
   if (kind.value === 'candlestick')
     return { candleData: chartCandles.value, data: [] as LineData[] }
