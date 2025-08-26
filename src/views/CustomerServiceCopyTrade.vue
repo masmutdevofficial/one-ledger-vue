@@ -11,8 +11,7 @@
 
       <!-- centered title -->
       <div class="min-w-0 text-center pr-9">
-        <h1 class="text-base font-semibold truncate">Assistant One Ledger</h1>
-        <p class="text-xs text-gray-500 truncate">{{ adminName }}</p>
+        <p class="text-xs font-semibold text-gray-500 truncate">{{ adminName }}</p>
       </div>
 
       <!-- right status -->
