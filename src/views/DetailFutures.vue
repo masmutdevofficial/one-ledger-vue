@@ -45,7 +45,7 @@
           aria-label="Open chat"
           title="Message"
         >
-          <img src="/img/chat-copy-trader.png" alt="Menu" class="w-7 h-7 object-contain" />
+          <img src="/img/chat-copy-trader.png" alt="Menu" class="w-5 h-5 object-contain" />
         </router-link>
       </div>
 
