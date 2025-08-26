@@ -330,11 +330,21 @@ function isAllowedMime(f: File) {
 }
 
 /** ================== Header helpers ================== */
-const adminName = computed(() => {
-  const mine = myUserId.value
-  const firstAdminMsg = messages.value.find((m) => mine !== null && m.id_users_sender !== mine)
-  return firstAdminMsg?.sender_display_name || 'Admin'
-})
+const csName = ref<string>('Admin')
+
+async function fetchCsName() {
+  if (!copyTraderId.value) return
+  const res = await fetch(`${API_BASE}/chat-copy-trader/cs-name/${copyTraderId.value}`, {
+    headers: authHeaders(),
+    credentials: 'include',
+  })
+  if (!res.ok) return
+  const j: { cs_name: string } = await res.json()
+  csName.value = j.cs_name || 'Admin'
+}
+
+const adminName = computed(() => csName.value)
+
 function goBack() {
   if (window.history.length > 1) router.back()
   else router.push('/')
@@ -576,6 +586,7 @@ onMounted(async () => {
   await fetchMe() // dapatkan myUserId
   await ensureChatByCopyTrader() // resolve copy_trader_id -> thread_id
   await fetchMessages(currentLimit.value)
+  await fetchCsName()
   startPolling()
 })
 onUnmounted(() => stopPolling())
