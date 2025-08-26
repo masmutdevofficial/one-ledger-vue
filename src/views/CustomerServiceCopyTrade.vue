@@ -329,7 +329,7 @@ function isAllowedMime(f: File) {
 }
 
 /** ================== Header helpers ================== */
-const csName = ref<string>('Admin')
+const csName = ref<string>('')
 
 async function fetchCsName() {
   if (!copyTraderId.value) return
@@ -339,7 +339,7 @@ async function fetchCsName() {
   })
   if (!res.ok) return
   const j: { cs_name: string } = await res.json()
-  csName.value = j.cs_name || 'Admin'
+  csName.value = j.cs_name || ''
 }
 
 const adminName = computed(() => csName.value)
