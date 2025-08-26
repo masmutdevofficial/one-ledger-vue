@@ -3,6 +3,24 @@
     <div class="h-[560px] flex flex-col overflow-hidden">
       <!-- List chat -->
       <div ref="listEl" class="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
+        <!-- NOTIF TICKER -->
+        <div
+          v-if="bannerItems.length"
+          class="sticky top-0 z-10 -mx-4 px-4 pb-2 bg-white/90 backdrop-blur border-b"
+        >
+          <div class="relative overflow-hidden h-7">
+            <div class="inline-block whitespace-nowrap marquee" :key="bannerKey" aria-live="polite">
+              <span
+                v-for="(t, i) in bannerItems"
+                :key="i"
+                class="mx-6 text-xs font-medium text-gray-800"
+              >
+                {{ t }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <template v-for="m in messages" :key="m.id">
           <div class="flex items-start gap-2 text-sm leading-relaxed">
             <span class="shrink-0 font-medium" :style="{ color: userColor(m.user) }">
@@ -17,6 +35,7 @@
             </p>
           </div>
         </template>
+
         <div v-if="!copyTraderId" class="text-sm text-gray-500">Memuat…</div>
       </div>
 
@@ -26,15 +45,16 @@
           <div class="relative">
             <button
               type="button"
-              @click="toggleEmoji()"
+              @click="onToggleEmoji"
               class="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100 active:bg-gray-200"
               title="Emoji"
               ref="emojiBtnRef"
             >
               <Icon icon="tabler:mood-smile" class="w-5 h-5 text-gray-700" />
             </button>
+
             <div
-              v-if="emojiOpen"
+              v-if="emoji.open.value"
               ref="emojiPanelRef"
               class="absolute bottom-full left-0 mb-2 w-64 rounded-xl border bg-white shadow p-2 z-10"
             >
@@ -42,11 +62,11 @@
               <div class="max-h-56 overflow-y-auto pr-1 overscroll-contain">
                 <div class="grid grid-cols-8 gap-1 text-[22px] leading-none">
                   <button
-                    v-for="(e, i) in frequentEmojis"
+                    v-for="(e, i) in emoji.list"
                     :key="i"
                     type="button"
                     class="h-8 w-8 rounded hover:bg-gray-100"
-                    @click="insertEmoji(e)"
+                    @click="onInsertEmoji(e)"
                   >
                     {{ e }}
                   </button>
@@ -60,9 +80,9 @@
             v-model="draft"
             @keydown.enter.exact.prevent="handleSend"
             @keydown.enter.shift.stop
-            @keyup="captureSelection"
-            @mouseup="captureSelection"
-            @select="captureSelection"
+            @keyup="onCaptureSelection"
+            @mouseup="onCaptureSelection"
+            @select="onCaptureSelection"
             rows="1"
             placeholder="Tulis pesan..."
             class="w-full resize-none outline-none rounded-xl px-3 py-3 pr-12 text-sm max-h-32 overflow-auto bg-gray-50 border border-gray-200 focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
@@ -87,9 +107,7 @@ import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
-/** ========= CONFIG ========= */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
-/** ========================= */
 
 type ChatMessage = {
   id: number
@@ -122,23 +140,22 @@ type NotifResp = { data: NotifRow | null }
 const route = useRoute()
 const modal = useApiAlertStore()
 
-/** ===== AUTH + REQUEST (tanpa any) ===== */
 function getToken(): string {
   return localStorage.getItem('token') ?? ''
 }
 function parseJsonSafe(input: string): unknown {
   try {
-    return JSON.parse(input) as unknown
+    return JSON.parse(input)
   } catch {
-    return input as unknown
+    return input
   }
 }
 function extractErrorMessage(data: unknown, fallback: string): string {
   if (typeof data === 'object' && data !== null) {
-    const maybeMsg =
+    const m =
       (data as { message?: unknown; error?: unknown }).message ??
       (data as { error?: unknown }).error
-    if (typeof maybeMsg === 'string') return maybeMsg
+    if (typeof m === 'string') return m
   }
   return fallback
 }
@@ -167,9 +184,8 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
   return data as T
 }
-/** ===================================== */
 
-/** ===== Resolve copyTraderId dari /futures/:username ===== */
+/** Resolve copyTraderId dari /futures/:username */
 const copyTraderId = ref<number | null>(null)
 async function resolveCopyTraderId(): Promise<void> {
   const usernameParam = String(route.params.username ?? '').trim()
@@ -183,9 +199,8 @@ async function resolveCopyTraderId(): Promise<void> {
   copyTraderId.value = resp?.data?.id ?? null
   if (!copyTraderId.value) modal.open('Error', 'Copy trader tidak ditemukan')
 }
-/** ================================================ */
 
-/** ========== STATE & UI ========== */
+/** State */
 const messages = ref<ChatMessage[]>([])
 let lastId: number | null = null
 let pollHandle: number | null = null
@@ -193,6 +208,18 @@ let pollNotifHandle: number | null = null
 const POLL_MS = 2000
 const POLL_NOTIF_MS = 5000
 
+/** Ticker notif */
+const bannerItems = ref<string[]>([])
+const bannerKey = ref(0)
+const seenNotifKeys = new Set<string>()
+let lastNotifId: number | null = null
+function enqueueBanner(text: string): void {
+  bannerItems.value.push(text)
+  if (bannerItems.value.length > 8) bannerItems.value.shift()
+  bannerKey.value++ // restart animasi
+}
+
+/** UI helpers */
 const draft = ref<string>('')
 const sending = ref<boolean>(false)
 const canSend = computed(() => draft.value.trim().length > 0)
@@ -217,94 +244,110 @@ watch(
     if (stick) scrollToBottom()
   },
 )
-
 function userColor(name: string): string {
   let hash = 0
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0
   const hue = hash % 360
   return `hsl(${hue} 65% 45%)`
 }
-/** ============================== */
 
-/** ========== EMOJI ========== */
-const emojiOpen = ref(false)
+function formatAmountEn(amountStr: string): string {
+  // aman untuk 20,8: jangan parse ke Number
+  const raw = String(amountStr).trim()
+  const isNeg = raw.startsWith('-')
+  const clean = raw.replace(/[^0-9.]/g, '') // buang simbol lain
+  const [intPartRaw, fracPartRaw = ''] = clean.split('.')
+
+  const intDigits = intPartRaw.replace(/^0+(?=\d)/, '') || '0'
+  const intWithSep = intDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
+  // potong trailing zero fraksi, tapi biarkan kalau semua nol -> hilangkan titik
+  const fracTrimmed = fracPartRaw.replace(/0+$/, '')
+  const frac = fracTrimmed ? `.${fracTrimmed}` : ''
+
+  return `${isNeg ? '-' : ''}${intWithSep}${frac}`
+}
+
+/** Emoji state+handler (semua via objek 'emoji') */
+const emoji = {
+  open: ref(false),
+  list: [
+    '😀',
+    '😂',
+    '😊',
+    '😍',
+    '😅',
+    '😘',
+    '😢',
+    '👍',
+    '🙏',
+    '🎉',
+    '🔥',
+    '🤔',
+    '😎',
+    '🥰',
+    '👏',
+    '🤯',
+    '🙌',
+    '💪',
+    '💖',
+    '🤝',
+    '🥲',
+    '😴',
+    '😇',
+    '😡',
+    '💯',
+    '💀',
+    '😜',
+    '😏',
+    '🫡',
+    '🤤',
+    '🤗',
+    '🤭',
+  ] as readonly string[],
+  selStart: ref(0),
+  selEnd: ref(0),
+}
 const emojiBtnRef = ref<HTMLButtonElement | null>(null)
 const emojiPanelRef = ref<HTMLDivElement | null>(null)
 const taRef = ref<HTMLTextAreaElement | null>(null)
-const frequentEmojis = [
-  '😀',
-  '😂',
-  '😊',
-  '😍',
-  '😅',
-  '😘',
-  '😢',
-  '👍',
-  '🙏',
-  '🎉',
-  '🔥',
-  '🤔',
-  '😎',
-  '🥰',
-  '👏',
-  '🤯',
-  '🙌',
-  '💪',
-  '💖',
-  '🤝',
-  '🥲',
-  '😴',
-  '😇',
-  '😡',
-  '💯',
-  '💀',
-  '😜',
-  '😏',
-  '🫡',
-  '🤤',
-  '🤗',
-  '🤭',
-]
 
-function toggleEmoji(): void {
-  emojiOpen.value = !emojiOpen.value
+function onToggleEmoji(): void {
+  emoji.open.value = !emoji.open.value
 }
-function closeEmojiIfClickOutside(ev: MouseEvent): void {
+function onClickOutsideEmoji(ev: MouseEvent): void {
   const p = emojiPanelRef.value,
     b = emojiBtnRef.value
   if (!p || !b) return
   const t = ev.target as Node
-  if (!p.contains(t) && !b.contains(t)) emojiOpen.value = false
+  if (!p.contains(t) && !b.contains(t)) emoji.open.value = false
 }
-onMounted(() => document.addEventListener('mousedown', closeEmojiIfClickOutside))
-onBeforeUnmount(() => document.removeEventListener('mousedown', closeEmojiIfClickOutside))
+onMounted(() => document.addEventListener('mousedown', onClickOutsideEmoji))
+onBeforeUnmount(() => document.removeEventListener('mousedown', onClickOutsideEmoji))
 
-const selStart = ref(0),
-  selEnd = ref(0)
-function captureSelection(): void {
+function onCaptureSelection(): void {
   const ta = taRef.value
   if (!ta) return
-  selStart.value = ta.selectionStart ?? 0
-  selEnd.value = ta.selectionEnd ?? 0
+  emoji.selStart.value = ta.selectionStart ?? 0
+  emoji.selEnd.value = ta.selectionEnd ?? 0
 }
-function insertEmoji(emoji: string): void {
+function onInsertEmoji(char: string): void {
   const ta = taRef.value
-  const s = selStart.value,
-    e = selEnd.value
+  const s = emoji.selStart.value,
+    e = emoji.selEnd.value
   const v = draft.value
-  draft.value = v.slice(0, s) + emoji + v.slice(e)
+  draft.value = v.slice(0, s) + char + v.slice(e)
   nextTick(() => {
     if (ta) {
-      const pos = s + emoji.length
+      const pos = s + char.length
       ta.focus()
       ta.setSelectionRange(pos, pos)
-      captureSelection()
+      onCaptureSelection()
     }
   })
 }
-/** =========================== */
 
-/** ========== API HELPERS (polling) ========== */
+/** API helpers (polling) */
 function mapApiMsg(m: ApiMessage): ChatMessage {
   return { id: m.id, user: m.username, text: m.message, created_at: m.created_at }
 }
@@ -326,25 +369,29 @@ async function pollNew(): Promise<void> {
     lastId = incoming[incoming.length - 1].id
   }
 }
-let lastNotifId: number | null = null
 async function pollNotif(): Promise<void> {
   if (!copyTraderId.value) return
   const res = await apiRequest<NotifResp>(`/copy-traders/${copyTraderId.value}/notif-latest`)
   const row = res.data
   if (!row) return
+
+  // dedup berdasarkan id + username + amount
+  const key = `${row.id}|${row.username}|${row.amount}`
   if (lastNotifId === null) {
     lastNotifId = row.id
+    seenNotifKeys.add(key)
     return
   }
-  if (row.id !== lastNotifId) {
-    lastNotifId = row.id
-    const label = row.status === 2 ? 'Win' : row.status === 3 ? 'Lose' : 'Pending'
-    modal.open('Transaksi Baru', `${row.username} • ${label} • Amount ${row.amount}`)
-  }
-}
-/** ========================================== */
+  if (seenNotifKeys.has(key)) return
 
-/** ========== LIFECYCLE ========== */
+  lastNotifId = row.id
+  seenNotifKeys.add(key)
+
+  // 👉 teks baru (bahasa Inggris)
+  enqueueBanner(`New trade from ${row.username} amount ${formatAmountEn(row.amount)} USD`)
+}
+
+/** Lifecycle */
 onMounted(async () => {
   try {
     await resolveCopyTraderId()
@@ -361,16 +408,14 @@ onBeforeUnmount((): void => {
   if (pollHandle) clearInterval(pollHandle)
   if (pollNotifHandle) clearInterval(pollNotifHandle)
 })
-/** ============================= */
 
-/** ========== SEND ========== */
+/** Send */
 async function handleSend(): Promise<void> {
   if (!canSend.value || sending.value || !copyTraderId.value) return
   try {
     sending.value = true
     const text = draft.value.trim()
     draft.value = ''
-
     const created = await apiRequest<ApiMessage>(`/copy-traders/${copyTraderId.value}/community`, {
       method: 'POST',
       body: JSON.stringify({ message: text }),
@@ -386,3 +431,18 @@ async function handleSend(): Promise<void> {
   }
 }
 </script>
+
+<style scoped>
+@keyframes marquee {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+.marquee {
+  will-change: transform;
+  animation: marquee 12s linear 1;
+}
+</style>
