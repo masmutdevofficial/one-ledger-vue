@@ -18,21 +18,35 @@
       </button>
 
       <!-- Profile & title -->
-      <div class="flex items-center gap-4 mb-1">
-        <img
-          :alt="`${trader.name} avatar`"
-          class="w-12 h-12 rounded-full object-cover"
-          :src="avatarUrl"
-          @error="onAvatarError"
-        />
-        <h1 class="font-extrabold text-lg flex items-center gap-2">
-          <span>{{ trader.name }}</span>
-          <Icon
-            v-if="trader.is_featured"
-            icon="tabler:shield-check"
-            class="w-5 h-5 text-amber-500"
+      <div class="flex items-center justify-between mb-1">
+        <!-- kiri: avatar + nama -->
+        <div class="flex items-center gap-4">
+          <img
+            :alt="`${trader.name} avatar`"
+            class="w-12 h-12 rounded-full object-cover"
+            :src="avatarUrl"
+            @error="onAvatarError"
           />
-        </h1>
+          <h1 class="font-extrabold text-lg flex items-center gap-2">
+            <span>{{ trader.name }}</span>
+            <Icon
+              v-if="trader.is_featured"
+              icon="tabler:shield-check"
+              class="w-5 h-5 text-amber-500"
+            />
+          </h1>
+        </div>
+
+        <!-- kanan: tombol chat -->
+        <router-link
+          v-if="trader && trader.id"
+          :to="`/chats/${trader.id}`"
+          class="ml-4 inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200"
+          aria-label="Open chat"
+          title="Message"
+        >
+          <Icon icon="tabler:message-circle-2" class="w-6 h-6 text-emerald-600" />
+        </router-link>
       </div>
 
       <p class="text-sm mb-2">Fixed ratio only. Target APR 400% / MDD {{ trader.mdd_30d_pct }}%.</p>

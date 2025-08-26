@@ -71,10 +71,6 @@ const routes = [
         component: () => import('@/views/NotificationTransactions.vue'),
       },
       {
-        path: 'cs-chat',
-        component: () => import('@/views/CustomerService.vue'),
-      },
-      {
         path: 'transfer',
         component: () => import('@/views/TransferUSDT.vue'),
       },
@@ -141,6 +137,10 @@ const routes = [
       {
         path: 'megadrop',
         component: () => import('@/views/menu/MegaDrop.vue'),
+      },
+      {
+        path: 'chats/:threadId',
+        component: () => import('@/views/CustomerServiceCopyTrade.vue'),
       },
       {
         path: 'news/:slug',
