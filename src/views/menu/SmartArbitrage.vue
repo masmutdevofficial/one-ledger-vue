@@ -56,7 +56,7 @@
               {{ formatPct(coin.currentApr) }}
             </p>
             <p class="text-gray-400 text-[10px] leading-none mt-2">
-              {{ coin.holdingDay }}Ds APR: <b class="text-gray-800">{{ formatPct(coin.currentApr) }}</b>
+              {{ coin.holdingDay }}D APR: <b class="text-gray-800">{{ formatPct(coin.currentApr) }}</b>
             </p>
           </div>
         </RouterLink>
