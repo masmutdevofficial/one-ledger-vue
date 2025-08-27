@@ -1,9 +1,6 @@
 <template>
   <div class="w-full max-w-md mx-auto p-4">
     <div class="flex flex-row items-center mb-3">
-      <!-- <button aria-label="Go back" class="text-black text-[12px] mr-2" @click="goBack">
-        <Icon icon="tabler:arrow-left" width="24" height="24" />
-      </button> -->
       <h1 class="font-semibold text-sm">Smart Arbitrage</h1>
     </div>
 
@@ -12,20 +9,29 @@
       <div>
         <p class="text-[12px] text-gray-700 font-normal flex items-center gap-1">
           Total Balance
-          <Icon icon="tabler:eye" class="text-gray-400" />
+          <button
+            type="button"
+            class="text-gray-400 cursor-pointer"
+            :aria-pressed="showBalance ? 'true' : 'false'"
+            :aria-label="showBalance ? 'Hide balance' : 'Show balance'"
+            @click="toggleShow"
+          >
+            <Icon :icon="showBalance ? 'tabler:eye' : 'tabler:eye-off'" />
+          </button>
         </p>
 
         <button
           type="button"
           class="text-[16px] font-extrabold text-black mt-1 flex items-center gap-1"
         >
-          ≈ <span>$0.00</span> USD
-          <Icon icon="tabler:chevron-down" class="text-xs" />
+          ≈ <span>{{ displayTotal }}</span> USD
         </button>
 
         <p class="text-[12px] mt-1 font-normal">
           30-Day Profit ≈
-          <span class="text-green-500 font-semibold">$0.00</span>
+          <span class="font-semibold" :class="showBalance ? 'text-green-500' : 'text-gray-400'">
+            {{ displayProfit }}
+          </span>
         </p>
       </div>
 
@@ -40,45 +46,77 @@
 
     <!-- List -->
     <div class="space-y-3">
-      <RouterLink
-        v-for="coin in filteredCoins"
-        :key="coin.pair"
-        :to="`/smart-arbitrage/detail/${coin.symbol.toLowerCase()}`"
-        class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 hover:bg-gray-100 transition"
-      >
-        <div class="flex items-center gap-3 relative">
-          <img
-            :src="coin.logoUrl"
-            :alt="`${coin.symbol} logo`"
-            class="w-6 h-6 rounded-full"
-            width="32"
-            height="32"
-          />
-          <!-- overlay coin logo -->
-          <img
-            :src="`/img/crypto/usdt.svg`"
-            :alt="`USDT logo`"
-            class="absolute inset-0 w-4 h-4 top-1.5 left-3.5"
-          />
-          <span class="text-black font-semibold text-[12px]">{{ coin.pair }}</span>
-        </div>
+      <template v-for="coin in filteredCoins" :key="coin.symbol">
+        <!-- ENABLED (bisa klik) -->
+        <RouterLink
+          v-if="!coin.disabled"
+          :to="`/smart-arbitrage/detail/${coin.symbol.toLowerCase()}`"
+          class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 hover:bg-gray-100 transition"
+        >
+          <div class="flex items-center gap-3 relative">
+            <div class="relative w-12 h-12">
+              <img
+                src="/img/crypto/usdt.svg"
+                alt="USDT logo"
+                class="absolute z-2 left-6.5 top-3 w-6 h-6 rounded-full"
+              />
+              <img
+                :src="`/img/crypto/${coin.symbol.toLowerCase()}.svg`"
+                :alt="`${coin.symbol} logo`"
+                class="absolute inset-0 w-7 h-7 m-auto rounded-full"
+              />
+            </div>
+            <span class="text-black font-semibold text-[12px]">{{ coin.pair }}</span>
+          </div>
+          <div class="text-right">
+            <p class="font-semibold text-[12px] leading-none text-teal-500">
+              {{ formatPct(coin.currentApr) }}
+            </p>
+            <p class="text-gray-400 text-[10px] leading-none mt-2">
+              30d APR: <b class="text-gray-800">{{ formatPct(coin.currentApr) }}</b>
+            </p>
+          </div>
+        </RouterLink>
 
-        <div class="text-right">
-          <p
-            class="font-semibold text-[12px] leading-none"
-            :class="coin.changePct >= 0 ? 'text-teal-500' : 'text-red-500'"
-          >
-            {{ formatPct(coin.changePct) }}
-          </p>
-          <p class="text-gray-400 text-[10px] leading-none mt-2">
-            30d APR: <b class="text-gray-800">{{ formatPct(coin.apr30d) }}</b>
-          </p>
+        <!-- DISABLED (ada Pending, tidak bisa klik) -->
+        <div
+          v-else
+          class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 opacity-60 cursor-not-allowed select-none"
+          aria-disabled="true"
+          title="You have a pending transaction for this asset"
+        >
+          <div class="flex items-center gap-3 relative">
+            <div class="relative w-12 h-12">
+              <img
+                src="/img/crypto/usdt.svg"
+                alt="USDT logo"
+                class="absolute z-2 left-6.5 top-3 w-6 h-6 rounded-full"
+              />
+              <img
+                :src="`/img/crypto/${coin.symbol.toLowerCase()}.svg`"
+                :alt="`${coin.symbol} logo`"
+                class="absolute inset-0 w-7 h-7 m-auto rounded-full"
+              />
+            </div>
+            <span class="text-black font-semibold text-[12px]">{{ coin.pair }}</span>
+          </div>
+          <div class="text-right">
+            <p class="font-semibold text-[12px] leading-none text-teal-500">
+              {{ formatPct(coin.currentApr) }}
+            </p>
+            <p class="text-gray-400 text-[10px] leading-none mt-2">
+              30d APR: <b class="text-gray-800">{{ formatPct(coin.currentApr) }}</b>
+            </p>
+          </div>
         </div>
-      </RouterLink>
+      </template>
     </div>
 
-    <p class="text-center text-gray-400 text-[12px] mt-6 font-normal">No more data</p>
+    <p class="text-center text-gray-400 text-[12px] mt-6 font-normal" v-if="!filteredCoins.length">
+      No more data
+    </p>
 
+    <!-- Bottom Nav -->
     <div
       class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50"
     >
@@ -94,19 +132,15 @@
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal Terms -->
     <div
       v-if="showModalTerm"
       class="fixed inset-0 z-50 flex items-center justify-center"
       aria-modal="true"
       role="dialog"
     >
-      <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/30" @click="closeModalTerm"></div>
-
-      <!-- Panel -->
       <div class="relative z-10 w-full max-w-lg mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
-        <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 class="text-base font-semibold">Terms &amp; Conditions</h3>
           <button
@@ -119,7 +153,6 @@
           </button>
         </div>
 
-        <!-- Body (scrollable) -->
         <div
           ref="scrollArea"
           class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-sm leading-relaxed text-gray-700"
@@ -181,11 +214,9 @@
             notice to users.
           </p>
 
-          <!-- spacer kecil agar mudah mencapai bottom -->
           <div class="h-2"></div>
         </div>
 
-        <!-- Footer -->
         <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
           <button
             type="button"
@@ -210,74 +241,151 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRoute } from 'vue-router'
-// const router = useRouter()
-const route = useRoute() // kalau butuh
+import { useApiAlertStore } from '@/stores/apiAlert'
 
-// function goBack() {
-//   if (window.history.length > 1) router.back()
-//   else router.push('/buy-p2p')
-// }
+/** KONFIGURASI */
+const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const TOKEN = localStorage.getItem('token') ?? ''
 
-interface Coin {
-  symbol: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'DOGE'
-  pair: string
-  changePct: number
-  apr30d: number
-  logoUrl: string
+/** STORE ALERT */
+const modal = useApiAlertStore()
+
+/** STATE UI HEADER */
+const showBalance = ref<boolean>(true)
+function toggleShow(): void {
+  showBalance.value = !showBalance.value
 }
 
-// Dummy data (tanpa API)
-const coins: ReadonlyArray<Coin> = [
-  {
-    symbol: 'BTC',
-    pair: 'BTC/USDT',
-    changePct: 3.43,
-    apr30d: 7.68,
-    logoUrl: '/img/crypto/btc.svg',
-  },
-  {
-    symbol: 'ETH',
-    pair: 'ETH/USDT',
-    changePct: 6.85,
-    apr30d: 6.95,
-    logoUrl: '/img/crypto/eth.svg',
-  },
-  {
-    symbol: 'SOL',
-    pair: 'SOL/USDT',
-    changePct: 10.95,
-    apr30d: 4.67,
-    logoUrl: '/img/crypto/sol.svg',
-  },
-  {
-    symbol: 'XRP',
-    pair: 'XRP/USDT',
-    changePct: 10.95,
-    apr30d: 6.26,
-    logoUrl: '/img/crypto/xrp.svg',
-  },
-  {
-    symbol: 'DOGE',
-    pair: 'DOGE/USDT',
-    changePct: 10.95,
-    apr30d: 6.73,
-    logoUrl: '/img/crypto/doge.svg',
-  },
-] as const
+/** SALDO (TOTAL BALANCE DIAMBIL DARI saldo_smart_arbitrage) */
+const saldoSmart = ref<number>(0)
+const displayTotal = computed<string>(() => (showBalance.value ? usd(saldoSmart.value) : '****'))
+const displayProfit = computed<string>(() => (showBalance.value ? '$0.00' : '****')) // belum ada endpoint profit
 
+/** TIPE DATA */
+interface ApiSmartItem {
+  id: number
+  symbol: string
+  current_apr: number
+  holding_day: number
+  created_at: string
+  updated_at: string
+}
+
+interface ApiSaldoResponse {
+  status: 'success'
+  saldo: number
+  saldo_smart_arbitrage: number
+  komisi: number
+}
+
+interface ApiTxItem {
+  id: number
+  id_users: number
+  id_smart_arbitrage: number
+  symbol: string
+  amount: string
+  status: 'Pending' | 'Claimed'
+  created_at: string
+  updated_at: string
+}
+
+interface ApiSummaryItem {
+  id_smart_arbitrage: number
+  symbol: string
+  total_pending_amount: string
+  total_pending_tx: number
+}
+
+interface ApiSmartResponse {
+  status: 'success'
+  data: ApiSmartItem[]
+  tx?: ApiTxItem[]
+  summary_by_symbol?: ApiSummaryItem[]
+}
+
+interface Coin {
+  id: number
+  symbol: string
+  pair: string
+  currentApr: number
+  disabled: boolean
+}
+
+/** LIST COIN DARI API */
+const coins = ref<Coin[]>([])
 const query = ref<string>('')
 
 const filteredCoins = computed<ReadonlyArray<Coin>>(() => {
   const q = query.value.trim().toLowerCase()
-  if (!q) return coins
-  return coins.filter((c) => c.pair.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q))
+  if (!q) return coins.value
+  return coins.value.filter(
+    (c) => c.pair.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q),
+  )
 })
 
-function formatPct(n: number): string {
-  const sign = n >= 0 ? '' : ''
-  return `${sign}${n.toFixed(2)}%`
+async function loadSmartList(): Promise<void> {
+  try {
+    const json = await fetchJson<ApiSmartResponse>('/api/smart-arbitrage')
+
+    // id_smart_arbitrage yang PENDING
+    const pendingIds = new Set<number>(
+      (json.tx ?? [])
+        .filter((t) => t.status === 'Pending')
+        .map((t) => Number(t.id_smart_arbitrage)),
+    )
+
+    coins.value = (json.data || []).map((it) => ({
+      id: it.id,
+      symbol: it.symbol.toUpperCase(),
+      pair: `${it.symbol.toUpperCase()}/USDT`,
+      currentApr: Number(it.current_apr || 0),
+      disabled: pendingIds.has(Number(it.id)),
+    }))
+  } catch (err) {
+    console.error('loadSmartList error:', err)
+    modal.open('Error', 'Gagal mengambil daftar Smart Arbitrage.')
+  }
 }
 
+/** HELPERS */
+function usd(n: number): string {
+  // tampil USD 2 desimal
+  return `$${Number(n || 0).toFixed(2)}`
+}
+function formatPct(n: number): string {
+  return `${Number(n || 0).toFixed(2)}%`
+}
+
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${TOKEN}`,
+      ...(init?.headers ?? {}),
+    },
+    credentials: 'include', // Sanctum
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `HTTP ${res.status}`)
+  }
+  return res.json() as Promise<T>
+}
+
+/** LOADERS */
+async function loadSaldo(): Promise<void> {
+  try {
+    const json = await fetchJson<ApiSaldoResponse>('/api/get-saldo')
+    saldoSmart.value = Number(json.saldo_smart_arbitrage || 0)
+  } catch (err) {
+    console.error('loadSaldo error:', err)
+    modal.open('Error', 'Gagal mengambil saldo (saldo_smart_arbitrage).')
+  }
+}
+
+/** LIFECYCLE */
+const route = useRoute()
 const showModalTerm = ref<boolean>(false)
 const readDone = ref<boolean>(false)
 const scrollArea = ref<HTMLDivElement | null>(null)
@@ -285,7 +393,6 @@ const scrollArea = ref<HTMLDivElement | null>(null)
 function openModalTerm(): void {
   showModalTerm.value = true
   readDone.value = false
-  // lock body scroll
   document.documentElement.style.overflow = 'hidden'
 }
 function closeModalTerm(): void {
@@ -294,16 +401,13 @@ function closeModalTerm(): void {
 }
 function onScroll(e: Event): void {
   const el = e.target as HTMLDivElement
-  // dianggap "dibaca" saat posisi scroll mencapai (atau >) bottom
   const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 4
   if (atBottom) readDone.value = true
 }
 function acknowledge(): void {
-  // aksi setelah user paham; saat ini cukup menutup modal
   closeModalTerm()
 }
 
-// safety: jika route berubah saat modal terbuka, tutup dan reset overflow
 watch(
   () => route.fullPath,
   () => {
@@ -311,15 +415,18 @@ watch(
   },
 )
 
-onMounted(() => {
-  // jika modal sudah kebuka karena hot-reload, jangan kunci scroll permanen
-  if (!showModalTerm.value) document.documentElement.style.overflow = ''
+onMounted(async () => {
+  if (!TOKEN) {
+    modal.open('Unauthorized', 'Token tidak ditemukan. Silakan login ulang.', () => {
+      // optional: redirect
+    })
+    return
+  }
+  document.documentElement.style.overflow = ''
+  await Promise.all([loadSaldo(), loadSmartList()])
 })
+
 onBeforeUnmount(() => {
   document.documentElement.style.overflow = ''
 })
 </script>
-
-<style scoped>
-/* opsional: tidak ada custom style */
-</style>

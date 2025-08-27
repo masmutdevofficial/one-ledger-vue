@@ -14,13 +14,13 @@
     <!-- Current APR box -->
     <div class="border border-black rounded-lg w-24 py-2 px-3 mb-6">
       <p class="text-xs text-center text-gray-700">Current APR</p>
-      <p class="text-green-600 font-semibold text-lg text-center leading-none">3.43%</p>
+      <p class="text-green-600 font-semibold text-lg text-center leading-none">
+        {{ Number.isFinite(currentApr) && currentApr > 0 ? `${currentApr.toFixed(3)}%` : '—' }}
+      </p>
     </div>
 
-    <!-- Amount label -->
+    <!-- Amount -->
     <label for="amount" class="text-sm font-semibold mb-1">Amount</label>
-
-    <!-- Amount input container -->
     <div class="relative mb-3">
       <input
         id="amount"
@@ -44,13 +44,15 @@
       </button>
     </div>
 
-    <!-- Est. Position Size and Recommended min holding period -->
+    <!-- Recommended min holding period -->
     <div class="flex justify-between text-xs text-gray-400 mb-3">
       <p class="border-b border-dotted border-gray-300 pb-0.5">Recommended min holding period</p>
-      <p class="font-semibold border-b border-dotted border-gray-300 pb-0.5">30 Days</p>
+      <p class="font-semibold border-b border-dotted border-gray-300 pb-0.5">
+        {{ holdingDay }} Days
+      </p>
     </div>
 
-    <!-- Fee level box -->
+    <!-- Fee level -->
     <div class="border border-gray-200 rounded-lg p-4 mb-10">
       <div class="flex justify-between mb-2">
         <p class="font-semibold text-sm text-gray-900">Your Fee Level</p>
@@ -92,11 +94,11 @@
           type="button"
           class="w-full rounded-lg py-3 text-base font-normal"
           :class="
-            agree
+            !confirmDisabled
               ? 'bg-teal-400 text-white hover:bg-teal-500'
               : 'bg-teal-300/50 text-white cursor-not-allowed'
           "
-          :disabled="!agree"
+          :disabled="confirmDisabled"
           @click="confirm"
         >
           Confirm
@@ -111,12 +113,8 @@
       aria-modal="true"
       role="dialog"
     >
-      <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/30" @click="closeTerms"></div>
-
-      <!-- Panel -->
       <div class="relative z-10 w-full max-w-lg mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
-        <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 class="text-base font-semibold">Terms &amp; Conditions</h3>
           <button
@@ -129,7 +127,6 @@
           </button>
         </div>
 
-        <!-- Body (scrollable) -->
         <div
           ref="scrollArea"
           class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-sm leading-relaxed text-gray-700"
@@ -194,7 +191,6 @@
           <div class="h-2"></div>
         </div>
 
-        <!-- Footer -->
         <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
           <button
             type="button"
@@ -220,60 +216,173 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { useApiAlertStore } from '@/stores/apiAlert'
+
+const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const TOKEN = localStorage.getItem('token') ?? ''
+const modal = useApiAlertStore()
 
 const route = useRoute()
 const router = useRouter()
+const symbolParam = computed<string>(() =>
+  String(route.params.symbol || '')
+    .trim()
+    .toUpperCase(),
+)
+const symbolUpper = computed<string>(() => symbolParam.value)
 
-// symbol dari URL, contoh: /smart-arbitrage/detail/btc
-const symbolParam = computed<string>(() => String(route.params.symbol || '').trim())
-const symbolUpper = computed<string>(() => symbolParam.value.toUpperCase())
+/** TYPES */
+interface SmartItem {
+  id: number
+  symbol: string
+  current_apr: number
+  holding_day: number
+}
+interface SmartResponse {
+  status: 'success'
+  data: SmartItem[]
+  tx?: {
+    id: number
+    id_users: number
+    id_smart_arbitrage: number
+    symbol: string
+    amount: string
+    status: 'Pending' | 'Claimed'
+    created_at: string
+    updated_at: string
+  }[]
+}
+interface GetSaldo {
+  status: 'success'
+  saldo: number
+  saldo_smart_arbitrage: number
+  komisi: number
+}
 
-// form state
-const amount = ref<string>('')
+/** STATE */
+const currentApr = ref<number>(0)
+const holdingDay = ref<number>(30)
+const amount = ref<string>('') // input USDT
+const agree = ref<boolean>(false) // consent
+const saldoAvailable = ref<number>(0) // kolom saldo utk Max
+const showModal = ref<boolean>(false)
+const readDone = ref<boolean>(false)
 
-// consent area
-const agree = ref<boolean>(false)
-
-// actions
+/** HELPERS */
+function lockScroll(lock: boolean): void {
+  document.documentElement.style.overflow = lock ? 'hidden' : ''
+}
 function goBack(): void {
   if (window.history.length > 1) router.back()
   else router.push('/dashboard')
 }
 function setMax(): void {
-  // placeholder: set nilai maksimal (dummy)
-  amount.value = '1000'
+  amount.value = saldoAvailable.value.toFixed(8)
 }
-function confirm(): void {
-  // aksi lanjut setelah agree (sementara tidak ada API)
-  // bisa diarahkan ke step berikutnya
+const confirmDisabled = computed<boolean>(() => {
+  const val = Number(amount.value || 0)
+  return !agree.value || !(val > 0)
+})
+
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${TOKEN}`,
+      ...(init?.headers ?? {}),
+    },
+    credentials: 'include',
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `HTTP ${res.status}`)
+  }
+  return res.json() as Promise<T>
 }
 
-// modal terms
-const showModal = ref<boolean>(false)
-const readDone = ref<boolean>(false)
-const scrollArea = ref<HTMLDivElement | null>(null)
+/** LOADERS */
+async function loadSmart(): Promise<void> {
+  const json = await fetchJson<SmartResponse>('/api/smart-arbitrage')
 
+  // Cek jika user sudah punya transaksi Pending utk symbol ini -> redirect
+  const hasPendingSame = (json.tx ?? []).some(
+    (t) => t.status === 'Pending' && t.symbol.toUpperCase() === symbolParam.value,
+  )
+  if (hasPendingSame) {
+    modal.open('Info', `Anda sudah memiliki transaksi Pending untuk ${symbolParam.value}.`, () => {
+      router.replace('/smart-arbitrage')
+    })
+    // tetap lanjut return supaya tidak mengisi state lain
+    return
+  }
+
+  // Ambil master untuk symbol ini
+  const found = (json.data || []).find((x) => x.symbol.toUpperCase() === symbolParam.value)
+  if (!found) {
+    modal.open('Not Found', `Symbol ${symbolParam.value} tidak tersedia.`, () => {
+      router.replace('/smart-arbitrage')
+    })
+    return
+  }
+  currentApr.value = Number(found.current_apr || 0)
+  holdingDay.value = Number(found.holding_day || 30)
+}
+
+async function loadSaldo(): Promise<void> {
+  const json = await fetchJson<GetSaldo>('/api/get-saldo')
+  saldoAvailable.value = Number(json.saldo || 0)
+}
+
+/** ACTIONS */
+async function confirm(): Promise<void> {
+  if (confirmDisabled.value) return
+  try {
+    const body = {
+      symbol: symbolParam.value,
+      amount: Number(amount.value || 0),
+      status: 'Pending',
+    }
+    await fetchJson('/api/transaksi-smart-arbitrage', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    modal.open('Success', 'Transaction created successfully.', () => {
+      router.push('/smart-arbitrage')
+    })
+  } catch {
+    modal.open('Error', 'Gagal membuat transaksi. Periksa saldo dan coba lagi.')
+  }
+}
+
+/** MODAL TERMS */
 function openTerms(): void {
   showModal.value = true
   readDone.value = false
   lockScroll(true)
 }
-
 function closeTerms(): void {
   showModal.value = false
   lockScroll(false)
 }
-
 function onScroll(e: Event): void {
   const el = e.target as HTMLDivElement
   const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 4
   if (atBottom) readDone.value = true
 }
 
-function lockScroll(lock: boolean): void {
-  document.documentElement.style.overflow = lock ? 'hidden' : ''
-}
-
-onMounted(() => lockScroll(false))
+/** LIFECYCLE */
+onMounted(async () => {
+  if (!TOKEN) {
+    modal.open('Unauthorized', 'Token tidak ditemukan. Silakan login.')
+    return
+  }
+  lockScroll(false)
+  try {
+    await Promise.all([loadSmart(), loadSaldo()])
+  } catch {
+    modal.open('Error', 'Gagal memuat data.')
+  }
+})
 onBeforeUnmount(() => lockScroll(false))
 </script>
