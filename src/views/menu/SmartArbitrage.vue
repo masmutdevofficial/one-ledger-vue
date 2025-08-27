@@ -1,9 +1,9 @@
 <template>
   <div class="w-full max-w-md mx-auto p-4">
     <div class="flex flex-row items-center mb-3">
-      <button aria-label="Go back" class="text-black text-[12px] mr-2" @click="goBack">
+      <!-- <button aria-label="Go back" class="text-black text-[12px] mr-2" @click="goBack">
         <Icon icon="tabler:arrow-left" width="24" height="24" />
-      </button>
+      </button> -->
       <h1 class="font-semibold text-sm">Smart Arbitrage</h1>
     </div>
 
@@ -84,7 +84,7 @@
     >
       <div class="flex justify-around items-center py-2 space-x-3">
         <RouterLink to="/dashboard" class="flex flex-col items-center text-gray-400">
-          <img alt="Home" src="/img/logo.png" class="w-4 h-4 object-contain rotate-33" />
+          <img alt="Home" src="/img/home-alt.png" class="w-4 h-4 object-contain" />
           <span class="text-xs mt-1 font-semibold">Home</span>
         </RouterLink>
         <div @click="openModalTerm" class="flex flex-col items-center cursor-pointer text-gray-400">
@@ -209,14 +209,14 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Icon } from '@iconify/vue'
-import { useRouter, useRoute } from 'vue-router'
-const router = useRouter()
+import { useRoute } from 'vue-router'
+// const router = useRouter()
 const route = useRoute() // kalau butuh
 
-function goBack() {
-  if (window.history.length > 1) router.back()
-  else router.push('/buy-p2p')
-}
+// function goBack() {
+//   if (window.history.length > 1) router.back()
+//   else router.push('/buy-p2p')
+// }
 
 interface Coin {
   symbol: 'BTC' | 'ETH' | 'SOL' | 'XRP' | 'DOGE'

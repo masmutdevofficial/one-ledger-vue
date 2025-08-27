@@ -46,12 +46,8 @@
 
     <!-- Est. Position Size and Recommended min holding period -->
     <div class="flex justify-between text-xs text-gray-400 mb-3">
-      <p class="border-b border-dotted border-gray-300 pb-0.5">Est. Position Size</p>
-      <p class="font-semibold border-b border-dotted border-gray-300 pb-0.5">--</p>
-    </div>
-    <div class="flex justify-between text-xs text-gray-400 mb-3">
       <p class="border-b border-dotted border-gray-300 pb-0.5">Recommended min holding period</p>
-      <p class="font-semibold border-b border-dotted border-gray-300 pb-0.5">14 Days</p>
+      <p class="font-semibold border-b border-dotted border-gray-300 pb-0.5">30 Days</p>
     </div>
 
     <!-- Fee level box -->

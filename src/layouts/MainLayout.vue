@@ -49,7 +49,9 @@ const hideBottomNav = computed(
     route.name === 'chats' ||
     route.path.includes('/chats') ||
     route.name === 'smart-arbitrage' ||
-    route.path.includes('/smart-arbitrage'),
+    route.path.includes('/smart-arbitrage') ||
+    route.name === 'event' ||
+    route.path.includes('/event'),
 )
 
 const teal600Filter = {
