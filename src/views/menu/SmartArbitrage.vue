@@ -9,21 +9,13 @@
       <div>
         <p class="text-[12px] text-gray-700 font-normal flex items-center gap-1">
           Total Balance
-          <button
-            type="button"
-            class="text-gray-400 cursor-pointer"
-            :aria-pressed="showBalance ? 'true' : 'false'"
-            :aria-label="showBalance ? 'Hide balance' : 'Show balance'"
-            @click="toggleShow"
-          >
+          <button type="button" class="text-gray-400 cursor-pointer" :aria-pressed="showBalance ? 'true' : 'false'"
+            :aria-label="showBalance ? 'Hide balance' : 'Show balance'" @click="toggleShow">
             <Icon :icon="showBalance ? 'tabler:eye' : 'tabler:eye-off'" />
           </button>
         </p>
 
-        <button
-          type="button"
-          class="text-[16px] font-extrabold text-black mt-1 flex items-center gap-1"
-        >
+        <button type="button" class="text-[16px] font-extrabold text-black mt-1 flex items-center gap-1">
           ≈ <span>{{ displayTotal }}</span> USD
         </button>
 
@@ -46,25 +38,16 @@
 
     <!-- List -->
     <div class="space-y-3">
-      <template v-for="coin in filteredCoins" :key="coin.symbol">
-        <!-- ENABLED (bisa klik) -->
-        <RouterLink
-          v-if="!coin.disabled"
-          :to="`/smart-arbitrage/detail/${coin.symbol.toLowerCase()}`"
-          class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 hover:bg-gray-100 transition"
-        >
+      <template v-for="coin in filteredCoins" :key="coin.id">
+        <!-- Idle (no tx) => bisa klik -->
+        <RouterLink v-if="coin.uiState === 'idle'" :to="`/smart-arbitrage/detail/${coin.symbol.toLowerCase()}`"
+          class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 hover:bg-gray-100 transition">
           <div class="flex items-center gap-3 relative">
             <div class="relative w-12 h-12">
-              <img
-                src="/img/crypto/usdt.svg"
-                alt="USDT logo"
-                class="absolute z-2 left-7.5 top-4 w-4 h-4 rounded-full"
-              />
-              <img
-                :src="`/img/crypto/${coin.symbol.toLowerCase()}.svg`"
-                :alt="`${coin.symbol} logo`"
-                class="absolute inset-0 w-7 h-7 m-auto rounded-full"
-              />
+              <img src="/img/crypto/usdt.svg" alt="USDT logo"
+                class="absolute z-2 left-7.5 top-4 w-4 h-4 rounded-full" />
+              <img :src="`/img/crypto/${coin.symbol.toLowerCase()}.svg`" :alt="`${coin.symbol} logo`"
+                class="absolute inset-0 w-7 h-7 m-auto rounded-full" />
             </div>
             <span class="text-black font-semibold text-[12px]">{{ coin.pair }}</span>
           </div>
@@ -78,39 +61,50 @@
           </div>
         </RouterLink>
 
-        <!-- DISABLED (ada Pending, tampil tombol Cancel) -->
-        <div
-          v-else
-          class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 opacity-100 select-none"
-          aria-disabled="true"
-          title="You have a pending transaction for this asset"
-        >
+        <!-- Pending => tombol Cancel -->
+        <div v-else-if="coin.uiState === 'pending'"
+          class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 select-none"
+          aria-disabled="true" title="You have a pending transaction for this asset">
           <div class="flex items-center gap-3 relative">
             <div class="relative w-12 h-12">
-              <img
-                src="/img/crypto/usdt.svg"
-                alt="USDT logo"
-                class="absolute z-2 left-7.5 top-4 w-4 h-4 rounded-full"
-              />
-              <img
-                :src="`/img/crypto/${coin.symbol.toLowerCase()}.svg`"
-                :alt="`${coin.symbol} logo`"
-                class="absolute inset-0 w-7 h-7 m-auto rounded-full"
-              />
+              <img src="/img/crypto/usdt.svg" alt="USDT logo"
+                class="absolute z-2 left-7.5 top-4 w-4 h-4 rounded-full" />
+              <img :src="`/img/crypto/${coin.symbol.toLowerCase()}.svg`" :alt="`${coin.symbol} logo`"
+                class="absolute inset-0 w-7 h-7 m-auto rounded-full" />
             </div>
             <span class="text-black font-semibold text-[12px]">{{ coin.pair }}</span>
           </div>
 
-          <!-- Tombol Cancel -->
           <div class="text-right">
-            <button
-              type="button"
+            <button type="button"
               class="text-[12px] px-3 py-1 rounded-lg border border-red-500 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="loadingCancelId === coin.id"
-              @click="openCancelModal(coin.id)"
-            >
+              :disabled="loadingCancelId === coin.id" @click="openCancelModal(coin.id)">
               <span v-if="loadingCancelId === coin.id">Canceling...</span>
               <span v-else>Cancel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Finished => tombol Claim -->
+        <div v-else-if="coin.uiState === 'finished'"
+          class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 select-none"
+          aria-disabled="true" title="You have a finished transaction for this asset">
+          <div class="flex items-center gap-3 relative">
+            <div class="relative w-12 h-12">
+              <img src="/img/crypto/usdt.svg" alt="USDT logo"
+                class="absolute z-2 left-7.5 top-4 w-4 h-4 rounded-full" />
+              <img :src="`/img/crypto/${coin.symbol.toLowerCase()}.svg`" :alt="`${coin.symbol} logo`"
+                class="absolute inset-0 w-7 h-7 m-auto rounded-full" />
+            </div>
+            <span class="text-black font-semibold text-[12px]">{{ coin.pair }}</span>
+          </div>
+
+          <div class="text-right">
+            <button type="button"
+              class="text-[12px] px-3 py-1 rounded-lg border border-teal-600 text-teal-700 hover:bg-teal-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="loadingClaimId === coin.id" @click="claimBySmartId(coin.id)">
+              <span v-if="loadingClaimId === coin.id">Claiming...</span>
+              <span v-else>Claim</span>
             </button>
           </div>
         </div>
@@ -118,26 +112,17 @@
     </div>
 
     <!-- Cancel Confirmation Modal -->
-    <div
-      v-if="showCancelModal"
-      class="fixed inset-0 z-51 flex items-center justify-center"
-      aria-modal="true"
-      role="dialog"
-    >
+    <div v-if="showCancelModal" class="fixed inset-0 z-[51] flex items-center justify-center" aria-modal="true"
+      role="dialog">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/30" @click="closeCancelModal"></div>
 
       <!-- Panel -->
-      <div class="relative z-52 w-full max-w-sm mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
+      <div class="relative z-[52] w-full max-w-sm mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
         <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 class="text-base font-semibold">Cancel Transaction</h3>
-          <button
-            type="button"
-            class="p-1 rounded hover:bg-gray-100"
-            @click="closeCancelModal"
-            aria-label="Close"
-          >
+          <button type="button" class="p-1 rounded hover:bg-gray-100" @click="closeCancelModal" aria-label="Close">
             <Icon icon="tabler:x" class="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -153,19 +138,13 @@
 
         <!-- Footer -->
         <div class="px-4 py-3 border-t border-gray-100 flex justify-end gap-2">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200"
-            @click="closeCancelModal"
-          >
+          <button type="button" class="px-4 py-2 rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200"
+            @click="closeCancelModal">
             Cancel
           </button>
-          <button
-            type="button"
+          <button type="button"
             class="px-4 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="loadingCancelId !== null"
-            @click="confirmCancel"
-          >
+            :disabled="loadingCancelId !== null" @click="confirmCancel">
             <span v-if="loadingCancelId !== null">Processing...</span>
             <span v-else>Continue</span>
           </button>
@@ -178,9 +157,7 @@
     </p>
 
     <!-- Bottom Nav -->
-    <div
-      class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50"
-    >
+    <div class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50">
       <div class="flex justify-around items-center py-2 space-x-3">
         <RouterLink to="/dashboard" class="flex flex-col items-center text-gray-400">
           <img alt="Home" src="/img/home-alt.png" class="w-4 h-4 object-contain" />
@@ -194,31 +171,19 @@
     </div>
 
     <!-- Modal Terms -->
-    <div
-      v-if="showModalTerm"
-      class="fixed inset-0 z-50 flex items-center justify-center"
-      aria-modal="true"
-      role="dialog"
-    >
+    <div v-if="showModalTerm" class="fixed inset-0 z-50 flex items-center justify-center" aria-modal="true"
+      role="dialog">
       <div class="absolute inset-0 bg-black/30" @click="closeModalTerm"></div>
       <div class="relative z-10 w-full max-w-lg mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 class="text-base font-semibold">Terms &amp; Conditions</h3>
-          <button
-            type="button"
-            class="p-1 rounded hover:bg-gray-100"
-            @click="closeModalTerm"
-            aria-label="Close"
-          >
+          <button type="button" class="p-1 rounded hover:bg-gray-100" @click="closeModalTerm" aria-label="Close">
             <Icon icon="tabler:x" class="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        <div
-          ref="scrollArea"
-          class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-sm leading-relaxed text-gray-700"
-          @scroll="onScroll"
-        >
+        <div ref="scrollArea" class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-sm leading-relaxed text-gray-700"
+          @scroll="onScroll">
           <p class="font-semibold">Terms &amp; Conditions – Smart Arbitrage (Lock Coin APR)</p>
 
           <h4 class="mt-3 font-semibold">Lock Coin APR Program</h4>
@@ -279,17 +244,10 @@
         </div>
 
         <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg font-medium"
-            :class="
-              readDone
-                ? 'bg-teal-600 text-white hover:bg-teal-700'
-                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            "
-            :disabled="!readDone"
-            @click="acknowledge"
-          >
+          <button type="button" class="px-4 py-2 rounded-lg font-medium" :class="readDone
+            ? 'bg-teal-600 text-white hover:bg-teal-700'
+            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            " :disabled="!readDone" @click="acknowledge">
             I understand
           </button>
         </div>
@@ -317,15 +275,10 @@ function toggleShow(): void {
   showBalance.value = !showBalance.value
 }
 
-/** MAP TRANSAKSI PENDING: id_smart_arbitrage -> tx */
-const pendingTxBySmartId = ref<Record<number, ApiTxItem>>({})
-/** LOADING CANCEL PER SMART-ID */
-const loadingCancelId = ref<number | null>(null)
-
 /** SALDO (TOTAL BALANCE DIAMBIL DARI saldo_smart_arbitrage) */
 const saldoSmart = ref<number>(0)
 const displayTotal = computed<string>(() => (showBalance.value ? usd(saldoSmart.value) : '****'))
-const displayProfit = computed<string>(() => (showBalance.value ? '$0.00' : '****')) // belum ada endpoint profit
+const displayProfit = computed<string>(() => (showBalance.value ? '$0.00' : '****')) // placeholder
 
 /** TIPE DATA */
 interface ApiSmartItem {
@@ -336,66 +289,50 @@ interface ApiSmartItem {
   created_at: string
   updated_at: string
 }
+
 interface ApiSaldoResponse {
   status: 'success'
   saldo: number
   saldo_smart_arbitrage: number
   komisi: number
 }
+
+type TxStatus = 'Pending' | 'Claimed' | 'Canceled' | 'Finished'
+
 interface ApiTxItem {
   id: number
   id_users: number
   id_smart_arbitrage: number
   symbol: string
   amount: string
-  status: 'Pending' | 'Claimed' | 'Canceled' // antisipasi enum baru
+  status: TxStatus
   created_at: string
   updated_at: string
 }
-interface ApiSummaryItem {
-  id_smart_arbitrage: number
-  symbol: string
-  total_pending_amount: string
-  total_pending_tx: number
-}
+
 interface ApiSmartResponse {
   status: 'success'
   data: ApiSmartItem[]
   tx?: ApiTxItem[]
-  summary_by_symbol?: ApiSummaryItem[]
+  summary_by_symbol?: unknown
 }
+
+type UiState = 'idle' | 'pending' | 'finished'
+
 interface Coin {
   id: number
   symbol: string
   pair: string
   currentApr: number
-  disabled: boolean
+  uiState: UiState
 }
 
-/** STATE MODAL CANCEL */
-const showCancelModal = ref<boolean>(false)
-const modalSmartId = ref<number | null>(null)
+/** MAP TRANSAKSI PER SMART-ID */
+const txBySmartId = ref<Record<number, ApiTxItem>>({})
 
-function openCancelModal(smartId: number): void {
-  modalSmartId.value = smartId
-  showCancelModal.value = true
-}
-function closeCancelModal(): void {
-  if (loadingCancelId.value !== null) return // cegah close saat proses
-  showCancelModal.value = false
-  modalSmartId.value = null
-}
-async function confirmCancel(): Promise<void> {
-  if (modalSmartId.value === null) return
-  loadingCancelId.value = modalSmartId.value
-  try {
-    await cancelTransaction(modalSmartId.value)
-    showCancelModal.value = false
-    modalSmartId.value = null
-  } finally {
-    loadingCancelId.value = null
-  }
-}
+/** LOADING CANCEL / CLAIM PER SMART-ID */
+const loadingCancelId = ref<number | null>(null)
+const loadingClaimId = ref<number | null>(null)
 
 /** LIST COIN DARI API */
 const coins = ref<Coin[]>([])
@@ -413,24 +350,34 @@ async function loadSmartList(): Promise<void> {
   try {
     const json = await fetchJson<ApiSmartResponse>('/api/smart-arbitrage')
 
-    // Kumpulkan transaksi Pending per smart_id
+    // ambil tx relevan per smart_id: Pending > Finished
     const map: Record<number, ApiTxItem> = {}
     for (const t of json.tx ?? []) {
+      const sid = Number(t.id_smart_arbitrage)
       if (t.status === 'Pending') {
-        map[Number(t.id_smart_arbitrage)] = t
+        map[sid] = t
+        continue
+      }
+      if (t.status === 'Finished') {
+        if (!map[sid]) map[sid] = t
       }
     }
-    pendingTxBySmartId.value = map
+    txBySmartId.value = map
 
-    const pendingIds = new Set<number>(Object.keys(map).map((k) => Number(k)))
+    coins.value = (json.data || []).map((it) => {
+      const tx = map[it.id]
+      let uiState: UiState = 'idle'
+      if (tx?.status === 'Pending') uiState = 'pending'
+      else if (tx?.status === 'Finished') uiState = 'finished'
 
-    coins.value = (json.data || []).map((it) => ({
-      id: it.id,
-      symbol: it.symbol.toUpperCase(),
-      pair: `${it.symbol.toUpperCase()}/USDT`,
-      currentApr: Number(it.current_apr || 0),
-      disabled: pendingIds.has(Number(it.id)),
-    }))
+      return {
+        id: it.id,
+        symbol: it.symbol.toUpperCase(),
+        pair: `${it.symbol.toUpperCase()}/USDT`,
+        currentApr: Number(it.current_apr || 0),
+        uiState,
+      }
+    })
   } catch (err) {
     console.error('loadSmartList error:', err)
     modal.open('Error', 'Gagal mengambil daftar Smart Arbitrage.')
@@ -439,21 +386,69 @@ async function loadSmartList(): Promise<void> {
 
 /** CANCEL TRANSACTION */
 async function cancelTransaction(smartId: number): Promise<void> {
-  const tx = pendingTxBySmartId.value[smartId]
-  if (!tx) {
+  const tx = txBySmartId.value[smartId]
+  if (!tx || tx.status !== 'Pending') {
     modal.open('Info', 'Tidak ada transaksi pending untuk aset ini.')
     return
   }
+  loadingCancelId.value = smartId
   try {
     await fetchJson(`/api/transaksi-smart-arbitrage/${tx.id}/cancel`, {
       method: 'POST',
-      body: JSON.stringify({}), // body kosong, endpoint pakai path param
+      body: JSON.stringify({}),
     })
     modal.open('Canceled', 'Transaksi berhasil dibatalkan (penalti 1%).', async () => {
       await Promise.all([loadSaldo(), loadSmartList()])
     })
   } catch {
     modal.open('Error', 'Gagal membatalkan transaksi.')
+  } finally {
+    loadingCancelId.value = null
+  }
+}
+
+/** CLAIM TRANSACTION (Finished -> Claimed) */
+async function claimBySmartId(smartId: number): Promise<void> {
+  const tx = txBySmartId.value[smartId]
+  if (!tx || tx.status !== 'Finished') {
+    modal.open('Info', 'Tidak ada transaksi yang siap di-claim untuk aset ini.')
+    return
+  }
+  loadingClaimId.value = smartId
+  try {
+    await fetchJson(`/api/transaksi-smart-arbitrage/${tx.id}/claim`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+    modal.open('Success', 'Claim berhasil.', async () => {
+      await Promise.all([loadSaldo(), loadSmartList()])
+    })
+  } catch {
+    modal.open('Error', 'Gagal melakukan claim.')
+  } finally {
+    loadingClaimId.value = null
+  }
+}
+
+/** STATE MODAL CANCEL */
+const showCancelModal = ref<boolean>(false)
+const modalSmartId = ref<number | null>(null)
+
+function openCancelModal(smartId: number): void {
+  modalSmartId.value = smartId
+  showCancelModal.value = true
+}
+function closeCancelModal(): void {
+  if (loadingCancelId.value !== null) return
+  showCancelModal.value = false
+  modalSmartId.value = null
+}
+async function confirmCancel(): Promise<void> {
+  if (modalSmartId.value === null) return
+  await cancelTransaction(modalSmartId.value)
+  if (loadingCancelId.value === null) {
+    showCancelModal.value = false
+    modalSmartId.value = null
   }
 }
 
@@ -525,9 +520,7 @@ watch(
 
 onMounted(async () => {
   if (!TOKEN) {
-    modal.open('Unauthorized', 'Token tidak ditemukan. Silakan login ulang.', () => {
-      // optional: redirect
-    })
+    modal.open('Unauthorized', 'Token tidak ditemukan. Silakan login ulang.', () => { })
     return
   }
   document.documentElement.style.overflow = ''
