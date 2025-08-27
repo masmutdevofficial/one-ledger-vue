@@ -726,7 +726,7 @@ function mapForPeriod(p: OriginPeriod) {
   return buf1d
 }
 function periodMs(p: OriginPeriod) {
-  if (p === '5min') return 60_000
+  if (p === '5min') return 300_000 // ← harus 300.000 ms
   if (p === '15min') return 900_000
   if (p === '30min') return 1_800_000
   if (p === '60min') return 3_600_000
