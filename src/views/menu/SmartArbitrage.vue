@@ -56,7 +56,7 @@
               {{ formatPct(coin.currentApr) }}
             </p>
             <p class="text-gray-400 text-[10px] leading-none mt-2">
-              30d APR: <b class="text-gray-800">{{ formatPct(coin.currentApr) }}</b>
+              {{ coin.holdingDay }}Ds APR: <b class="text-gray-800">{{ formatPct(coin.currentApr) }}</b>
             </p>
           </div>
         </RouterLink>
@@ -324,6 +324,7 @@ interface Coin {
   symbol: string
   pair: string
   currentApr: number
+  holdingDay: number
   uiState: UiState
 }
 
@@ -375,6 +376,7 @@ async function loadSmartList(): Promise<void> {
         symbol: it.symbol.toUpperCase(),
         pair: `${it.symbol.toUpperCase()}/USDT`,
         currentApr: Number(it.current_apr || 0),
+        holdingDay: Number(it.holding_day || 0),
         uiState,
       }
     })
