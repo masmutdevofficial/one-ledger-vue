@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full max-w-md mx-auto p-4">
+  <div class="w-full max-w-md mx-auto p-4 mb-20">
     <div class="flex flex-row items-center mb-3">
       <h1 class="font-semibold text-sm">Smart Arbitrage</h1>
     </div>
@@ -58,7 +58,7 @@
               <img
                 src="/img/crypto/usdt.svg"
                 alt="USDT logo"
-                class="absolute z-2 left-6.5 top-3 w-6 h-6 rounded-full"
+                class="absolute z-2 left-7.5 top-4 w-4 h-4 rounded-full"
               />
               <img
                 :src="`/img/crypto/${coin.symbol.toLowerCase()}.svg`"
@@ -78,10 +78,10 @@
           </div>
         </RouterLink>
 
-        <!-- DISABLED (ada Pending, tidak bisa klik) -->
+        <!-- DISABLED (ada Pending, tampil tombol Cancel) -->
         <div
           v-else
-          class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 opacity-60 cursor-not-allowed select-none"
+          class="flex justify-between items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 opacity-100 select-none"
           aria-disabled="true"
           title="You have a pending transaction for this asset"
         >
@@ -90,7 +90,7 @@
               <img
                 src="/img/crypto/usdt.svg"
                 alt="USDT logo"
-                class="absolute z-2 left-6.5 top-3 w-6 h-6 rounded-full"
+                class="absolute z-2 left-7.5 top-4 w-4 h-4 rounded-full"
               />
               <img
                 :src="`/img/crypto/${coin.symbol.toLowerCase()}.svg`"
@@ -100,16 +100,77 @@
             </div>
             <span class="text-black font-semibold text-[12px]">{{ coin.pair }}</span>
           </div>
+
+          <!-- Tombol Cancel -->
           <div class="text-right">
-            <p class="font-semibold text-[12px] leading-none text-teal-500">
-              {{ formatPct(coin.currentApr) }}
-            </p>
-            <p class="text-gray-400 text-[10px] leading-none mt-2">
-              30d APR: <b class="text-gray-800">{{ formatPct(coin.currentApr) }}</b>
-            </p>
+            <button
+              type="button"
+              class="text-[12px] px-3 py-1 rounded-lg border border-red-500 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="loadingCancelId === coin.id"
+              @click="openCancelModal(coin.id)"
+            >
+              <span v-if="loadingCancelId === coin.id">Canceling...</span>
+              <span v-else>Cancel</span>
+            </button>
           </div>
         </div>
       </template>
+    </div>
+
+    <!-- Cancel Confirmation Modal -->
+    <div
+      v-if="showCancelModal"
+      class="fixed inset-0 z-51 flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+    >
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/30" @click="closeCancelModal"></div>
+
+      <!-- Panel -->
+      <div class="relative z-52 w-full max-w-sm mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <h3 class="text-base font-semibold">Cancel Transaction</h3>
+          <button
+            type="button"
+            class="p-1 rounded hover:bg-gray-100"
+            @click="closeCancelModal"
+            aria-label="Close"
+          >
+            <Icon icon="tabler:x" class="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="px-4 py-4 text-sm text-gray-700">
+          <p class="mb-2">Are you sure you want to cancel this transaction?</p>
+          <p>
+            A <span class="font-semibold">1% penalty</span> will be applied to the total amount.
+            This action cannot be undone.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-4 py-3 border-t border-gray-100 flex justify-end gap-2">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200"
+            @click="closeCancelModal"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="loadingCancelId !== null"
+            @click="confirmCancel"
+          >
+            <span v-if="loadingCancelId !== null">Processing...</span>
+            <span v-else>Continue</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <p class="text-center text-gray-400 text-[12px] mt-6 font-normal" v-if="!filteredCoins.length">
@@ -256,6 +317,11 @@ function toggleShow(): void {
   showBalance.value = !showBalance.value
 }
 
+/** MAP TRANSAKSI PENDING: id_smart_arbitrage -> tx */
+const pendingTxBySmartId = ref<Record<number, ApiTxItem>>({})
+/** LOADING CANCEL PER SMART-ID */
+const loadingCancelId = ref<number | null>(null)
+
 /** SALDO (TOTAL BALANCE DIAMBIL DARI saldo_smart_arbitrage) */
 const saldoSmart = ref<number>(0)
 const displayTotal = computed<string>(() => (showBalance.value ? usd(saldoSmart.value) : '****'))
@@ -270,45 +336,65 @@ interface ApiSmartItem {
   created_at: string
   updated_at: string
 }
-
 interface ApiSaldoResponse {
   status: 'success'
   saldo: number
   saldo_smart_arbitrage: number
   komisi: number
 }
-
 interface ApiTxItem {
   id: number
   id_users: number
   id_smart_arbitrage: number
   symbol: string
   amount: string
-  status: 'Pending' | 'Claimed'
+  status: 'Pending' | 'Claimed' | 'Canceled' // antisipasi enum baru
   created_at: string
   updated_at: string
 }
-
 interface ApiSummaryItem {
   id_smart_arbitrage: number
   symbol: string
   total_pending_amount: string
   total_pending_tx: number
 }
-
 interface ApiSmartResponse {
   status: 'success'
   data: ApiSmartItem[]
   tx?: ApiTxItem[]
   summary_by_symbol?: ApiSummaryItem[]
 }
-
 interface Coin {
   id: number
   symbol: string
   pair: string
   currentApr: number
   disabled: boolean
+}
+
+/** STATE MODAL CANCEL */
+const showCancelModal = ref<boolean>(false)
+const modalSmartId = ref<number | null>(null)
+
+function openCancelModal(smartId: number): void {
+  modalSmartId.value = smartId
+  showCancelModal.value = true
+}
+function closeCancelModal(): void {
+  if (loadingCancelId.value !== null) return // cegah close saat proses
+  showCancelModal.value = false
+  modalSmartId.value = null
+}
+async function confirmCancel(): Promise<void> {
+  if (modalSmartId.value === null) return
+  loadingCancelId.value = modalSmartId.value
+  try {
+    await cancelTransaction(modalSmartId.value)
+    showCancelModal.value = false
+    modalSmartId.value = null
+  } finally {
+    loadingCancelId.value = null
+  }
 }
 
 /** LIST COIN DARI API */
@@ -327,12 +413,16 @@ async function loadSmartList(): Promise<void> {
   try {
     const json = await fetchJson<ApiSmartResponse>('/api/smart-arbitrage')
 
-    // id_smart_arbitrage yang PENDING
-    const pendingIds = new Set<number>(
-      (json.tx ?? [])
-        .filter((t) => t.status === 'Pending')
-        .map((t) => Number(t.id_smart_arbitrage)),
-    )
+    // Kumpulkan transaksi Pending per smart_id
+    const map: Record<number, ApiTxItem> = {}
+    for (const t of json.tx ?? []) {
+      if (t.status === 'Pending') {
+        map[Number(t.id_smart_arbitrage)] = t
+      }
+    }
+    pendingTxBySmartId.value = map
+
+    const pendingIds = new Set<number>(Object.keys(map).map((k) => Number(k)))
 
     coins.value = (json.data || []).map((it) => ({
       id: it.id,
@@ -347,15 +437,33 @@ async function loadSmartList(): Promise<void> {
   }
 }
 
+/** CANCEL TRANSACTION */
+async function cancelTransaction(smartId: number): Promise<void> {
+  const tx = pendingTxBySmartId.value[smartId]
+  if (!tx) {
+    modal.open('Info', 'Tidak ada transaksi pending untuk aset ini.')
+    return
+  }
+  try {
+    await fetchJson(`/api/transaksi-smart-arbitrage/${tx.id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({}), // body kosong, endpoint pakai path param
+    })
+    modal.open('Canceled', 'Transaksi berhasil dibatalkan (penalti 1%).', async () => {
+      await Promise.all([loadSaldo(), loadSmartList()])
+    })
+  } catch {
+    modal.open('Error', 'Gagal membatalkan transaksi.')
+  }
+}
+
 /** HELPERS */
 function usd(n: number): string {
-  // tampil USD 2 desimal
   return `$${Number(n || 0).toFixed(2)}`
 }
 function formatPct(n: number): string {
   return `${Number(n || 0).toFixed(2)}%`
 }
-
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
