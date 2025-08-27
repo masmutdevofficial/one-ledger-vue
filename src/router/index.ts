@@ -143,6 +143,10 @@ const routes = [
         component: () => import('@/views/CustomerServiceCopyTrade.vue'),
       },
       {
+        path: 'smart-arbitrage/detail/:symbol',
+        component: () => import('@/views/menu/DetailSmartArbitrage.vue'),
+      },
+      {
         path: 'news/:slug',
         component: () => import('@/views/DetailNews.vue'),
       },

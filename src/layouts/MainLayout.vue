@@ -44,7 +44,13 @@ function isActive(path: string): boolean {
 
 const noHeaderPaths = ['/account'] // bisa ditambah: '/account/settings', dll
 const hideHeader = computed(() => noHeaderPaths.some((p) => route.path.startsWith(p)))
-const hideBottomNav = computed(() => route.name === 'chats' || route.path.includes('/chats'))
+const hideBottomNav = computed(
+  () =>
+    route.name === 'chats' ||
+    route.path.includes('/chats') ||
+    route.name === 'smart-arbitrage' ||
+    route.path.includes('/smart-arbitrage'),
+)
 
 const teal600Filter = {
   filter:
