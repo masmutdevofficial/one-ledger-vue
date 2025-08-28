@@ -443,13 +443,15 @@ function buttonText(kind: ClaimKind, status: Tri): string {
   return labelText(status)
 }
 
-/** COPY Trade status: 0 locked, 1 claimable (progress >=5), 2 claimed */
+/** COPY Trade status:
+ *  0 = locked (progress < 5)
+ *  1 = claimable (progress >= 5 and not yet claimed)
+ *  2 = claimed
+ */
 const copyTradeStatus = computed<Tri>(() => {
   if (claimedKinds.value.has('copytrade1000')) return 2
   const val = Number(claim.value.bonus_copytrade_1000) || 0
-  if (val >= 5) return 1
-  if (val >= 1) return 1 // optional: show claimable if any progress; adjust if needed
-  return 0
+  return val >= 5 ? 1 : 0
 })
 
 /** Handle Claim click */
