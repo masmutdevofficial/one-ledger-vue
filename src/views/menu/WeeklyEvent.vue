@@ -31,7 +31,7 @@
       </span>
     </p>
 
-    <!-- Card 1 -->
+    <!-- Card 1: Deposit >= 100 -->
     <div class="border border-gray-200 rounded-lg mb-3 p-3">
       <div class="flex items-center space-x-3 mb-1">
         <div
@@ -43,11 +43,21 @@
       </div>
       <div class="flex justify-between items-center text-xs text-gray-400">
         <span>Reward <span class="text-teal-500 font-semibold">$5.00</span></span>
-        <button class="bg-teal-500 text-white text-xs rounded px-3 py-0.5">Claim</button>
+        <button
+          class="text-white text-xs rounded px-3 py-0.5 transition-colors"
+          :class="[
+            btnClass(claim.bonus_deposit_100),
+            isClaiming.deposit100 ? 'opacity-70 cursor-wait' : '',
+          ]"
+          :disabled="isDisabled(claim.bonus_deposit_100) || isClaiming.deposit100"
+          @click="onClaim('deposit100', claim.bonus_deposit_100)"
+        >
+          {{ buttonText('deposit100', claim.bonus_deposit_100) }}
+        </button>
       </div>
     </div>
 
-    <!-- Card 2 with Extra Rewards label -->
+    <!-- Card 2: Deposit >= 1000 (Extra Rewards) -->
     <div class="border border-gray-200 rounded-lg mb-3 p-3 relative">
       <div
         class="absolute top-0 left-0 bg-yellow-100 rounded-sm px-2 py-0.5 flex items-center text-yellow-600 text-[10px] font-semibold space-x-1 select-none"
@@ -65,11 +75,21 @@
       </div>
       <div class="flex justify-between items-center text-xs text-gray-400">
         <span>Reward <span class="text-teal-500 font-semibold">$50.00</span></span>
-        <button class="bg-teal-500 text-white text-xs rounded px-3 py-0.5">Claim</button>
+        <button
+          class="text-white text-xs rounded px-3 py-0.5 transition-colors"
+          :class="[
+            btnClass(claim.bonus_deposit_1000),
+            isClaiming.deposit1000 ? 'opacity-70 cursor-wait' : '',
+          ]"
+          :disabled="isDisabled(claim.bonus_deposit_1000) || isClaiming.deposit1000"
+          @click="onClaim('deposit1000', claim.bonus_deposit_1000)"
+        >
+          {{ buttonText('deposit1000', claim.bonus_deposit_1000) }}
+        </button>
       </div>
     </div>
 
-    <!-- Card 3 -->
+    <!-- Card 3: SPOT volume >= 500 -->
     <div class="border border-gray-200 rounded-lg mb-3 p-3">
       <div class="flex items-center space-x-3 mb-1">
         <div
@@ -78,17 +98,26 @@
           <Icon icon="tabler:currency-dollar" class="w-4 h-4" />
         </div>
         <p class="text-gray-700 text-sm leading-5">
-          Trade &gt; 500 USDT In total Volume<br />
-          ( Buys &amp; Sells ) on all SPOT trading pairs
+          Trade &gt; 500 USDT In total Volume<br />( Buys &amp; Sells ) on all SPOT trading pairs
         </p>
       </div>
       <div class="flex justify-between items-center text-xs text-gray-400">
         <span>Reward <span class="text-teal-500 font-semibold">$5.00</span></span>
-        <button class="bg-teal-500 text-white text-xs rounded px-3 py-0.5">Claim</button>
+        <button
+          class="text-white text-xs rounded px-3 py-0.5 transition-colors"
+          :class="[
+            btnClass(claim.bonus_tradespot_500),
+            isClaiming.tradespot500 ? 'opacity-70 cursor-wait' : '',
+          ]"
+          :disabled="isDisabled(claim.bonus_tradespot_500) || isClaiming.tradespot500"
+          @click="onClaim('tradespot500', claim.bonus_tradespot_500)"
+        >
+          {{ buttonText('tradespot500', claim.bonus_tradespot_500) }}
+        </button>
       </div>
     </div>
 
-    <!-- Card 4 -->
+    <!-- Card 4: COPY Trade >= 1000 (show progress) -->
     <div class="border border-gray-200 rounded-lg mb-3 p-3">
       <div class="flex items-center space-x-3 mb-1">
         <div
@@ -96,13 +125,27 @@
         >
           <Icon icon="tabler:currency-dollar" class="w-4 h-4" />
         </div>
-        <p class="text-gray-700 text-sm leading-5">Trade &gt; 1000 USDT on all COPY Trade 0/5</p>
+        <p class="text-gray-700 text-sm leading-5">
+          Trade &gt; 1000 USDT on all COPY Trade
+          <span class="text-teal-600 font-semibold">{{ claim.bonus_copytrade_1000 }}/5</span>
+        </p>
       </div>
       <div class="flex justify-between items-center text-xs text-gray-400">
         <span>Reward <span class="text-teal-500 font-semibold">$200.00</span></span>
-        <button class="bg-teal-500 text-white text-xs rounded px-3 py-0.5">Claim</button>
+        <button
+          class="text-white text-xs rounded px-3 py-0.5 transition-colors"
+          :class="[
+            btnClass(copyTradeStatus),
+            isClaiming.copytrade1000 ? 'opacity-70 cursor-wait' : '',
+          ]"
+          :disabled="isDisabled(copyTradeStatus) || isClaiming.copytrade1000"
+          @click="onClaim('copytrade1000', copyTradeStatus)"
+        >
+          {{ buttonText('copytrade1000', copyTradeStatus) }}
+        </button>
       </div>
     </div>
+
     <p class="text-center text-gray-300 text-xs mt-6 select-none">No more data</p>
 
     <!-- Bottom Nav -->
@@ -146,7 +189,7 @@
           </button>
         </div>
 
-        <!-- Body (scrollable) -->
+        <!-- Body -->
         <div
           ref="scrollArea"
           class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700"
@@ -221,15 +264,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { useApiAlertStore } from '@/stores/apiAlert'
 
+/** ===== Constants ===== */
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+const getToken = (): string =>
+  typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
+
+/** ===== Router & Alert ===== */
 const router = useRouter()
+const modal = useApiAlertStore()
 
-// countdown default 29d 19h 54m 35s
+/** ===== Countdown ===== */
 const defaultSeconds = 29 * 24 * 60 * 60 + 19 * 60 * 60 + 54 * 60 + 35
-
 const timeLeft = ref({ days: 0, hours: 0, minutes: 0, seconds: 0 })
 let intervalId: number | undefined
 
@@ -244,9 +294,8 @@ function updateTimeLeft(total: number): void {
 onMounted(() => {
   const saved = localStorage.getItem('challengeEnd')
   let endTime: number
-  if (saved) {
-    endTime = Number.parseInt(saved, 10)
-  } else {
+  if (saved) endTime = Number.parseInt(saved, 10)
+  else {
     endTime = Math.floor(Date.now() / 1000) + defaultSeconds
     localStorage.setItem('challengeEnd', String(endTime))
   }
@@ -257,7 +306,11 @@ onMounted(() => {
   }
   tick()
   intervalId = window.setInterval(tick, 1000)
+
+  // Load claim data on mount
+  void loadClaimData()
 })
+
 onBeforeUnmount(() => {
   if (intervalId) clearInterval(intervalId)
 })
@@ -287,5 +340,150 @@ function onScroll(e: Event): void {
 }
 function acknowledge(): void {
   closeModalTerm()
+}
+
+/** ===== Claim Data (from /claim-new-user) ===== */
+type Tri = 0 | 1 | 2
+type ApiClaimData = {
+  bonus_deposit_100: Tri
+  bonus_deposit_1000: Tri
+  bonus_tradespot_500: Tri
+  bonus_copytrade_1000: number
+  notif: 0 | 1
+}
+type ApiClaimResp = {
+  success: boolean
+  data: ApiClaimData
+  user_id: number
+}
+
+const claim = ref<ApiClaimData>({
+  bonus_deposit_100: 0,
+  bonus_deposit_1000: 0,
+  bonus_tradespot_500: 0,
+  bonus_copytrade_1000: 0,
+  notif: 0,
+})
+
+async function loadClaimData(): Promise<void> {
+  const token = getToken()
+  if (!token) {
+    modal.open('Unauthorized', 'Token not found.')
+    return
+  }
+  try {
+    const res = await fetch(`${API_BASE}/claim-new-user`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      credentials: 'include',
+    })
+    if (!res.ok) {
+      const msg = await res.text().catch(() => `HTTP ${res.status}`)
+      throw new Error(msg)
+    }
+    const json = (await res.json()) as ApiClaimResp
+    if (!json?.success || !json.data) throw new Error('Invalid response payload.')
+    claim.value = json.data
+  } catch (e: unknown) {
+    modal.open('Error', e instanceof Error ? e.message : 'Failed to load claim data.')
+  }
+}
+
+/** ===== Claiming to API ===== */
+type ClaimKind = 'deposit100' | 'deposit1000' | 'tradespot500' | 'copytrade1000'
+type ApiClaimCreateResp = {
+  success: boolean
+  message?: string
+  data?: { id: number; jenis: ClaimKind; reward: string; user_id: number }
+}
+
+const isClaiming = ref<Record<ClaimKind, boolean>>({
+  deposit100: false,
+  deposit1000: false,
+  tradespot500: false,
+  copytrade1000: false,
+})
+
+const claimedKinds = ref<Set<ClaimKind>>(new Set())
+
+async function callClaimApi(kind: ClaimKind): Promise<ApiClaimCreateResp> {
+  const token = getToken()
+  if (!token) throw new Error('Token not found.')
+  const res = await fetch(`${API_BASE}/claim-new-user/claim`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ jenis: kind }),
+  })
+  const txt = await res.text()
+  const json = txt ? (JSON.parse(txt) as ApiClaimCreateResp) : { success: false }
+  if (!res.ok || !json.success) {
+    throw new Error(json?.message || `HTTP ${res.status}`)
+  }
+  return json
+}
+
+/** ===== UI helpers for claim status ===== */
+function isDisabled(v: Tri): boolean {
+  return v === 0 || v === 2
+}
+function labelText(v: Tri): string {
+  return v === 2 ? 'Claimed' : 'Claim'
+}
+function btnClass(v: Tri): string {
+  if (v === 1) return 'bg-teal-600 hover:bg-teal-700'
+  return 'bg-gray-300 cursor-not-allowed'
+}
+function buttonText(kind: ClaimKind, status: Tri): string {
+  if (isClaiming.value[kind]) return 'Claiming...'
+  return labelText(status)
+}
+
+/** COPY Trade status: 0 locked, 1 claimable (progress >=5), 2 claimed */
+const copyTradeStatus = computed<Tri>(() => {
+  if (claimedKinds.value.has('copytrade1000')) return 2
+  const val = Number(claim.value.bonus_copytrade_1000) || 0
+  if (val >= 5) return 1
+  if (val >= 1) return 1 // optional: show claimable if any progress; adjust if needed
+  return 0
+})
+
+/** Handle Claim click */
+async function onClaim(kind: ClaimKind, status: Tri): Promise<void> {
+  if (status === 0) {
+    modal.open('Not eligible', 'You have not met the requirements yet.')
+    return
+  }
+  if (status === 2) {
+    modal.open('Already claimed', 'This reward has already been claimed.')
+    return
+  }
+  if (isClaiming.value[kind]) return
+
+  try {
+    isClaiming.value[kind] = true
+    const resp = await callClaimApi(kind)
+    const rewardNum = Number(resp.data?.reward ?? 0)
+    modal.open('Success', `Claim successful. Reward: $${rewardNum.toFixed(2)}`)
+
+    // Update local UI state to "claimed"
+    if (kind === 'deposit100') {
+      claim.value.bonus_deposit_100 = 2
+    } else if (kind === 'deposit1000') {
+      claim.value.bonus_deposit_1000 = 2
+    } else if (kind === 'tradespot500') {
+      claim.value.bonus_tradespot_500 = 2
+    } else if (kind === 'copytrade1000') {
+      claimedKinds.value.add('copytrade1000')
+    }
+  } catch (e: unknown) {
+    modal.open('Error', e instanceof Error ? e.message : 'Failed to claim reward.')
+  } finally {
+    isClaiming.value[kind] = false
+  }
 }
 </script>

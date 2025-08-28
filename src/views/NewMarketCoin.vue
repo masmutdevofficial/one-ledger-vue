@@ -1326,6 +1326,16 @@ function hasPendingTxs(): boolean {
   }
 }
 
+/* ===== Order submit (updated) ===== */
+type SaveTradePayload = {
+  symbol: string
+  side: 'BUY' | 'SELL'
+  price: number
+  qty: number
+  fee: number
+  event_price: number // ⬅️ NEW
+}
+
 async function submitTrade() {
   if (submitting.value) return
   submitError.value = ''
@@ -1343,19 +1353,19 @@ async function submitTrade() {
 
     const side = activeTab.value === 'buy' ? 'BUY' : 'SELL'
     let price = marketPrice.value
-    if (!price || price <= 0) throw new Error('Harga market tidak tersedia')
+    if (!price || price <= 0) throw new Error('Market price is not available')
 
     const bid = bestBid(),
       ask = bestAsk()
     if (bid > 0 && ask > 0) {
       const spreadPct = ((ask - bid) / bid) * 100
-      if (spreadPct > 2) throw new Error(`Spread terlalu lebar (${spreadPct.toFixed(2)}%).`)
+      if (spreadPct > 2) throw new Error(`Spread too wide (${spreadPct.toFixed(2)}%).`)
       if (side === 'BUY' && price !== ask) price = ask
       if (side === 'SELL' && price !== bid) price = bid
     }
 
     const amount = Number(totalAmount.value)
-    if (!(amount > 0)) throw new Error('Total tidak valid')
+    if (!(amount > 0)) throw new Error('Invalid total')
 
     let qty = side === 'BUY' ? amount / price : amount
     if (side === 'SELL') {
@@ -1366,9 +1376,22 @@ async function submitTrade() {
     } else {
       qty = Math.floor(qty * 1e8) / 1e8
     }
-    if (!(qty > 0)) throw new Error('Qty = 0 setelah pembulatan')
+    if (!(qty > 0)) throw new Error('Qty becomes 0 after rounding')
 
-    const payload = { symbol: pairToApiSymbol(selectedPair.value), side, price, qty, fee: 0 }
+    // event_price as USDT net:
+    // BUY  -> amount + fee  (what you actually spend; if fee=0, same as amount)
+    // SELL -> price*qty - fee (what you actually receive)
+    const netBuy = amount + 0 // fee is 0 in your payload, adjust if you add fee later
+    const netSell = price * qty - 0 // fee=0 in payload; if you add fee, subtract it here
+
+    const payload: SaveTradePayload = {
+      symbol: pairToApiSymbol(selectedPair.value),
+      side,
+      price,
+      qty,
+      fee: 0,
+      event_price: side === 'BUY' ? netBuy : netSell, // ⬅️ send USDT net
+    }
 
     const res = await fetch(`${API_BASE}/save-trades`, {
       method: 'POST',
@@ -1395,7 +1418,7 @@ async function submitTrade() {
     rawPercent.value = 0
     amountPercent.value = 0
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Gagal kirim order'
+    const msg = e instanceof Error ? e.message : 'Failed to submit order'
     submitError.value = msg
     modal.open('Error', msg)
   } finally {
