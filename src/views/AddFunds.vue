@@ -110,15 +110,15 @@ const selected = ref<AssetSymbol>('USDT')
 const defaultData: Record<AssetSymbol, AssetData> = {
   USDT: {
     wallet: 'TRksMjUu2g4HSRo4Qaay8p71pzo8u5CVdy',
-    qr: 'https://storage.googleapis.com/a1aa/image/53ffc1bc-cd09-4f53-8a7a-f59ba342a5f9.jpg',
+    qr: 'https://dummyimage.com/300x300/eeeeee/222222.png',
   },
   BTC: {
     wallet: 'bc1qqexampleexampleexampleexampleexample0',
-    qr: 'https://dummyimage.com/300x300/eeeeee/222222.png&text=BTC+QR',
+    qr: 'https://dummyimage.com/300x300/eeeeee/222222.png',
   },
   ETH: {
     wallet: '0x2F1F4d6e7f8A9b102c6fE0D5d5a0C1b2C3d4E5F6',
-    qr: 'https://dummyimage.com/300x300/eeeeee/222222.png&text=ETH+QR',
+    qr: 'https://dummyimage.com/300x300/eeeeee/222222.png',
   },
 }
 
