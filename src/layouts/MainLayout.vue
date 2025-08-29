@@ -437,7 +437,7 @@ onBeforeUnmount(() => {
                 <img
                   alt="Home"
                   src="/img/logo-symetric.png"
-                  class="w-4 h-4 object-contain rotate-33"
+                  class="w-4 h-4 object-contain"
                 />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>
