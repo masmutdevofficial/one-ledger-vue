@@ -434,7 +434,11 @@ onBeforeUnmount(() => {
                 class="flex flex-col items-center"
                 :class="isActive('/dashboard') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <img alt="Home" src="/img/logo.png" class="w-4 h-4 object-contain rotate-33" />
+                <img
+                  alt="Home"
+                  src="/img/logo-symetric.png"
+                  class="w-4 h-4 object-contain rotate-33"
+                />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>
 
