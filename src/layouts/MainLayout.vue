@@ -155,7 +155,7 @@ const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote 
   RAD: { name: 'Radworks (RAD)', logoUrl: localLogo('rad'), quote: 'USDT' },
   BAND: { name: 'Band Protocol', logoUrl: localLogo('band'), quote: 'USDT' },
   ALGO: { name: 'Algorand', logoUrl: localLogo('algo'), quote: 'USDT' },
-  POL: { name: 'Polygon (POL)', logoUrl: localLogo('pol'), quote: 'USDT' },
+  POL: { name: 'Polygon Matic (POL)', logoUrl: localLogo('pol'), quote: 'USDT' },
   DOGE: { name: 'Dogecoin', logoUrl: localLogo('doge'), quote: 'USDT' },
   LUNA: { name: 'Terra (LUNA)', logoUrl: localLogo('luna'), quote: 'USDT' },
   GALA: { name: 'Gala', logoUrl: localLogo('gala'), quote: 'USDT' },
@@ -434,11 +434,7 @@ onBeforeUnmount(() => {
                 class="flex flex-col items-center"
                 :class="isActive('/dashboard') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <img
-                  alt="Home"
-                  src="/img/logo-symetric.png"
-                  class="w-4 h-4 object-contain"
-                />
+                <img alt="Home" src="/img/logo-symetric.png" class="w-4 h-4 object-contain" />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>
 

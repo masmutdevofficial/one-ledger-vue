@@ -1,10 +1,7 @@
 <template>
   <div class="max-w-md w-full mx-auto px-4 pt-4 pb-28">
     <!-- Top bar -->
-    <div class="flex items-center justify-between mb-3">
-      <button aria-label="Go back" class="text-black text-xl" @click="goBack">
-        <Icon icon="tabler:arrow-left" class="w-6 h-6" />
-      </button>
+    <div class="flex items-center justify-center mb-3">
       <p class="text-center text-gray-400 text-base leading-6">
         Complete this month’s challenge and unlock<br />an exclusive reward!
       </p>
@@ -265,7 +262,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
-import { useRouter } from 'vue-router'
+// import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
@@ -275,7 +272,7 @@ const getToken = (): string =>
   typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
 
 /** ===== Router & Alert ===== */
-const router = useRouter()
+// const router = useRouter()
 const modal = useApiAlertStore()
 
 /** ===== Countdown ===== */
@@ -315,9 +312,9 @@ onBeforeUnmount(() => {
   if (intervalId) clearInterval(intervalId)
 })
 
-function goBack(): void {
-  router.back()
-}
+// function goBack(): void {
+//   router.back()
+// }
 
 /** ===== Terms Modal ===== */
 const showModalTerm = ref(false)

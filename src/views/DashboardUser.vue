@@ -6,28 +6,25 @@
         <div class="flex flex-col">
           <div class="flex items-center space-x-1 text-gray-700 text-sm font-normal mb-1">
             <span>Est. Total Value</span>
-            <Icon icon="tabler:eye" class="w-4 h-4" />
+            <!-- EYE: toggle hide/show -->
+            <button
+              type="button"
+              class="inline-flex items-center"
+              :aria-pressed="isTotalHidden ? 'true' : 'false'"
+              :title="isTotalHidden ? 'Show balance' : 'Hide balance'"
+              @click="toggleTotalHidden"
+            >
+              <Icon :icon="isTotalHidden ? 'tabler:eye-off' : 'tabler:eye'" class="w-4 h-4" />
+            </button>
           </div>
 
           <div class="flex items-baseline space-x-1 font-semibold text-3xl text-black mb-1">
-            <span>
-              {{
-                totalValue !== null
-                  ? totalValue.toLocaleString('id-ID', { minimumFractionDigits: 2 })
-                  : '...'
-              }}
-            </span>
+            <span>{{ totalValueUsdtStr }}</span>
             <span class="text-base font-normal">USDT</span>
-            <Icon icon="tabler:chevron-down" class="text-base w-4 h-4" />
+            <!-- CHEVRON DIHILANGKAN -->
           </div>
 
-          <div class="text-gray-400 text-sm mb-2">
-            ≈ ${{
-              totalValue !== null
-                ? totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })
-                : '...'
-            }}
-          </div>
+          <div class="text-gray-400 text-sm mb-2">≈ ${{ totalValueUsdStr }}</div>
         </div>
 
         <RouterLink
@@ -114,10 +111,10 @@
               <span>{{ item.name }}</span>
             </div>
             <div class="text-right">
-              <div class="font-bold text-[16px] leading-none">
+              <div class="font-bold text-[12px] leading-none">
                 {{ item.price !== null ? item.price : '...' }}
               </div>
-              <div class="text-[12px] text-[#9ca3af] mt-0.5">
+              <div class="text-[10px] text-[#9ca3af] mt-0.5">
                 {{ item.price !== null ? '$' + item.price : '...' }}
               </div>
             </div>
@@ -227,6 +224,21 @@ const iconPath = (s: string) => `/img/crypto/${s.toLowerCase()}.svg`
 const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 const getToken = () => (isBrowser() ? localStorage.getItem('token') || '' : '')
 
+/** ===== Persist hide/show saldo ===== */
+const TV_HIDE_KEY = 'dashHideTotal:v1'
+const isTotalHidden = ref(false)
+function toggleTotalHidden() {
+  isTotalHidden.value = !isTotalHidden.value
+}
+onMounted(() => {
+  if (isBrowser()) {
+    isTotalHidden.value = localStorage.getItem(TV_HIDE_KEY) === '1'
+  }
+})
+watch(isTotalHidden, (v) => {
+  if (isBrowser()) localStorage.setItem(TV_HIDE_KEY, v ? '1' : '0')
+})
+
 /** ===== Menu ===== */
 interface MenuItem {
   label: string
@@ -243,7 +255,7 @@ const items: MenuItem[] = [
 ]
 const router = useRouter()
 
-/** ===== Cache Dashboard ===== */
+/** ===== Cache Dashboard (dipertahankan dari kode Anda) ===== */
 type PriceEntry = { p: number; ts: number }
 type OpenEntry = { o: number; ts: number }
 type PosMini = { symbol: string; qty: number; avgCost: number }
@@ -303,9 +315,7 @@ function upsertOpenCache(symLower: string, open: number) {
 /** Hydrate UI dari cache */
 function hydrateFromCache() {
   const now = Date.now()
-
   if (dcache.saldo && now - dcache.saldo.ts <= SALDO_TTL) saldo.value = Number(dcache.saldo.v) || 0
-
   if (dcache.positions && now - dcache.positions.ts <= POS_TTL) {
     positions.value = dcache.positions.items.map((it) => ({
       symbol: it.symbol,
@@ -313,13 +323,11 @@ function hydrateFromCache() {
       avg_cost: it.avgCost,
     }))
   }
-
   if (dcache.prices) {
     for (const [k, v] of Object.entries(dcache.prices)) {
       if (now - v.ts <= PRICE_TTL) priceMap[k.toUpperCase()] = v.p
     }
   }
-
   if (dcache.dayOpen) {
     for (const coin of displayedCoins) {
       const lower = symbolMap[coin] + 'usdt'
@@ -334,7 +342,6 @@ function hydrateFromCache() {
       }
     }
   }
-
   recomputeTotals()
 }
 
@@ -344,12 +351,26 @@ const totalValue = ref<number | null>(null)
 const portfolioUpnlAbs = ref<number>(0)
 const portfolioUpnlPct = ref<number>(0)
 
+/** String yang ditampilkan (respect isTotalHidden) */
+const totalValueUsdtStr = computed(() => {
+  if (isTotalHidden.value) return '••••'
+  return totalValue.value !== null
+    ? totalValue.value.toLocaleString('id-ID', { minimumFractionDigits: 2 })
+    : '...'
+})
+const totalValueUsdStr = computed(() => {
+  if (isTotalHidden.value) return '••••'
+  return totalValue.value !== null
+    ? totalValue.value.toLocaleString('en-US', { minimumFractionDigits: 2 })
+    : '...'
+})
+
 /** ===== Positions ===== */
 type PositionRow = { symbol: string; qty: string | number; avg_cost: string | number }
 const positions = ref<PositionRow[]>([])
-const priceMap = reactive<Record<string, number>>({}) // { BTCUSDT: price }
+const priceMap = reactive<Record<string, number>>({})
 
-/** ===== Market small table (top coins) ===== */
+/** ===== Market small table ===== */
 interface MarketItem {
   name: string
   price: number | null
@@ -368,7 +389,7 @@ const marketData = ref<MarketItem[]>(
   displayedCoins.map((c) => ({ name: c, price: null, change: null, icon: iconPath(c) })),
 )
 
-/** ===== Helpers ===== */
+/** ===== Helpers (tetap) ===== */
 const nfIdCache = new Map<string, Intl.NumberFormat>()
 const nfId = (min: number, max: number) => {
   const key = `${min}-${max}`
@@ -415,19 +436,10 @@ function recomputeTotals() {
   })
 }
 
-/** ===== API Types (notif) ===== */
-type ApiNotifResp = {
-  success: boolean
-  notif: 0 | 1
-  unread: boolean
-  user_id: number
-  // labels optional
-}
+/** ===== Notif Event ===== */
+type ApiNotifResp = { success: boolean; notif: 0 | 1; unread: boolean; user_id: number }
 type ApiResetResp = { success: boolean; updated: number; user_id: number }
-
-/** ===== Notif Event (claim_new_user) ===== */
 const hasEventNotif = ref<boolean>(false)
-
 async function loadEventNotif() {
   const token = getToken()
   if (!token) {
@@ -445,17 +457,12 @@ async function loadEventNotif() {
       : {}
     hasEventNotif.value = !!(res.ok && 'unread' in data && (data as ApiNotifResp).unread)
   } catch {
-    // diamkan agar tidak mengganggu UI utama
     hasEventNotif.value = false
   }
 }
-
 async function resetEventNotif(): Promise<ApiResetResp> {
   const token = getToken()
-  if (!token) {
-    modal.open('Unauthorized', 'Token tidak ditemukan.')
-    throw new Error('No token')
-  }
+  if (!token) throw new Error('No token')
   const res = await fetch(`${API_BASE}/claim-new-user/notif/reset`, {
     method: 'PUT',
     headers: {
@@ -465,10 +472,7 @@ async function resetEventNotif(): Promise<ApiResetResp> {
     },
     credentials: 'include',
   })
-  if (!res.ok) {
-    const msg = await res.text().catch(() => `HTTP ${res.status}`)
-    throw new Error(msg)
-  }
+  if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`))
   const data = (await res.json()) as ApiResetResp
   hasEventNotif.value = false
   return data
@@ -476,15 +480,12 @@ async function resetEventNotif(): Promise<ApiResetResp> {
 function isEventItem(item: MenuItem): boolean {
   return item.to === '/event' || item.label.toLowerCase() === 'event'
 }
-
 async function onMenuClick(item: MenuItem) {
-  if (isEventItem(item) && hasEventNotif.value) {
-    await resetEventNotif()
-  }
+  if (isEventItem(item) && hasEventNotif.value) await resetEventNotif()
   router.push(item.to)
 }
 
-/** ===== Loader (API, wajib Bearer) ===== */
+/** ===== Loaders ===== */
 async function loadSaldo() {
   const token = getToken()
   if (!token) {
@@ -525,7 +526,7 @@ async function loadPositions() {
   upsertPositionsCache(mini)
 }
 
-/** ===== WS (routing per-klien, on-demand subscribe) ===== */
+/** ===== WS (ringkas) ===== */
 let activeLower = new Set<string>()
 function rebuildActiveLower() {
   const s = new Set<string>()
@@ -542,16 +543,13 @@ watch(
   { deep: true },
 )
 
-// buffer update
-const pendingPrice: Record<string, number> = {} // 'BTCUSDT' -> last
-const pendingKlineClose: Record<string, number> = {} // 'BTCUSDT' -> close(1d)
+const pendingPrice: Record<string, number> = {}
+const pendingKlineClose: Record<string, number> = {}
 let flushTimer: ReturnType<typeof setTimeout> | null = null
-
 function scheduleFlush() {
   if (flushTimer) return
   flushTimer = window.setTimeout(() => {
     const touched: string[] = []
-
     for (const [symUp, px] of Object.entries(pendingPrice)) {
       if (priceMap[symUp] !== px) {
         priceMap[symUp] = px
@@ -566,33 +564,25 @@ function scheduleFlush() {
       }
       delete pendingKlineClose[symUp]
     }
-
     for (const symUp of touched) upsertPriceCache(symUp.toLowerCase(), priceMap[symUp])
     if (touched.length) recomputeTotals()
-
     for (const item of marketData.value) {
       const upper = (symbolMap[item.name] + 'usdt').toUpperCase()
       const last = priceMap[upper]
       if (last !== undefined) item.price = Number(last)
     }
-
     flushTimer = null
   }, 300)
 }
-
 let wsAgg: WebSocket | null = null
 let wsTimer: ReturnType<typeof setTimeout> | null = null
-
-/** kline 1d open/close untuk %change harian */
-const dayOpen: Record<string, number> = {} // 'BTCUSDT' -> open
-
+const dayOpen: Record<string, number> = {}
 function handleKline1d(symLower: string, open: number, close: number) {
   const symUp = symLower.toUpperCase()
   dayOpen[symUp] = open
   pendingKlineClose[symUp] = close
   upsertOpenCache(symLower, open)
   upsertPriceCache(symLower, close)
-
   const coin = displayedCoins.find((c) => symbolMap[c] + 'usdt' === symLower)
   if (coin && open) {
     const row = marketData.value.find((x) => x.name === coin)
@@ -603,19 +593,15 @@ function handleKline1d(symLower: string, open: number, close: number) {
   }
   scheduleFlush()
 }
-
 function handleTicker(symLower: string, last: number) {
   const symUp = symLower.toUpperCase()
   pendingPrice[symUp] = last
   upsertPriceCache(symLower, last)
   scheduleFlush()
 }
-
-/** ===== Subscribe Helpers ===== */
 const KLINE_PERIODS = ['1day'] as const
 let subscribedLower = new Set<string>()
 let resubTimer: ReturnType<typeof setTimeout> | null = null
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function wsSend(obj: any) {
   if (wsAgg && wsAgg.readyState === WebSocket.OPEN) {
@@ -651,16 +637,12 @@ function scheduleResubscribe() {
   resubTimer = window.setTimeout(() => {
     resubTimer = null
     if (!wsAgg || wsAgg.readyState !== WebSocket.OPEN) return
-
     const want = new Set(activeLower)
     const current = new Set(subscribedLower)
-
     const toSub: string[] = []
     const toUnsub: string[] = []
-
     for (const s of want) if (!current.has(s)) toSub.push(s)
     for (const s of current) if (!want.has(s)) toUnsub.push(s)
-
     if (toUnsub.length) {
       doUnsubscribe(toUnsub)
       for (const s of toUnsub) subscribedLower.delete(s)
@@ -672,8 +654,6 @@ function scheduleResubscribe() {
     }
   }, 200)
 }
-
-/** ===== Connect WS ===== */
 function connectAggregator() {
   if (wsAgg) {
     try {
@@ -681,29 +661,23 @@ function connectAggregator() {
     } catch {}
   }
   wsAgg = new WebSocket(WS_BASE)
-
   wsAgg.onopen = () => {
     subscribedLower = new Set()
     scheduleResubscribe()
   }
-
   wsAgg.onclose = () => {
     wsAgg = null
     if (wsTimer) clearTimeout(wsTimer)
     wsTimer = window.setTimeout(connectAggregator, 2000)
   }
-
   wsAgg.onerror = () => {
     try {
       wsAgg?.close()
     } catch {}
   }
-
   wsAgg.onmessage = (e) => {
     try {
       const msg = JSON.parse(e.data as string)
-
-      // snapshot batched
       if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
         for (const it of msg.items) {
           const symLower = String(it.symbol || '').toLowerCase()
@@ -718,10 +692,8 @@ function connectAggregator() {
         }
         return
       }
-
       const symLower = String(msg.symbol || '').toLowerCase()
       if (!symLower || !activeLower.has(symLower)) return
-
       if (msg.type === 'ticker' && Number.isFinite(Number(msg.last))) {
         handleTicker(symLower, Number(msg.last))
         return
@@ -755,20 +727,19 @@ const newsList = ref<NewsItem[]>([])
 const loading = ref(true)
 const modal = useApiAlertStore()
 
-/** ===== Infinite Scroll (news) ===== */
+/** ===== Market computed ===== */
 const filteredMarketData = computed(
   () =>
     displayedCoins
       .map((coin) => marketData.value.find((item) => item.name === coin))
       .filter(Boolean) as MarketItem[],
 )
+
+/** ===== Scroll & visibility ===== */
 const onScroll = () => {
   const bottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100
   if (!bottom) return
-  // pagination news kalau perlu
 }
-
-/** ===== Visibility handler ===== */
 const visHandler = () => {
   if (document.hidden) saveDashCacheDebounced()
 }
@@ -777,27 +748,20 @@ const visHandler = () => {
 onMounted(async () => {
   loadDashCache()
   hydrateFromCache()
-
   await Promise.all([loadSaldo(), loadPositions()])
-
   for (const p of positions.value) {
     const key = String(p.symbol).toUpperCase()
     priceMap[key] = priceMap[key] ?? 0
   }
-
   rebuildActiveLower()
   recomputeTotals()
-
   connectAggregator()
-
   window.addEventListener('scroll', onScroll, { passive: true })
   requestAnimationFrame(() => onScroll())
-
   const token = getToken()
   if (!token) {
     modal.open('Unauthorized', 'Token tidak ditemukan.')
   } else {
-    // load news
     try {
       const res = await fetch(`${API_BASE}/news`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
@@ -832,18 +796,13 @@ onMounted(async () => {
     } finally {
       loading.value = false
     }
-
-    // load notif event (claim_new_user)
     await loadEventNotif()
   }
-
   if (isBrowser()) document.addEventListener('visibilitychange', visHandler, { passive: true })
 })
-
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   if (isBrowser()) document.removeEventListener('visibilitychange', visHandler)
-
   if (wsAgg) {
     try {
       wsAgg.close()
@@ -854,7 +813,6 @@ onUnmounted(() => {
     clearTimeout(wsTimer)
     wsTimer = null
   }
-
   try {
     if (isBrowser()) localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache))
   } catch {}

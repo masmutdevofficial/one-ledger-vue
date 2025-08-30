@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white p-6">
+  <div class="bg-white p-6 min-h-screen overflow-hidden overscroll-none">
     <div class="max-w-md mx-auto">
       <!-- Title -->
       <h2 class="text-sm font-semibold text-black mb-3">Account Info</h2>

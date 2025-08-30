@@ -13,10 +13,7 @@
         </h1>
 
         <div class="flex flex-col items-center mb-3">
-          <div
-            class="w-10 h-10 rounded-full flex items-center justify-center mb-1"
-            :class="it.side === 'BUY' ? 'bg-teal-500' : 'bg-red-500'"
-          >
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mb-1 bg-teal-500">
             <Icon icon="tabler:check" class="text-white w-6 h-6" />
           </div>
           <p class="text-gray-400 text-sm">{{ it.status }}</p>

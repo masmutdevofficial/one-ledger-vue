@@ -4,32 +4,33 @@
     <section class="bg-white mb-6 px-4 mt-2">
       <div class="flex items-center space-x-1 text-gray-700 text-sm font-normal mb-1">
         <span>Est. Total Value</span>
-        <Icon icon="tabler:eye" class="w-4 h-4" />
+        <!-- tombol mata: toggle hide/show -->
+        <button
+          type="button"
+          class="inline-flex items-center"
+          :aria-pressed="isTotalHidden ? 'true' : 'false'"
+          :title="isTotalHidden ? 'Show balance' : 'Hide balance'"
+          @click="isTotalHidden = !isTotalHidden"
+        >
+          <Icon :icon="isTotalHidden ? 'tabler:eye-off' : 'tabler:eye'" class="w-4 h-4" />
+        </button>
       </div>
 
       <div class="flex items-baseline space-x-1 font-semibold text-3xl text-black mb-1">
-        <span>
-          {{
-            totalValue !== null
-              ? totalValue.toLocaleString('id-ID', { minimumFractionDigits: 2 })
-              : '...'
-          }}
-        </span>
+        <!-- tampilkan nilai / '••••' -->
+        <span>{{ totalValueUsdtStr }}</span>
         <span class="text-base font-normal">USDT</span>
-        <Icon icon="tabler:chevron-down" class="text-base w-4 h-4" />
+        <!-- ikon dropdown DIHAPUS -->
       </div>
 
-      <div class="text-gray-400 text-sm mb-2">
-        ≈ ${{
-          totalValue !== null
-            ? totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })
-            : '...'
-        }}
-      </div>
+      <div class="text-gray-400 text-sm mb-2">≈ ${{ totalValueUsdStr }}</div>
 
       <div class="text-xs flex items-center text-black mb-4">
         Unrealized PnL
-        <span class="font-semibold ml-1" :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'">
+        <span
+          class="font-semibold ml-1"
+          :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'"
+        >
           {{ signedMoneyId(portfolioUpnlAbs, 2) }}
           ({{ signedPercent(portfolioUpnlPct) }})
         </span>
@@ -37,20 +38,27 @@
       </div>
 
       <div class="grid grid-cols-3 gap-3">
-        <RouterLink to="/add-funds"
-          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-black rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-full text-center">
+        <RouterLink
+          to="/add-funds"
+          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-black rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-full text-center"
+        >
           Add Funds
         </RouterLink>
-        <RouterLink to="/send"
-          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center">
+        <RouterLink
+          to="/send"
+          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center"
+        >
           Send
         </RouterLink>
-        <RouterLink to="/transfer"
-          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center">
+        <RouterLink
+          to="/transfer"
+          class="bg-[#E6E6E6] flex justify-center items-center text-black rounded-md px-6 py-2 text-[10px] font-semibold w-full text-center"
+        >
           Transfer
         </RouterLink>
       </div>
     </section>
+
     <div class="flex items-center justify-between px-4 py-3">
       <div class="flex items-center space-x-3">
         <img alt="USDT logo" class="w-6 h-6" height="24" :src="USDT_ICON" width="24" />
@@ -71,9 +79,13 @@
         No Data Available
       </div>
 
-      <section v-else v-for="a in assets" :key="a.symbol"
+      <section
+        v-else
+        v-for="a in assets"
+        :key="a.symbol"
         class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md bg-white cursor-pointer hover:ring-2 hover:ring-teal-200 transition"
-        @click="goAsset(a)">
+        @click="goAsset(a)"
+      >
         <div class="flex justify-between items-center">
           <p class="text-gray-500 text-[10px] font-normal">Asset</p>
           <Icon icon="tabler:adjustments-horizontal" class="text-gray-400 text-[10px]" />
@@ -81,7 +93,13 @@
 
         <div class="flex justify-between items-center text-[10px]">
           <div class="flex items-center space-x-2">
-            <img :alt="`${a.base} logo`" class="rounded-full" :src="a.logoUrl" width="20" height="20" />
+            <img
+              :alt="`${a.base} logo`"
+              class="rounded-full"
+              :src="a.logoUrl"
+              width="20"
+              height="20"
+            />
             <p class="font-bold text-black text-xs leading-4">
               {{ a.base }}
               <span class="font-normal text-gray-400 text-[10px]">/{{ a.quote }}</span>
@@ -94,8 +112,11 @@
         </div>
 
         <!-- Unrealized PnL -->
-        <div v-if="a.lastPrice > 0" class="flex justify-between items-center space-x-4 font-semibold text-xs leading-4"
-          :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'">
+        <div
+          v-if="a.lastPrice > 0"
+          class="flex justify-between items-center space-x-4 font-semibold text-xs leading-4"
+          :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'"
+        >
           <p>{{ signedMoneyId(a.uPnlAbs, 2) }}</p>
           <p>{{ signedPercent(a.uPnlPct) }}</p>
         </div>
@@ -139,6 +160,36 @@ import { useApiAlertStore } from '@/stores/apiAlert'
 const router = useRouter()
 const modal = useApiAlertStore()
 
+// === Hide/Show total value (persist di localStorage) ===
+const TV_HIDE_KEY = 'portfolioHideTotal:v1'
+const isTotalHidden = ref(false)
+
+onMounted(() => {
+  try {
+    isTotalHidden.value = localStorage.getItem(TV_HIDE_KEY) === '1'
+  } catch {}
+})
+watch(isTotalHidden, (v) => {
+  try {
+    localStorage.setItem(TV_HIDE_KEY, v ? '1' : '0')
+  } catch {}
+})
+
+// string tampilan untuk total value (IDR-style USDT & USD)
+const totalValueUsdtStr = computed(() => {
+  if (isTotalHidden.value) return '••••'
+  return totalValue.value !== null
+    ? totalValue.value.toLocaleString('id-ID', { minimumFractionDigits: 2 })
+    : '...'
+})
+
+const totalValueUsdStr = computed(() => {
+  if (isTotalHidden.value) return '••••'
+  return totalValue.value !== null
+    ? totalValue.value.toLocaleString('en-US', { minimumFractionDigits: 2 })
+    : '...'
+})
+
 /** ===== Utils ===== */
 const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 
@@ -156,9 +207,9 @@ const USDT_ICON = '/img/crypto/usdt.svg'
 const saldoText = computed(() =>
   saldoAwal.value !== null
     ? saldoAwal.value.toLocaleString('id-ID', {
-      minimumFractionDigits: 6,
-      maximumFractionDigits: 6,
-    })
+        minimumFractionDigits: 6,
+        maximumFractionDigits: 6,
+      })
     : '...',
 )
 
@@ -308,7 +359,7 @@ function savePortfolioCacheDebounced() {
   portfSaveTimer = window.setTimeout(() => {
     try {
       localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache))
-    } catch { }
+    } catch {}
     portfSaveTimer = null
   }, 250)
 }
@@ -321,7 +372,7 @@ function upsertPositionsCache(items: PositionsCacheItem[]) {
   savePortfolioCacheDebounced()
 }
 function upsertPriceCache(symLower: string, price: number) {
-  ; (portfCache.prices ||= {})[symLower] = { p: price, ts: Date.now() }
+  ;(portfCache.prices ||= {})[symLower] = { p: price, ts: Date.now() }
   savePortfolioCacheDebounced()
 }
 
@@ -387,19 +438,24 @@ function rebuildAssetMap() {
   for (const a of assets.value) assetMap.set(a.symbol.toUpperCase(), a)
 }
 
-
 /** ===== Formatters ===== */
 const nfCache = new Map<string, Intl.NumberFormat>()
 const nfId = (min: number, max: number) => {
   const k = `${min}-${max}`
   if (!nfCache.has(k))
-    nfCache.set(k, new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }))
+    nfCache.set(
+      k,
+      new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }),
+    )
   return nfCache.get(k)!
 }
-const formatNumberId = (nu: number, digits = 2) => (Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0')
+const formatNumberId = (nu: number, digits = 2) =>
+  Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0'
 const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
-const signedPercent = (pct: number) => (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
-const signedMoneyId = (nu: number, digits = 2) => (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
+const signedPercent = (pct: number) =>
+  (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
+const signedMoneyId = (nu: number, digits = 2) =>
+  (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
 /** ===== Helpers ===== */
 function splitSymbol(sym: string): { base: string; quote: Quote } {
   const s = sym.toUpperCase()
@@ -422,7 +478,9 @@ async function loadSaldo() {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       credentials: 'include',
     })
-    const data: SaldoResponse = await res.json().catch(() => ({ status: 'error', saldo: 0, koin: 0 }))
+    const data: SaldoResponse = await res
+      .json()
+      .catch(() => ({ status: 'error', saldo: 0, koin: 0 }))
     if (res.ok && data?.status === 'success') {
       const v = Number(data.saldo) || 0
       saldoAwal.value = v
@@ -503,10 +561,8 @@ async function loadAssets() {
       lastPrice: a.lastPrice,
     }))
     upsertPositionsCache(posItems)
-
   } catch (e: unknown) {
-    const msg: string =
-      e instanceof Error ? e.message : 'Gagal memuat assets.'
+    const msg: string = e instanceof Error ? e.message : 'Gagal memuat assets.'
     errorAssets.value = msg
 
     assets.value = []
@@ -519,14 +575,15 @@ async function loadAssets() {
   }
 }
 
-
 /** ===== Totals (per-frame) ===== */
 let totalsScheduled = false
 function recomputeTotals() {
   if (totalsScheduled) return
   totalsScheduled = true
   requestAnimationFrame(() => {
-    let sumValue = 0, sumUpnl = 0, cost = 0
+    let sumValue = 0,
+      sumUpnl = 0,
+      cost = 0
     for (const a of assets.value) {
       sumValue += a.valueUsd || 0
       sumUpnl += a.uPnlAbs || 0
@@ -549,20 +606,32 @@ let subscribedLower = new Set<string>()
 let resubTimer: ReturnType<typeof setTimeout> | null = null
 
 function currentActiveSymbolsLower(): string[] {
-  return Array.from(new Set(assets.value.map(a => a.symbol.toLowerCase())))
+  return Array.from(new Set(assets.value.map((a) => a.symbol.toLowerCase())))
 }
 function wsSend(obj: unknown) {
   if (aggWs && aggWs.readyState === WebSocket.OPEN) {
-    try { aggWs.send(JSON.stringify(obj)) } catch { }
+    try {
+      aggWs.send(JSON.stringify(obj))
+    } catch {}
   }
 }
 function doSubscribe(symbolsLower: string[]) {
   if (!symbolsLower.length) return
-  wsSend({ type: 'subscribe', channels: ['ticker', 'kline'], symbols: symbolsLower, periods: KLINE_PERIODS })
+  wsSend({
+    type: 'subscribe',
+    channels: ['ticker', 'kline'],
+    symbols: symbolsLower,
+    periods: KLINE_PERIODS,
+  })
 }
 function doUnsubscribe(symbolsLower: string[]) {
   if (!symbolsLower.length) return
-  wsSend({ type: 'unsubscribe', channels: ['ticker', 'kline'], symbols: symbolsLower, periods: KLINE_PERIODS })
+  wsSend({
+    type: 'unsubscribe',
+    channels: ['ticker', 'kline'],
+    symbols: symbolsLower,
+    periods: KLINE_PERIODS,
+  })
 }
 function requestSnapshot(symbolsLower: string[]) {
   if (!symbolsLower.length) return
@@ -583,8 +652,15 @@ function scheduleResubscribe() {
     for (const s of want) if (!curr.has(s)) toSub.push(s)
     for (const s of curr) if (!want.has(s)) toUnsub.push(s)
 
-    if (toUnsub.length) { doUnsubscribe(toUnsub); for (const s of toUnsub) subscribedLower.delete(s) }
-    if (toSub.length) { doSubscribe(toSub); requestSnapshot(toSub); for (const s of toSub) subscribedLower.add(s) }
+    if (toUnsub.length) {
+      doUnsubscribe(toUnsub)
+      for (const s of toUnsub) subscribedLower.delete(s)
+    }
+    if (toSub.length) {
+      doSubscribe(toSub)
+      requestSnapshot(toSub)
+      for (const s of toSub) subscribedLower.add(s)
+    }
   }, 200)
 }
 
@@ -600,7 +676,10 @@ function scheduleFlush() {
     for (const [symLower, payload] of Object.entries(pending)) {
       const symUp = symLower.toUpperCase()
       const a = assetMap.get(symUp)
-      if (!a) { delete pending[symLower]; continue }
+      if (!a) {
+        delete pending[symLower]
+        continue
+      }
 
       let changed = false
       if (payload.last !== undefined && a.lastPrice !== payload.last) {
@@ -634,7 +713,9 @@ function scheduleFlush() {
 
 function connectAggregatorWs() {
   if (aggWs) {
-    try { aggWs.close() } catch { }
+    try {
+      aggWs.close()
+    } catch {}
     aggWs = null
   }
 
@@ -652,7 +733,9 @@ function connectAggregatorWs() {
   }
 
   aggWs.onerror = () => {
-    try { aggWs?.close() } catch { }
+    try {
+      aggWs?.close()
+    } catch {}
   }
 
   aggWs.onmessage = (e) => {
@@ -665,7 +748,7 @@ function connectAggregatorWs() {
           const symLower = String(it.symbol || '').toLowerCase()
           if (!symLower) continue
           if (it.type === 'ticker' && Number.isFinite(Number(it.last))) {
-            ; (pending[symLower] ||= {}).last = Number(it.last)
+            ;(pending[symLower] ||= {}).last = Number(it.last)
           } else if (it.type === 'kline' && it.period === '1day') {
             const c = Number(it.close)
             if (Number.isFinite(c)) (pending[symLower] ||= {}).klineClose = c
@@ -680,19 +763,21 @@ function connectAggregatorWs() {
       if (!symLower) return
 
       if (msg.type === 'ticker' && Number.isFinite(Number(msg.last))) {
-        ; (pending[symLower] ||= {}).last = Number(msg.last)
+        ;(pending[symLower] ||= {}).last = Number(msg.last)
         scheduleFlush()
         return
       }
       if (msg.type === 'kline' && msg.period === '1day') {
         const close = Number(msg.close)
         if (Number.isFinite(close)) {
-          ; (pending[symLower] ||= {}).klineClose = close
+          ;(pending[symLower] ||= {}).klineClose = close
           scheduleFlush()
         }
         return
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -713,30 +798,47 @@ onMounted(() => {
   // beforeunload listener
   if (isBrowser()) {
     const flush = () => {
-      try { localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache)) } catch { }
+      try {
+        localStorage.setItem(PORTF_LS_KEY, JSON.stringify(portfCache))
+      } catch {}
     }
     window.addEventListener('beforeunload', flush)
     removeBeforeUnload = () => window.removeEventListener('beforeunload', flush)
   }
 
   // async tasks
-  ; (async () => {
+  ;(async () => {
     await loadSaldo()
     await loadAssets()
     connectAggregatorWs() // connect setelah assets terisi
-  })().catch(() => { })
+  })().catch(() => {})
 })
 
 // resubscribe kalau daftar aset berubah
-watch(assets, () => {
-  rebuildAssetMap()
-  recomputeTotals()
-  scheduleResubscribe()
-}, { deep: true })
+watch(
+  assets,
+  () => {
+    rebuildAssetMap()
+    recomputeTotals()
+    scheduleResubscribe()
+  },
+  { deep: true },
+)
 
 onUnmounted(() => {
-  if (removeBeforeUnload) { removeBeforeUnload(); removeBeforeUnload = null }
-  if (aggWs) { try { aggWs.close() } catch { }; aggWs = null }
-  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
+  if (removeBeforeUnload) {
+    removeBeforeUnload()
+    removeBeforeUnload = null
+  }
+  if (aggWs) {
+    try {
+      aggWs.close()
+    } catch {}
+    aggWs = null
+  }
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
 })
 </script>

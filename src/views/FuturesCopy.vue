@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 mb-20">
+  <div class="px-4 mb-20 relative">
     <div class="flex flex-row justify-start items-center mb-4">
       <button
         aria-label="Back"
@@ -12,28 +12,57 @@
       <h2 class="font-semibold text-base select-none">Futures Copy</h2>
     </div>
 
-    <div class="text-sm font-semibold mb-4 select-none">Public</div>
+    <div class="text-sm font-semibold mb-4 select-none">Private</div>
 
     <!-- Filter bar -->
     <div class="flex items-center space-x-4 text-xs text-gray-400 mb-4 select-none">
-      <div class="flex items-center space-x-1 cursor-pointer">
+      <!-- 30D tanpa ikon -->
+      <div class="flex items-center">
         <span>30D</span>
-        <Icon icon="tabler:chevron-down" class="w-3 h-3" />
       </div>
-      <div class="flex items-center space-x-1 cursor-pointer">
-        <span>PnL</span>
-        <Icon icon="tabler:chevron-down" class="w-3 h-3" />
+
+      <!-- PnL filter (dropdown: Terbanyak / Terkecil) -->
+      <div class="relative">
+        <button
+          type="button"
+          class="flex items-center space-x-1 cursor-pointer"
+          @click="togglePnlMenu"
+        >
+          <span>PnL</span>
+          <Icon icon="tabler:chevron-down" class="w-3 h-3" />
+        </button>
+
+        <div
+          v-if="showPnl"
+          class="absolute z-20 mt-2 bg-white border border-gray-200 rounded-lg p-3 shadow w-56"
+        >
+          <div class="text-[11px] text-gray-500 mb-2">Urutkan PnL</div>
+          <div class="space-y-2 text-sm">
+            <label class="flex items-center space-x-2">
+              <input type="radio" value="DESC" v-model="pnlOrder" />
+              <span>Terbanyak (highest first)</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="radio" value="ASC" v-model="pnlOrder" />
+              <span>Terkecil (lowest first)</span>
+            </label>
+          </div>
+          <div class="mt-3 flex items-center space-x-2">
+            <button type="button" class="text-xs px-2 py-1 border rounded" @click="applyPnl">
+              Apply
+            </button>
+            <button type="button" class="text-xs px-2 py-1 border rounded" @click="closePnl">
+              Close
+            </button>
+          </div>
+        </div>
       </div>
-      <label class="flex items-center space-x-1 cursor-pointer select-none">
-        <input checked class="w-4 h-4 rounded border-gray-300 text-black" type="checkbox" />
-        <span class="underline text-gray-400">Smart Filter</span>
-      </label>
     </div>
 
-    <!-- List items -->
+    <!-- List items (pakai hasil sorting) -->
     <ul class="space-y-6">
       <li
-        v-for="item in copyTraders"
+        v-for="item in sortedTraders"
         :key="item.id"
         class="flex flex-col space-y-2 border-b border-gray-100 pb-4"
       >
@@ -72,12 +101,12 @@
           </div>
 
           <button
-            v-if="item.button === 'Copy'"
+            v-if="item.button === 'Join'"
             class="bg-teal-300 text-white text-sm rounded-lg px-4 py-1 shadow-[0_0_8px_rgba(0,0,0,0.1)] select-none"
             type="button"
             @click="goToFutures(item.username)"
           >
-            Copy
+            Join
           </button>
           <button
             v-else
@@ -103,29 +132,23 @@
         </div>
 
         <div class="flex items-start space-x-3">
-          <!-- Kiri: Gambar -->
-          <!-- <MiniAreaChart :series="item.chartSeries" :categories="item.chartCategories" /> -->
-          <!-- Kanan: Info -->
           <div class="flex-1">
             <div class="flex items-start justify-between text-xs text-gray-400 select-none">
-              <div class="flex flex-col justify-start text-xs text-gray-400 select-none">
-                <span class="">{{ item.labelMdd }}</span>
+              <div class="flex flex-col justify-start">
+                <span>{{ item.labelMdd }}</span>
                 <span
                   :class="item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none'"
                 >
                   {{ item.mddValue }}
                 </span>
               </div>
-              <div
-                class="flex flex-col justify-center items-center text-xs text-gray-400 select-none"
-              >
+              <div class="flex flex-col justify-center items-center">
                 <span>{{ item.labelRoi }}</span>
                 <div class="text-gray-900 font-semibold text-xs select-none">
                   {{ item.roi }}
                 </div>
               </div>
-
-              <div class="flex flex-col justify-center text-xs text-gray-400 select-none">
+              <div class="flex flex-col justify-center">
                 <span>{{ item.labelSharpe }}</span>
                 <span class="text-gray-900 font-semibold text-end">{{ item.sharpe }}</span>
               </div>
@@ -138,10 +161,9 @@
 </template>
 
 <script setup lang="ts">
-// import MiniAreaChart from '@/components/futures/MiniAreaChart.vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 const router = useRouter()
 
@@ -183,8 +205,9 @@ interface CopyTrader {
   followerLabel1: string
   followerLabel2: string
   showClock?: boolean
-  button: 'Copy' | 'Full'
-  pnl: string
+  button: 'Join' | 'Full'
+  pnl: string // formatted
+  pnlNum: number // numeric for sorting
   pnlClass: string
   roi: string
   aum: string
@@ -238,8 +261,9 @@ function mapRow(r: ApiRow): CopyTrader {
     followerLabel2: `/${r.copies_limit}`,
     showClock: !!r.is_featured,
 
-    button: isFull ? 'Full' : 'Copy',
+    button: isFull ? 'Full' : 'Join',
     pnl: toSignedMoney(r.pnl_30d),
+    pnlNum: r.pnl_30d,
     pnlClass: r.pnl_30d >= 0 ? 'text-green-500' : 'text-red-500',
     roi: toPct(r.roi_30d_pct),
     aum: fmt2(r.aum),
@@ -258,6 +282,29 @@ function mapRow(r: ApiRow): CopyTrader {
     chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   }
 }
+
+/** ==== Filter PnL ==== */
+const showPnl = ref(false)
+type PnlOrder = 'ASC' | 'DESC'
+const pnlOrder = ref<PnlOrder>('DESC') // default: Terbanyak (highest first)
+
+function togglePnlMenu() {
+  showPnl.value = !showPnl.value
+}
+function applyPnl() {
+  showPnl.value = false
+}
+function closePnl() {
+  showPnl.value = false
+}
+
+const sortedTraders = computed(() => {
+  const arr = copyTraders.value.slice()
+  arr.sort((a, b) => {
+    return pnlOrder.value === 'DESC' ? b.pnlNum - a.pnlNum : a.pnlNum - b.pnlNum
+  })
+  return arr
+})
 
 /** ==== Fetch data dari API ==== */
 onMounted(async () => {

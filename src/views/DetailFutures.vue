@@ -168,7 +168,7 @@
           <span class="text-black">{{ currentTotal.toFixed(4) }}</span>
         </div>
         <!-- When NO pending order: show submit -->
-        <div v-if="!hasPendingOrder">
+        <div v-if="!hasPendingOrder" class="pb-5">
           <button
             class="mt-3 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 float-right"
             type="button"

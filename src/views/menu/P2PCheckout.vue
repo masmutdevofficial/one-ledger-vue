@@ -142,7 +142,7 @@ function goBack() {
 
 async function cancelOrder() {
   if (!invoiceId.value || !invoiceValid.value) {
-    pageError.value = 'Invalid Invoice ID'
+    pageError.value = 'Your Order Has Been Canceled'
     return
   }
   try {
@@ -161,7 +161,7 @@ async function cancelOrder() {
     /* abaikan */
   } finally {
     clearTimer()
-    pageError.value = 'Invalid Invoice ID'
+    pageError.value = 'Your Order Has Been Canceled'
   }
 }
 
@@ -249,7 +249,7 @@ onBeforeUnmount(() => {
 
     <!-- ERROR PAGE -->
     <div v-if="pageError" class="flex-grow px-5 pt-10">
-      <h1 class="text-center text-red-600 font-semibold">{{ pageError }}</h1>
+      <h1 class="text-center text-[#d9d9d9] font-bold">{{ pageError }}</h1>
     </div>
 
     <!-- NORMAL PAGE -->
