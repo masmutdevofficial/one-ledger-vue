@@ -1,9 +1,9 @@
 <template>
   <section class="px-6 pt-1 max-w-md mx-auto w-full">
-    <h1 class="font-bold text-[14px] mb-8">Help &amp; Support</h1>
+    <h1 class="font-bold text-[16px] mb-8">Help &amp; Support</h1>
 
     <!-- Nav: trigger modal by menu -->
-    <nav class="flex flex-col space-y-3 text-[12px] font-normal text-black">
+    <nav class="flex flex-col space-y-3 text-[14px] font-normal text-black">
       <button type="button" class="text-left block hover:underline" @click="openModal('about')">
         About Us
       </button>

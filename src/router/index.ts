@@ -123,6 +123,10 @@ const routes = [
         component: () => import('@/views/menu/P2PDetail.vue'),
       },
       {
+        path: 'p2p-profile',
+        component: () => import('@/views/menu/ProfileP2P.vue'),
+      },
+      {
         path: 'p2p-checkout',
         component: () => import('@/views/menu/P2PCheckout.vue'),
       },

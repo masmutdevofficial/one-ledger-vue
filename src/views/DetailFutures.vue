@@ -56,7 +56,7 @@
 
       <small v-show="!!amountError" class="block text-red-500 text-xs mb-2">{{
         amountError
-      }}</small>
+        }}</small>
 
       <!-- Available (left)  |  Min Buy (right) -->
       <div class="flex justify-between items-center text-[10px] text-gray-400 mb-5">
@@ -70,7 +70,7 @@
           </button>
         </div>
         <div class="flex items-center gap-1">
-          <span>Min Buy</span>
+          <span>Min Open Position</span>
           <span class="font-normal">
             {{ trader?.min_buy != null ? fmtUSDT(trader.min_buy) : '—' }} USDT
           </span>
