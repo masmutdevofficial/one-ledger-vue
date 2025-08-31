@@ -135,6 +135,10 @@ const routes = [
         component: () => import('@/views/menu/P2PCheckoutSell.vue'),
       },
       {
+        path: 'more',
+        component: () => import('@/views/MoreMenu.vue'),
+      },
+      {
         path: 'event',
         component: () => import('@/views/menu/WeeklyEvent.vue'),
       },

@@ -362,7 +362,7 @@ const items: MenuItem[] = [
   { label: 'Megadrop', to: '/megadrop', img: '/img/newmenu/megadrop.png' },
   { label: 'Copy Trade', to: '/futures', img: '/img/CopyTrade.png' },
   { label: 'Event', to: '/event', img: '/img/newmenu/event.png' },
-  { label: 'More', to: '/account', img: '/img/newmenu/more.png' },
+  { label: 'More', to: '/more', img: '/img/newmenu/more.png' },
 ]
 
 const isP2PItem = (item: MenuItem) => item.label?.toLowerCase() === 'p2p'
