@@ -3,19 +3,20 @@
     <div class="h-[560px] flex flex-col overflow-hidden">
       <!-- List chat -->
       <div ref="listEl" class="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
-        <!-- NOTIF TICKER -->
+        <!-- NOTIF TICKER (1x marquee, lalu hilang; notif baru replace lama) -->
         <div
-          v-if="bannerItems.length"
-          class="sticky top-0 z-10 -mx-4 px-4 pb-2 bg-white/90 backdrop-blur border-b"
+          v-if="showBanner"
+          class="sticky top-0 z-10 -mx-4 px-4 pb-2 bg-white/90 backdrop-blur border-b pointer-events-none"
         >
           <div class="relative overflow-hidden h-7">
-            <div class="inline-block whitespace-nowrap marquee" :key="bannerKey" aria-live="polite">
-              <span
-                v-for="(t, i) in bannerItems"
-                :key="i"
-                class="mx-6 text-xs font-medium text-gray-800"
-              >
-                {{ t }}
+            <div
+              class="inline-block whitespace-nowrap marquee"
+              :key="bannerKey"
+              aria-live="polite"
+              @animationend="onMarqueeEnd"
+            >
+              <span class="mx-6 text-xs font-medium text-gray-800">
+                {{ bannerText }}
               </span>
             </div>
           </div>
@@ -208,15 +209,30 @@ let pollNotifHandle: number | null = null
 const POLL_MS = 2000
 const POLL_NOTIF_MS = 5000
 
-/** Ticker notif */
-const bannerItems = ref<string[]>([])
+/** ====== NOTIF TICKER ======
+ * - tampil 1x marquee, lalu hilang
+ * - notif baru menggantikan yang lama
+ */
+const showBanner = ref(false)
+const bannerText = ref('')
 const bannerKey = ref(0)
 const seenNotifKeys = new Set<string>()
 let lastNotifId: number | null = null
-function enqueueBanner(text: string): void {
-  bannerItems.value.push(text)
-  if (bannerItems.value.length > 8) bannerItems.value.shift()
-  bannerKey.value++ // restart animasi
+
+function showBannerOnce(text: string): void {
+  // replace notif lama dengan yang baru
+  bannerText.value = text
+  // reset agar animasi bisa start ulang
+  showBanner.value = false
+  bannerKey.value++ // paksa re-render elemen animasi
+  nextTick(() => {
+    showBanner.value = true
+  })
+}
+function onMarqueeEnd(): void {
+  // setelah 1x animasi, sembunyikan
+  showBanner.value = false
+  bannerText.value = ''
 }
 
 /** UI helpers */
@@ -252,23 +268,18 @@ function userColor(name: string): string {
 }
 
 function formatAmountEn(amountStr: string): string {
-  // aman untuk 20,8: jangan parse ke Number
   const raw = String(amountStr).trim()
   const isNeg = raw.startsWith('-')
-  const clean = raw.replace(/[^0-9.]/g, '') // buang simbol lain
+  const clean = raw.replace(/[^0-9.]/g, '')
   const [intPartRaw, fracPartRaw = ''] = clean.split('.')
-
   const intDigits = intPartRaw.replace(/^0+(?=\d)/, '') || '0'
   const intWithSep = intDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-
-  // potong trailing zero fraksi, tapi biarkan kalau semua nol -> hilangkan titik
   const fracTrimmed = fracPartRaw.replace(/0+$/, '')
   const frac = fracTrimmed ? `.${fracTrimmed}` : ''
-
   return `${isNeg ? '-' : ''}${intWithSep}${frac}`
 }
 
-/** Emoji state+handler (semua via objek 'emoji') */
+/** Emoji state+handler */
 const emoji = {
   open: ref(false),
   list: [
@@ -375,9 +386,9 @@ async function pollNotif(): Promise<void> {
   const row = res.data
   if (!row) return
 
-  // dedup berdasarkan id + username + amount
   const key = `${row.id}|${row.username}|${row.amount}`
   if (lastNotifId === null) {
+    // pertama kali, jangan tampilkan
     lastNotifId = row.id
     seenNotifKeys.add(key)
     return
@@ -387,8 +398,8 @@ async function pollNotif(): Promise<void> {
   lastNotifId = row.id
   seenNotifKeys.add(key)
 
-  // 👉 teks baru (bahasa Inggris)
-  enqueueBanner(`New trade from ${row.username} amount ${formatAmountEn(row.amount)} USD`)
+  // tampilkan 1x, replace notif lama jika ada
+  showBannerOnce(`New trade from ${row.username} amount ${formatAmountEn(row.amount)} USD`)
 }
 
 /** Lifecycle */

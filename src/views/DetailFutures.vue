@@ -1,3 +1,4 @@
+<!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <template>
   <main class="px-5 flex-grow mb-20">
     <!-- STATES (page-level) -->
@@ -19,7 +20,6 @@
 
       <!-- Profile & title -->
       <div class="flex items-center justify-between mb-1">
-        <!-- kiri: avatar + nama -->
         <div class="flex items-center gap-4">
           <img
             :alt="`${trader.name} avatar`"
@@ -37,7 +37,6 @@
           </h1>
         </div>
 
-        <!-- kanan: tombol chat -->
         <router-link
           v-if="trader && trader.id"
           :to="`/chats/${trader.id}`"
@@ -51,7 +50,6 @@
 
       <p class="text-sm mb-2">Fixed ratio only. Target APR 400% / MDD {{ trader.mdd_30d_pct }}%.</p>
 
-      <!-- Badge -->
       <div
         class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none"
       >
@@ -86,7 +84,6 @@
         </button>
       </div>
 
-      <!-- input-level error only -->
       <small v-show="!!amountError" class="block text-red-500 text-xs mb-2">{{
         amountError
       }}</small>
@@ -120,7 +117,6 @@
         </button>
       </div>
       <div class="grid grid-cols-1 gap-4 mb-8">
-        <!-- Stop Loss -->
         <div>
           <label for="sl" class="text-gray-400 text-xs mb-1 block">Stop Loss</label>
           <div class="relative">
@@ -143,31 +139,18 @@
         </div>
       </div>
 
-      <!-- Summary (pakai data dari API untuk ROI & PnL) -->
+      <!-- Summary -->
       <div class="mb-8" v-if="showSummary">
-        <!-- Summary (only after user enters a valid amount) -->
         <div class="flex justify-between text-xs text-gray-400 mb-1">
           <span class="underline">Net Copy Amount</span>
           <span class="text-black">{{ netCopyAmount }}</span>
         </div>
-        <!-- ROI: show ONLY when there is a pending tx, and include progress % here -->
-        <div v-if="hasPendingForPnl" class="hidden text-xs text-gray-400 mb-1">
-          <span class="underline">ROI</span>
-          <span class="text-teal-400"> {{ Math.round(progress * 100) }}% </span>
-        </div>
 
-        <!-- PnL: keep only the animated money, remove the % from here -->
         <div v-if="hasPendingForPnl" class="flex justify-between text-xs text-gray-400 mb-1">
           <span class="underline">PNL</span>
-          <span class="text-teal-400">
-            {{ signedMoney(currentProfit, 4) }}
-          </span>
+          <span class="text-teal-400">{{ signedMoney(currentProfit, 4) }}</span>
         </div>
-        <div v-if="hasPendingForPnl" class="hidden text-[11px] text-gray-400 mb-1">
-          <span class="underline">Current Value</span>
-          <span class="text-black">{{ currentTotal.toFixed(4) }}</span>
-        </div>
-        <!-- When NO pending order: show submit -->
+
         <div v-if="!hasPendingOrder" class="pb-5">
           <button
             class="mt-3 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 float-right"
@@ -178,16 +161,6 @@
             {{ loadingSubmit ? 'Processing…' : 'Open Position' }}
           </button>
         </div>
-
-        <!-- When there IS a pending order: hide submit, show countdown + progress -->
-        <!-- <div v-else class="mt-3 float-right flex items-center gap-2">
-          <div
-            class="pointer-events-none select-none text-xs font-semibold rounded-md py-1 px-3 bg-gray-200 text-gray-600"
-            title="Pending order in progress"
-          >
-            Pending… {{ remainingClock }}
-          </div>
-        </div> -->
 
         <p v-if="submitError" class="text-red-500 text-xs mt-2">{{ submitError }}</p>
         <p v-if="submitSuccess" class="text-green-500 text-xs mt-2">{{ submitSuccess }}</p>
@@ -205,17 +178,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import ChatCard from '@/components/futures/ChatCard.vue'
 
-/* =========================
-   Pinia modal helpers
-========================= */
-const modal = useApiAlertStore()
-const alertSuccess = (msg: string, onClose?: () => void) => modal.open('Success', msg, onClose)
-const alertError = (msg: string, onClose?: () => void) => modal.open('Error', msg, onClose)
-const submitError = ref<string | null>(null)
-const submitSuccess = ref<string | null>(null)
-/* =========================
-   API helpers
-========================= */
+/* ===== ALERT pakai Pinia store ===== */
+const apiAlert = useApiAlertStore()
+const alertSuccess = (msg: string, onClose?: () => void) => apiAlert.open('Success', msg, onClose)
+const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error', msg, onClose)
+
+/* ===== Helpers API ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 async function authFetch(path: string, init: RequestInit = {}) {
   const token = localStorage.getItem('token')
@@ -232,9 +200,7 @@ async function authFetch(path: string, init: RequestInit = {}) {
   return { text, json: () => JSON.parse(text) }
 }
 
-/* =========================
-   Formatters
-========================= */
+/* ===== Formatters ===== */
 function fmtUSDT(n: number): string {
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
@@ -245,20 +211,13 @@ function fmtMoney(n: number, dp = 4): string {
   if (!Number.isFinite(n)) return '0'
   return n.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
 }
-// function signedPercent(v: number): string {
-//   if (!Number.isFinite(v)) return '0.00%'
-//   const s = v >= 0 ? '+' : ''
-//   return s + v.toFixed(2) + '%'
-// }
 function signedMoney(v: number, dp = 2): string {
   if (!Number.isFinite(v)) return '0'
   const s = v >= 0 ? '+' : ''
   return s + v.toFixed(dp)
 }
 
-/* =========================
-   Page state
-========================= */
+/* ===== Types & state ===== */
 type Trader = {
   id: number
   name: string
@@ -293,8 +252,7 @@ let isAlive = true
 const finalizeControllers = new Map<number, AbortController>()
 onUnmounted(() => {
   isAlive = false
-  // cancel any in-flight finalize requests
-  finalizeControllers.forEach((ctrl) => ctrl.abort())
+  finalizeControllers.forEach((c) => c.abort())
   finalizeControllers.clear()
 })
 
@@ -322,18 +280,39 @@ const paramSlug = computed(() => {
   return (raw ?? '').toString().trim()
 })
 
+/* ===== [ACCESS GUARD] ===== */
+async function ensureAccess(slug: string): Promise<boolean> {
+  try {
+    const code = sessionStorage.getItem(`copy_access:${slug}`) || ''
+    const { json } = await authFetch(`/copy-traders/${encodeURIComponent(slug)}/access-verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: code }),
+    })
+    const res = json() as { status: 'success' | 'error'; code: string }
+    if (res.status === 'success') return true
+    alertError('Akses ditolak')
+  } catch {
+    alertError('Gagal memverifikasi akses')
+  }
+  router.replace('/futures')
+  return false
+}
+
+/* ===== Load Trader ===== */
 async function loadTrader(slug: string) {
   loading.value = true
   pageError.value = null
   trader.value = null
   avatarBroken.value = false
   try {
+    const ok = await ensureAccess(slug)
+    if (!ok) return
+
     const { json } = await authFetch(`/data-lable-copy-trading/${encodeURIComponent(slug)}`)
     trader.value = json() as Trader
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
-    // 404 handled as "No Data Available"
-    if (String(e.message).startsWith('HTTP 404')) {
+    if (String(e?.message || '').startsWith('HTTP 404')) {
       trader.value = null
     } else {
       pageError.value = e?.message ?? 'Failed to load data.'
@@ -350,9 +329,7 @@ function goHistory() {
   router.push({ path: `/futures/${slug}/history` })
 }
 
-/* =========================
-   Balance & amount validation
-========================= */
+/* ===== Balance & amount validation ===== */
 interface SaldoApi {
   status: 'success' | 'unauthorized'
   saldo?: string
@@ -370,7 +347,6 @@ async function fetchSaldo() {
     if (data.status !== 'success') throw new Error('API status != success')
     saldo.value = Number(data.saldo ?? 0)
     komisi.value = Number(data.komisi ?? 0)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     alertError(e?.message ?? 'Failed to load balance')
   } finally {
@@ -382,12 +358,7 @@ const amount = ref<string>('') // input value
 const amountError = ref<string>('') // input-level error
 
 const netCopyAmount = computed(() => {
-  // if there’s a pending order, use its amount
-  if (hasPendingOrder.value && activePending.value) {
-    return fmtMoney(activePending.value.amount, 4)
-  }
-
-  // otherwise use the input
+  if (hasPendingOrder.value && activePending.value) return fmtMoney(activePending.value.amount, 4)
   const raw = (amount.value || '').replace(',', '.').trim()
   const n = Number(raw)
   return Number.isFinite(n) && n > 0 ? fmtMoney(n, 4) : '0.0000'
@@ -411,21 +382,16 @@ watch(amount, (val) => {
 })
 
 const showSummary = computed(() => {
-  // If there’s an active pending tx, always show the summary
-  if (hasPendingForPnl.value) return true // or use hasPendingOrder / !!activePending.value
-
-  // Otherwise, require a valid amount
+  if (hasPendingForPnl.value) return true
   const raw = (amount.value || '').trim()
   if (!raw) return false
   const n = Number(raw.replace(',', '.'))
   return Number.isFinite(n) && n > 0 && !amountError.value
 })
 
-/* =========================
-   TP / SL
-========================= */
-const tp = ref<number | null>(null) // integer 1..100 (server enforces >0)
-const sl = ref<number | null>(null) // select 10..100
+/* ===== TP / SL ===== */
+const tp = ref<number | null>(null)
+const sl = ref<number | null>(null)
 
 async function fetchTakeProfit(): Promise<void> {
   try {
@@ -433,40 +399,36 @@ async function fetchTakeProfit(): Promise<void> {
     if (!token) throw new Error('Unauthorized.')
 
     const res = await fetch(`${API_BASE}/users/me/take-profit`, {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
     })
     if (!res.ok) {
-      // server kadang balas text/plain untuk error
       let msg = `HTTP ${res.status}`
       try {
         msg = await res.text()
       } catch {}
       throw new Error(msg)
     }
-
-    const data = await res.json() // { id: number, take_profit: number }
+    const data = await res.json()
     const v = Number(data?.take_profit)
     tp.value = Number.isInteger(v) && v > 0 ? v : null
   } catch {
     tp.value = null
-    // opsional: tampilkan modal/toast kamu di sini
-    // modal.open('Error', 'Failed to fetch take profit.')
   }
 }
 
 onMounted(fetchTakeProfit)
 
-/* =========================
-   Pending TX (localStorage) + PnL animation
-========================= */
+/* ===== Pending TX & PnL animation ===== */
 type PendingTx = { id: number; expiresAt: number; amount: number; tp: number }
 const LS_KEY = 'pendingTxs'
 const TTL_MS = 5 * 60 * 1000
 
 const pendingList = ref<PendingTx[]>([])
+
+// penanda tx yang sudah pernah mengurangi saldo lokal
+let processedSaldoTxIds = new Set<number>()
+// guard agar tidak mengurangi saldo pada load awal
+let initSaldoSyncDone = false
 
 function loadPending() {
   try {
@@ -478,6 +440,28 @@ function loadPending() {
     pendingList.value = []
   }
 }
+
+// Kurangi saldo lokal ketika ada pending tx BARU
+watch(
+  pendingList,
+  (newList) => {
+    // skip pengurangan pada load awal: tandai semua id sebagai sudah diproses
+    if (!initSaldoSyncDone) {
+      processedSaldoTxIds = new Set<number>(newList.map((t) => t.id))
+      initSaldoSyncDone = true
+      return
+    }
+    for (const tx of newList) {
+      if (!processedSaldoTxIds.has(tx.id)) {
+        // tx baru → kurangi saldo lokal agar langsung terlihat
+        saldo.value = Math.max(0, saldo.value - tx.amount)
+        processedSaldoTxIds.add(tx.id)
+      }
+    }
+  },
+  { deep: true },
+)
+
 function savePending() {
   localStorage.setItem(LS_KEY, JSON.stringify(pendingList.value))
 }
@@ -492,7 +476,6 @@ function removePendingTx(id: number) {
   savePending()
 }
 
-// keep `now` ticking for progress calc
 const nowTick = ref(Date.now())
 let tickHandle: number | undefined
 
@@ -500,7 +483,6 @@ const activePending = computed<PendingTx | null>(() => {
   if (!pendingList.value.length) return null
   return [...pendingList.value].sort((a, b) => a.expiresAt - b.expiresAt)[0]
 })
-
 const progress = computed(() => {
   const p = activePending.value
   if (!p) return 0
@@ -520,26 +502,12 @@ const currentTotal = computed(() => {
   return p.amount + currentProfit.value
 })
 const hasPendingForPnl = computed(() => !!activePending.value)
-
-// Reuse hasPendingForPnl as the “order lock”
 const hasPendingOrder = computed(() => hasPendingForPnl.value)
 
-// const remainingMs = computed(() => {
-//   const p = activePending.value
-//   return p ? Math.max(0, p.expiresAt - nowTick.value) : 0
-// })
-// const remainingClock = computed(() => {
-//   const ms = remainingMs.value
-//   const mm = Math.floor(ms / 60000)
-//   const ss = Math.floor((ms % 60000) / 1000)
-//   return `${mm}:${String(ss).padStart(2, '0')}`
-// })
-
-// finalize
+/* ===== finalize ===== */
 async function finalizeWinLose(txId: number) {
   const ctrl = new AbortController()
   finalizeControllers.set(txId, ctrl)
-
   try {
     const { json } = await authFetch('/win-lose/finalize', {
       method: 'POST',
@@ -547,45 +515,33 @@ async function finalizeWinLose(txId: number) {
       body: JSON.stringify({ transaction_id: txId }),
       signal: ctrl.signal,
     })
-
     const data = json()
-
-    // always update storage + server-side balance, even if user navigates
     removePendingTx(txId)
     await fetchSaldo()
-
-    // show success only if this component is still mounted
-    if (isAlive) {
-      alertSuccess('Take Profit Reached. Your position has hit the target profit')
-    }
-
+    if (isAlive) alertSuccess('Take Profit Reached. Your position has hit the target profit')
     return data
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
-    // ignore aborts caused by unmount/navigation
     if (e?.name === 'AbortError') return
     throw e
   } finally {
     finalizeControllers.delete(txId)
   }
 }
-
 function scheduleFinalize(txId: number, expiresAt: number) {
   const delay = Math.max(0, expiresAt - Date.now())
   window.setTimeout(() => {
-    finalizeWinLose(txId).catch((e) => {
-      console.error('Finalize failed:', e) // left pending; will retry on next mount
-    })
+    finalizeWinLose(txId).catch((e) => console.error('Finalize failed:', e))
   }, delay)
 }
 
-/* =========================
-   Submit
-========================= */
+/* ===== Submit ===== */
+const submitError = ref<string | null>(null)
+const submitSuccess = ref<string | null>(null)
 const loadingSubmit = ref(false)
+
 async function submitWinLose() {
   if (hasPendingOrder.value) {
-    return alertError(`You already have a pending order. Please wait to place a new one.`)
+    return alertError('You already have a pending order. Please wait to place a new one.')
   }
 
   const normalized = (amount.value || '').replace(',', '.').trim()
@@ -603,7 +559,7 @@ async function submitWinLose() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id_copy_traders: trader.value?.id, // <-- kirim id copy trader
+        id_copy_traders: trader.value?.id, // kirim id copy trader
         amount: amt,
         take_profit: tp.value,
         stop_loss: sl.value,
@@ -612,19 +568,14 @@ async function submitWinLose() {
     })
     const data = json() as { status: 'success'; transaction_id: number }
 
-    // store + schedule finalize (you already have these)
+    // Simpan pending → watcher akan otomatis mengurangi saldo lokal sekali saja
     addPendingTx(data.transaction_id, amt, tp.value)
+
+    // Jadwalkan finalize
     const p = activePending.value || pendingList.value.find((x) => x.id === data.transaction_id)
     if (p) scheduleFinalize(p.id, p.expiresAt)
 
-    // success notice (as you asked earlier)
-    alertSuccess(
-      'Order created.',
-      () => {
-        amount.value = ''
-      }, // don’t refresh balance here; it changes on finalize
-    )
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    alertSuccess('Order created.')
   } catch (e: any) {
     alertError(e?.message ?? 'Submit failed')
   } finally {
@@ -632,9 +583,7 @@ async function submitWinLose() {
   }
 }
 
-/* =========================
-   Lifecycle
-========================= */
+/* ===== Lifecycle ===== */
 watch(
   paramSlug,
   (s) => {
@@ -649,22 +598,25 @@ watch(
 )
 
 onMounted(() => {
-  // start 1s ticker
+  // 1s ticker
   tickHandle = window.setInterval(() => {
     nowTick.value = Date.now()
   }, 1000)
+
   // initial saldo + pending tx
   fetchSaldo()
   loadPending()
-  // schedule pending that exist
+
+  // schedule existing pending
   const now = Date.now()
   pendingList.value.forEach((tx) => {
     if (tx.expiresAt <= now) finalizeWinLose(tx.id).catch(console.error)
     else scheduleFinalize(tx.id, tx.expiresAt)
   })
-  // keep in sync if other tabs modify localStorage
+
+  // sync across tabs; watcher akan kurangi saldo untuk tx baru dari tab lain
   window.addEventListener('storage', (e) => {
-    if (e.key === LS_KEY) loadPending()
+    if (e.key === 'pendingTxs') loadPending()
   })
 })
 onUnmounted(() => {

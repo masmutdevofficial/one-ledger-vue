@@ -161,13 +161,24 @@
           <Icon icon="tabler:clock" class="w-3 h-3" />
           <span>{{ trade.time }}</span>
         </div>
-        <button
-          class="bg-teal-500 text-white text-xs font-semibold rounded-md px-6 py-1"
-          type="button"
-          @click="goDetail(trade.id)"
-        >
-          Buy
-        </button>
+
+        <!-- BUY & SELL buttons -->
+        <div class="flex items-center gap-2">
+          <button
+            class="bg-teal-500 text-white text-xs font-semibold rounded-md px-6 py-1"
+            type="button"
+            @click="goDetail(trade.id)"
+          >
+            Buy
+          </button>
+          <button
+            class="bg-red-500 text-white text-xs font-semibold rounded-md px-6 py-1"
+            type="button"
+            @click="goDetailSell(trade.id)"
+          >
+            Sell
+          </button>
+        </div>
       </div>
 
       <div
@@ -198,6 +209,9 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 function goDetail(tradeId: number) {
   router.push(`/p2p-detail?id=${tradeId}`)
+}
+function goDetailSell(tradeId: number) {
+  router.push(`/p2p-detail-sell?id=${tradeId}`)
 }
 
 type Trade = {
@@ -312,7 +326,6 @@ function mapRow(r: ApiRow): Trade {
 function overlaps(aMin: number, aMax: number, bMin: number, bMax: number) {
   return aMax >= bMin && aMin <= bMax
 }
-
 function limitBand(preset: LimitPreset): [number, number] | null {
   switch (preset) {
     case 'ALL':

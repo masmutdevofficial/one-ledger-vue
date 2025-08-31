@@ -23,15 +23,8 @@
         type="button"
         disabled
       >
-        <img
-          alt="USDT currency icon in teal circle"
-          class="w-5 h-5"
-          height="20"
-          src="https://storage.googleapis.com/a1aa/image/bbb0943e-27ab-4116-efaf-7d0fc453e2e5.jpg"
-          width="20"
-        />
+        <img src="/img/crypto/usdt.svg" alt="USDT" class="w-5 h-5 rounded-full object-contain" />
         <span>USDT</span>
-        <Icon icon="tabler:chevron-down" class="w-3 h-3 text-black" />
       </button>
       <input
         v-model="amount"

@@ -127,6 +127,14 @@ const routes = [
         component: () => import('@/views/menu/P2PCheckout.vue'),
       },
       {
+        path: 'p2p-detail-sell',
+        component: () => import('@/views/menu/P2PDetailSell.vue'),
+      },
+      {
+        path: 'p2p-checkout-sell',
+        component: () => import('@/views/menu/P2PCheckoutSell.vue'),
+      },
+      {
         path: 'event',
         component: () => import('@/views/menu/WeeklyEvent.vue'),
       },

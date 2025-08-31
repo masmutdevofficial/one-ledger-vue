@@ -16,12 +16,11 @@
 
     <!-- Filter bar -->
     <div class="flex items-center space-x-4 text-xs text-gray-400 mb-4 select-none">
-      <!-- 30D tanpa ikon -->
       <div class="flex items-center">
         <span>30D</span>
       </div>
 
-      <!-- PnL filter (dropdown: Terbanyak / Terkecil) -->
+      <!-- PnL filter -->
       <div class="relative">
         <button
           type="button"
@@ -59,7 +58,7 @@
       </div>
     </div>
 
-    <!-- List items (pakai hasil sorting) -->
+    <!-- List items -->
     <ul class="space-y-6">
       <li
         v-for="item in sortedTraders"
@@ -104,7 +103,7 @@
             v-if="item.button === 'Join'"
             class="bg-teal-300 text-white text-sm rounded-lg px-4 py-1 shadow-[0_0_8px_rgba(0,0,0,0.1)] select-none"
             type="button"
-            @click="goToFutures(item.username)"
+            @click="join(item)"
           >
             Join
           </button>
@@ -118,7 +117,7 @@
           </button>
         </div>
 
-        <!-- Label bar: pakai label dari API -->
+        <!-- Label bar -->
         <div class="flex justify-between text-xs text-gray-400 select-none">
           <span>{{ item.labelPnl }}</span>
           <span>{{ item.labelAum }}</span>
@@ -158,12 +157,92 @@
       </li>
     </ul>
   </div>
+
+  <!-- Modal Password -->
+  <div
+    v-if="modal.open"
+    class="fixed inset-0 z-51 flex items-center justify-center"
+    aria-modal="true"
+    role="dialog"
+  >
+    <div class="absolute inset-0 bg-black/30" @click="closeModal"></div>
+
+    <form
+      class="relative z-10 w-[92%] max-w-sm rounded-2xl bg-white p-5 shadow-lg"
+      @submit.prevent="submitPassword"
+    >
+      <div class="mb-3">
+        <h3 class="text-base font-semibold">Masukkan Password</h3>
+        <p class="mt-1 text-xs text-gray-500 select-none">
+          Akses untuk <b>{{ modal.trader?.username }}</b> dilindungi password.
+        </p>
+      </div>
+
+      <label class="block text-xs text-gray-600 mb-1 select-none">Password</label>
+      <input
+        v-model="modal.password"
+        type="password"
+        inputmode="text"
+        autocomplete="current-password"
+        required
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+      />
+
+      <p v-if="modal.error" class="mt-2 text-xs text-red-600">{{ modal.error }}</p>
+
+      <div class="mt-4 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          class="text-xs px-3 py-1.5 rounded border border-gray-300"
+          @click="closeModal"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          class="text-xs px-3 py-1.5 rounded bg-teal-500 text-white disabled:opacity-60"
+          :disabled="modal.loading"
+        >
+          {{ modal.loading ? 'Memeriksa…' : 'Masuk' }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ALERT (lokal) -->
+  <div
+    v-if="alert.open"
+    class="fixed z-[60] top-4 left-1/2 -translate-x-1/2 max-w-md mx-4"
+    role="alert"
+    aria-live="assertive"
+  >
+    <div
+      class="flex items-start gap-2 rounded-xl border px-3 py-2 shadow bg-white"
+      :class="alert.type === 'success' ? 'border-teal-300' : 'border-red-300'"
+    >
+      <Icon
+        v-if="alert.type === 'success'"
+        icon="tabler:circle-check"
+        class="w-5 h-5 text-teal-600 mt-0.5"
+      />
+      <Icon v-else icon="tabler:alert-triangle" class="w-5 h-5 text-red-600 mt-0.5" />
+      <div class="text-sm text-gray-900 flex-1">{{ alert.message }}</div>
+      <button
+        type="button"
+        class="shrink-0 p-1 rounded hover:bg-gray-100"
+        aria-label="Tutup"
+        @click="closeAlert()"
+      >
+        <Icon icon="tabler:x" class="w-4 h-4 text-gray-500" />
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted, nextTick } from 'vue'
 
 const router = useRouter()
 
@@ -181,13 +260,11 @@ type ApiRow = {
   is_featured: boolean | 0 | 1
   copies_used: number
   copies_limit: number
-
   text_pnl_30d?: string | null
   text_roi_30d_pct?: string | null
   text_mdd_30d_pct?: string | null
   text_aum?: string | null
   text_sharpe_ratio?: string | null
-
   pnl_30d: number
   roi_30d_pct: number
   mdd_30d_pct: number
@@ -206,8 +283,8 @@ interface CopyTrader {
   followerLabel2: string
   showClock?: boolean
   button: 'Join' | 'Full'
-  pnl: string // formatted
-  pnlNum: number // numeric for sorting
+  pnl: string
+  pnlNum: number
   pnlClass: string
   roi: string
   aum: string
@@ -215,14 +292,11 @@ interface CopyTrader {
   sharpe: string
   chartSeries: number[]
   chartCategories?: string[]
-
-  // labels dari API
   labelPnl: string
   labelRoi: string
   labelAum: string
   labelMdd: string
   labelSharpe: string
-
   slug?: string
 }
 
@@ -260,7 +334,6 @@ function mapRow(r: ApiRow): CopyTrader {
     followerLabel1: String(r.copies_used),
     followerLabel2: `/${r.copies_limit}`,
     showClock: !!r.is_featured,
-
     button: isFull ? 'Full' : 'Join',
     pnl: toSignedMoney(r.pnl_30d),
     pnlNum: r.pnl_30d,
@@ -269,15 +342,11 @@ function mapRow(r: ApiRow): CopyTrader {
     aum: fmt2(r.aum),
     mddValue: toPct(r.mdd_30d_pct),
     sharpe: String(r.sharpe_ratio),
-
-    // labels dinamis (fallback kalau kosong)
     labelPnl: lbl(r.text_pnl_30d, '30D PnL'),
     labelRoi: lbl(r.text_roi_30d_pct, '30D ROI'),
     labelAum: lbl(r.text_aum, 'AUM'),
     labelMdd: lbl(r.text_mdd_30d_pct, '30D MDD'),
     labelSharpe: lbl(r.text_sharpe_ratio, 'Sharpe Ratio'),
-
-    // sparkline dummy (UI tetap)
     chartSeries: [10, 20, 15, 25, 20, 35, 28],
     chartCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   }
@@ -286,8 +355,7 @@ function mapRow(r: ApiRow): CopyTrader {
 /** ==== Filter PnL ==== */
 const showPnl = ref(false)
 type PnlOrder = 'ASC' | 'DESC'
-const pnlOrder = ref<PnlOrder>('DESC') // default: Terbanyak (highest first)
-
+const pnlOrder = ref<PnlOrder>('DESC')
 function togglePnlMenu() {
   showPnl.value = !showPnl.value
 }
@@ -300,13 +368,11 @@ function closePnl() {
 
 const sortedTraders = computed(() => {
   const arr = copyTraders.value.slice()
-  arr.sort((a, b) => {
-    return pnlOrder.value === 'DESC' ? b.pnlNum - a.pnlNum : a.pnlNum - b.pnlNum
-  })
+  arr.sort((a, b) => (pnlOrder.value === 'DESC' ? b.pnlNum - a.pnlNum : a.pnlNum - b.pnlNum))
   return arr
 })
 
-/** ==== Fetch data dari API ==== */
+/** ==== Fetch data ==== */
 onMounted(async () => {
   try {
     const token = localStorage.getItem('token')
@@ -316,12 +382,8 @@ onMounted(async () => {
     }
 
     const res = await fetch('https://one-ledger.masmutpanel.my.id/api/data-lable-copy-trading', {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
     })
-
     if (!res.ok) throw new Error(String(res.status))
     const data: ApiRow[] = await res.json()
     copyTraders.value = Array.isArray(data) ? data.map(mapRow) : []
@@ -330,10 +392,170 @@ onMounted(async () => {
   }
 })
 
-/** ==== Navigasi ==== */
-function goToFutures(username: string) {
-  const item = copyTraders.value.find((i) => i.username === username)
-  const slug = item?.slug || slugify(username)
-  router.push(`/futures/${slug}`)
+/** ==== ALERT lokal ==== */
+type AlertType = 'success' | 'error'
+const alert = ref<{ open: boolean; type: AlertType; message: string; _t?: number | null }>({
+  open: false,
+  type: 'success',
+  message: '',
+  _t: null,
+})
+function openAlert(type: AlertType, message: string, timeoutMs = 2500) {
+  closeAlert()
+  alert.value.open = true
+  alert.value.type = type
+  alert.value.message = message
+  alert.value._t = window.setTimeout(() => closeAlert(), timeoutMs)
 }
+function closeAlert() {
+  if (alert.value._t) {
+    clearTimeout(alert.value._t)
+    alert.value._t = null
+  }
+  alert.value.open = false
+}
+onUnmounted(() => closeAlert())
+
+/** ==== Modal & Join Flow ==== */
+
+interface ModalState {
+  open: boolean
+  trader: CopyTrader | null
+  password: string
+  loading: boolean
+  error: string | null
+}
+const modal = ref<ModalState>({
+  open: false,
+  trader: null,
+  password: '',
+  loading: false,
+  error: null,
+})
+
+async function join(item: CopyTrader) {
+  try {
+    const token = localStorage.getItem('token')?.trim() ?? ''
+    if (!token) {
+      openAlert('error', 'Anda belum login.')
+      return
+    }
+
+    const slug = item.slug || slugify(item.username)
+
+    // Cek status password
+    const resStatus = await fetch(
+      `https://one-ledger.masmutpanel.my.id/api/copy-traders/${encodeURIComponent(slug)}/password-status`,
+      { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } },
+    )
+
+    if (resStatus.status === 404) {
+      openAlert('error', 'Copy trader tidak ditemukan.')
+      return
+    }
+    if (!resStatus.ok) {
+      openAlert('error', `Gagal memeriksa status password (${resStatus.status}).`)
+      return
+    }
+
+    const { has_password } = (await resStatus.json()) as { has_password: boolean }
+
+    if (!has_password) {
+      sessionStorage.setItem(`copy_access:${slug}`, '')
+      openAlert('success', 'Akses terbuka. Masuk...')
+      router.push(`/futures/${slug}`)
+      return
+    }
+
+    // Ada password -> buka modal
+    modal.value.open = true
+    modal.value.trader = item
+    modal.value.password = ''
+    modal.value.error = null
+    await nextTick()
+  } catch {
+    openAlert('error', 'Terjadi kesalahan saat memeriksa akses.')
+  }
+}
+
+async function submitPassword() {
+  if (!modal.value.trader) return
+  // simpan dulu target sebelum modal direset
+  const t = modal.value.trader
+  const slug = t.slug || slugify(t.username)
+
+  try {
+    modal.value.loading = true
+    modal.value.error = null
+
+    const token = localStorage.getItem('token')?.trim() ?? ''
+    if (!token) {
+      modal.value.loading = false
+      openAlert('error', 'Anda belum login.')
+      return
+    }
+
+    const res = await fetch(
+      `https://one-ledger.masmutpanel.my.id/api/copy-traders/${encodeURIComponent(slug)}/password-check`,
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password: modal.value.password }),
+      },
+    )
+
+    if (res.status === 404) {
+      modal.value.loading = false
+      openAlert('error', 'Copy trader tidak ditemukan.')
+      return
+    }
+    if (!res.ok) {
+      modal.value.loading = false
+      openAlert('error', `Gagal memvalidasi password (${res.status}).`)
+      return
+    }
+
+    const raw = await res.text()
+    const data = JSON.parse(raw) as
+      | { status: 'success'; code: 'OK' | 'NO_PASSWORD_SET'; bcrypt?: string }
+      | { status: 'error'; code: 'INVALID_PASSWORD'; bcrypt?: string }
+
+    if (data.status === 'success') {
+      // simpan credential akses untuk halaman detail (opsional)
+      sessionStorage.setItem(`copy_access:${slug}`, modal.value.password)
+      if (data.bcrypt) sessionStorage.setItem(`copy_access_bcrypt:${slug}`, data.bcrypt)
+
+      closeModal() // aman dipanggil sekarang
+      openAlert('success', 'Password valid. Masuk...')
+      // langsung ke detail pakai slug (tanpa mencari username)
+      router.push(`/futures/${slug}`)
+    } else {
+      modal.value.error = 'Password salah. Coba lagi.'
+      openAlert('error', 'Password salah.')
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e) {
+    openAlert('error', 'Terjadi kesalahan saat validasi password.')
+  } finally {
+    modal.value.loading = false
+  }
+}
+
+function closeModal() {
+  modal.value.open = false
+  modal.value.trader = null
+  modal.value.password = ''
+  modal.value.error = null
+}
+
+/** Escape untuk tutup modal */
+function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && modal.value.open) closeModal()
+}
+window.addEventListener('keydown', onKey)
+onUnmounted(() => window.removeEventListener('keydown', onKey))
 </script>

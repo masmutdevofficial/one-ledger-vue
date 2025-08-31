@@ -63,7 +63,11 @@
               class="absolute -top-1 -right-1 inline-flex w-3 h-3 rounded-full bg-red-500/70 ring-2 ring-white badge-pulse"
               aria-hidden="true"
             />
-            <img :src="item.img" :alt="item.label" class="w-7 h-7 object-contain" />
+            <img
+              :src="item.img"
+              :alt="item.label"
+              :class="['object-contain', isP2PItem(item) ? 'w-5 h-5' : 'w-7 h-7']"
+            />
           </div>
           <span class="mt-2 text-xs text-gray-700 text-center font-semibold">{{ item.label }}</span>
         </RouterLink>
@@ -247,12 +251,15 @@ interface MenuItem {
 }
 const items: MenuItem[] = [
   { label: 'Arbitrage', to: '/smart-arbitrage', img: '/img/robot-logo.png' },
-  { label: 'Hub reward', to: '/hub-rewards', img: '/img/newmenu/hub-reward.png' },
+  { label: 'P2P', to: '/p2p', img: '/img/P2P.png' },
   { label: 'Megadrop', to: '/megadrop', img: '/img/newmenu/megadrop.png' },
-  { label: 'LaunchPool', to: '/launchpool', img: '/img/newmenu/launchpool.png' },
+  { label: 'Copy Trade', to: '/futures', img: '/img/CopyTrade.png' },
   { label: 'Event', to: '/event', img: '/img/newmenu/event.png' },
   { label: 'More', to: '/account', img: '/img/newmenu/more.png' },
 ]
+
+const isP2PItem = (item: MenuItem) => item.label?.toLowerCase() === 'p2p'
+
 const router = useRouter()
 
 /** ===== Cache Dashboard (dipertahankan dari kode Anda) ===== */

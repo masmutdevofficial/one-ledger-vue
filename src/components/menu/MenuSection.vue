@@ -13,6 +13,8 @@ interface MenuItem {
 
 const router = useRouter()
 
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+
 const showLanguageSelector = ref(false)
 const selectedLang = ref(localStorage.getItem('language') || 'en')
 const showLogoutModal = ref(false)
@@ -38,10 +40,26 @@ function updateLanguage(lang: string) {
   showLanguageSelector.value = false
 }
 
-const logout = () => {
-  localStorage.removeItem('token')
-  showLogoutModal.value = false
-  router.replace('/login')
+const logout = async () => {
+  const token = localStorage.getItem('token')
+
+  try {
+    if (token) {
+      await fetch(`${API_BASE}/logout`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+    }
+  } catch (_) {
+    // abaikan error jaringan
+  } finally {
+    localStorage.removeItem('token')
+    showLogoutModal.value = false
+    router.replace('/login')
+  }
 }
 </script>
 
@@ -69,6 +87,7 @@ const logout = () => {
       </div>
       <Icon icon="tabler:chevron-right" class="text-gray-400" />
     </RouterLink>
+
     <button
       v-for="item in menuItems"
       :key="item.title"

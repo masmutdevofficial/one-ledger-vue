@@ -38,12 +38,8 @@ function goOnChainDeposit(): void {
         type="button"
         class="flex items-center gap-1 border border-gray-300 rounded-full px-3 py-1 text-[10px] font-semibold hover:bg-gray-50"
       >
-        <span
-          class="bg-yellow-300 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold text-black"
-        >
-          $
-        </span>
-        <span>USD</span>
+        <img src="/img/crypto/usdt.svg" alt="USDT" class="w-5 h-5 rounded-full object-contain" />
+        <span>USDT</span>
       </button>
     </div>
 
