@@ -27,24 +27,14 @@
 
         <div class="flex items-baseline justify-between">
           <div class="flex items-center space-x-2">
-            <input
-              v-model.number="amountUsdt"
-              type="number"
-              step="0.01"
-              min="0"
-              inputmode="decimal"
-              placeholder="100"
+            <input v-model.number="amountUsdt" type="number" step="0.01" min="0" inputmode="decimal" placeholder="100"
               class="bg-transparent outline-none border-b border-gray-300 focus:border-teal-500 text-3xl font-extrabold leading-none w-36"
-              aria-label="Amount in USDT"
-            />
+              aria-label="Amount in USDT" />
             <span class="text-base font-semibold pt-1">USDT</span>
           </div>
 
-          <button
-            type="button"
-            class="text-yellow-500 font-semibold text-sm select-none hover:underline"
-            @click="onClickMax"
-          >
+          <button type="button" class="text-yellow-500 font-semibold text-sm select-none hover:underline"
+            @click="onClickMax">
             Max
           </button>
         </div>
@@ -65,7 +55,7 @@
         <p class="font-semibold mb-3">Advertiser's Requirements</p>
 
         <div class="flex items-center justify-between mb-1">
-          <p class="font-bold text-sm flex items-center gap-1">
+          <p class="text-sm font-bold flex items-center gap-1">
             <span>{{ offer?.advertiser_name }}</span>
           </p>
 
@@ -87,12 +77,9 @@
         </ul>
       </section>
 
-      <button
-        type="button"
+      <button type="button"
         class="w-full mt-8 bg-teal-500 text-white text-base font-normal py-3 rounded-lg hover:bg-green-700 disabled:opacity-60"
-        :disabled="submitLoading || !amountUsdt || amountUsdt <= 0 || !idParam"
-        @click="placeOrder"
-      >
+        :disabled="submitLoading || !amountUsdt || amountUsdt <= 0 || !idParam" @click="placeOrder">
         <span v-if="submitLoading">Processing…</span>
         <span v-else>Place Sell Order</span>
       </button>
@@ -112,7 +99,7 @@ const modal = useApiAlertStore()
 
 function goBack() {
   if (window.history.length > 1) router.back()
-  else router.push('/sell-p2p') // arahkan ke halaman list SELL
+  else router.push('/sell-p2p')
 }
 
 type ApiRow = {
@@ -125,7 +112,7 @@ type ApiRow = {
   side: 'buy' | 'sell'
   asset_symbol: string
   fiat_currency: string
-  price_fiat: number // rate IDR per 1 USDT
+  price_fiat: number
   limit_min_fiat: number
   limit_max_fiat: number
   available_asset: number
@@ -138,14 +125,13 @@ const loading = ref(true)
 const errorMsg = ref<string | null>(null)
 const offer = ref<ApiRow | null>(null)
 
-// ===== Amount & submit state
 const amountUsdt = ref<number | null>(null)
 const submitLoading = ref(false)
 
 const idParam = computed<number | null>(() => {
   const raw = route.query.id
   if (raw == null) return null
-  const n = Number(raw)
+  const n = Number(Array.isArray(raw) ? raw[0] : raw)
   return Number.isInteger(n) && n > 0 ? n : null
 })
 
@@ -168,6 +154,37 @@ function clampToAvailable(usdt: number): number {
   return Math.min(usdt, offer.value.available_asset)
 }
 
+/** ===== Saldo API ===== */
+type SaldoRespSuccess = { status: 'success'; saldo: number; komisi: number }
+type SaldoRespError = { status: 'error'; message: string }
+type SaldoResponse = SaldoRespSuccess | SaldoRespError
+
+async function fetchSaldo(): Promise<number> {
+  const token = localStorage.getItem('token')
+  if (!token) throw new Error('Unauthorized.')
+
+  const res = await fetch('https://one-ledger.masmutpanel.my.id/api/saldo', {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+  })
+
+  let data: SaldoResponse
+  try {
+    data = (await res.json()) as SaldoResponse
+  } catch {
+    throw new Error(`Failed to parse saldo response (HTTP ${res.status}).`)
+  }
+
+  if (!res.ok) {
+    const msg = 'message' in data ? data.message : `Request failed (HTTP ${res.status}).`
+    throw new Error(msg)
+  }
+  if (data.status !== 'success') throw new Error('Failed to fetch saldo.')
+
+  const s = Number(data.saldo)
+  if (!Number.isFinite(s) || s < 0) throw new Error('Invalid saldo value.')
+  return s
+}
+
 async function fetchOffer() {
   const token = localStorage.getItem('token')
   if (!token) throw new Error('Unauthorized.')
@@ -179,25 +196,34 @@ async function fetchOffer() {
     try {
       const j = await res.json()
       if (j?.message) msg = j.message
-    } catch {}
+    } catch { }
     throw new Error(msg)
   }
-  offer.value = await res.json()
+  offer.value = (await res.json()) as ApiRow
 }
 
-function onClickMax() {
-  if (!offer.value) return
-  const rate = offer.value.price_fiat
-  if (!rate || rate <= 0) {
-    modal.open('Rate unavailable', 'Price rate (price_fiat) is not available.')
-    return
+async function onClickMax() {
+  try {
+    const saldo = await fetchSaldo() // Max = saldo user (diasumsikan dalam USDT)
+    let maxUsdt = saldo
+
+    // hormati ketersediaan advertiser
+    maxUsdt = clampToAvailable(maxUsdt)
+
+    // jika ada rate valid, jangan melewati limit_max_fiat
+    if (offer.value && offer.value.price_fiat > 0) {
+      const byLimit = offer.value.limit_max_fiat / offer.value.price_fiat
+      maxUsdt = Math.min(maxUsdt, byLimit)
+    }
+
+    amountUsdt.value = Number(maxUsdt.toFixed(2))
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Unknown error.'
+    modal.open('Gagal mengambil saldo', msg)
   }
-  // Max USDT berdasar limit_max_fiat & ketersediaan
-  const usdt = offer.value.limit_max_fiat / rate
-  amountUsdt.value = Number(clampToAvailable(usdt).toFixed(2))
 }
 
-// ===== Place Sell Order -> POST /api/withdraws
+/** ===== Place Sell Order -> POST /api/withdraws ===== */
 type WithdrawResp = {
   id: number
   order_id: string
@@ -247,14 +273,14 @@ async function placeOrder() {
     })
 
     if (!res.ok) {
-      // coba baca pesan error & case pending
-      let payloadErr: any = null
+      let payloadErr: unknown = null
       try {
         payloadErr = await res.json()
-      } catch {}
+      } catch { }
 
-      const msg = (payloadErr?.message ?? '').trim()
-      const inv = payloadErr?.invoice
+      const errObj = payloadErr as { message?: string; invoice?: string }
+      const msg = (errObj?.message ?? '').trim()
+      const inv = errObj?.invoice
       const isPendingMsg =
         msg === 'Complete your pending order before creating a new request.' ||
         msg === 'A pending withdrawal already exists.' ||

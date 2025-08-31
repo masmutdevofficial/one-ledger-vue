@@ -31,24 +31,18 @@
     <!-- Card 1: Deposit >= 100 -->
     <div class="border border-gray-200 rounded-lg mb-3 p-3">
       <div class="flex items-center space-x-3 mb-1">
-        <div
-          class="flex justify-center items-center w-8 h-8 rounded-full border border-gray-300 text-teal-500"
-        >
+        <div class="flex justify-center items-center w-8 h-8 rounded-full border border-gray-300 text-teal-500">
           <Icon icon="tabler:currency-dollar" class="w-4 h-4" />
         </div>
         <p class="text-gray-700 text-sm leading-5">Deposit a minimum of 100 USDT Via On Chain</p>
       </div>
       <div class="flex justify-between items-center text-xs text-gray-400">
         <span>Reward <span class="text-teal-500 font-semibold">$5.00</span></span>
-        <button
-          class="text-white text-xs rounded px-3 py-0.5 transition-colors"
-          :class="[
-            btnClass(claim.bonus_deposit_100),
-            isClaiming.deposit100 ? 'opacity-70 cursor-wait' : '',
-          ]"
-          :disabled="isDisabled(claim.bonus_deposit_100) || isClaiming.deposit100"
-          @click="onClaim('deposit100', claim.bonus_deposit_100)"
-        >
+        <button class="text-white text-xs rounded px-3 py-0.5 transition-colors" :class="[
+          btnClass(claim.bonus_deposit_100),
+          isClaiming.deposit100 ? 'opacity-70 cursor-wait' : '',
+        ]" :disabled="isDisabled(claim.bonus_deposit_100) || isClaiming.deposit100"
+          @click="onClaim('deposit100', claim.bonus_deposit_100)">
           {{ buttonText('deposit100', claim.bonus_deposit_100) }}
         </button>
       </div>
@@ -57,30 +51,23 @@
     <!-- Card 2: Deposit >= 1000 (Extra Rewards) -->
     <div class="border border-gray-200 rounded-lg mb-3 p-3 relative">
       <div
-        class="absolute top-0 left-0 bg-yellow-100 rounded-sm px-2 py-0.5 flex items-center text-yellow-600 text-[10px] font-semibold space-x-1 select-none"
-      >
+        class="absolute top-0 left-0 bg-yellow-100 rounded-sm px-2 py-0.5 flex items-center text-yellow-600 text-[10px] font-semibold space-x-1 select-none">
         <Icon icon="tabler:bolt" class="w-3 h-3" />
         <span>Extra Rewards</span>
       </div>
       <div class="flex items-center space-x-3 mb-1 mt-3">
-        <div
-          class="flex justify-center items-center w-8 h-8 rounded-full border border-gray-300 text-teal-500"
-        >
+        <div class="flex justify-center items-center w-8 h-8 rounded-full border border-gray-300 text-teal-500">
           <Icon icon="tabler:currency-dollar" class="w-4 h-4" />
         </div>
         <p class="text-gray-700 text-sm leading-5">Deposit a minimum of 1000 USDT Via On Chain</p>
       </div>
       <div class="flex justify-between items-center text-xs text-gray-400">
         <span>Reward <span class="text-teal-500 font-semibold">$50.00</span></span>
-        <button
-          class="text-white text-xs rounded px-3 py-0.5 transition-colors"
-          :class="[
-            btnClass(claim.bonus_deposit_1000),
-            isClaiming.deposit1000 ? 'opacity-70 cursor-wait' : '',
-          ]"
-          :disabled="isDisabled(claim.bonus_deposit_1000) || isClaiming.deposit1000"
-          @click="onClaim('deposit1000', claim.bonus_deposit_1000)"
-        >
+        <button class="text-white text-xs rounded px-3 py-0.5 transition-colors" :class="[
+          btnClass(claim.bonus_deposit_1000),
+          isClaiming.deposit1000 ? 'opacity-70 cursor-wait' : '',
+        ]" :disabled="isDisabled(claim.bonus_deposit_1000) || isClaiming.deposit1000"
+          @click="onClaim('deposit1000', claim.bonus_deposit_1000)">
           {{ buttonText('deposit1000', claim.bonus_deposit_1000) }}
         </button>
       </div>
@@ -89,9 +76,7 @@
     <!-- Card 3: SPOT volume >= 500 -->
     <div class="border border-gray-200 rounded-lg mb-3 p-3">
       <div class="flex items-center space-x-3 mb-1">
-        <div
-          class="flex justify-center items-center w-8 h-8 rounded-full border border-gray-300 text-teal-500"
-        >
+        <div class="flex justify-center items-center w-8 h-8 rounded-full border border-gray-300 text-teal-500">
           <Icon icon="tabler:currency-dollar" class="w-4 h-4" />
         </div>
         <p class="text-gray-700 text-sm leading-5">
@@ -100,15 +85,11 @@
       </div>
       <div class="flex justify-between items-center text-xs text-gray-400">
         <span>Reward <span class="text-teal-500 font-semibold">$5.00</span></span>
-        <button
-          class="text-white text-xs rounded px-3 py-0.5 transition-colors"
-          :class="[
-            btnClass(claim.bonus_tradespot_500),
-            isClaiming.tradespot500 ? 'opacity-70 cursor-wait' : '',
-          ]"
-          :disabled="isDisabled(claim.bonus_tradespot_500) || isClaiming.tradespot500"
-          @click="onClaim('tradespot500', claim.bonus_tradespot_500)"
-        >
+        <button class="text-white text-xs rounded px-3 py-0.5 transition-colors" :class="[
+          btnClass(claim.bonus_tradespot_500),
+          isClaiming.tradespot500 ? 'opacity-70 cursor-wait' : '',
+        ]" :disabled="isDisabled(claim.bonus_tradespot_500) || isClaiming.tradespot500"
+          @click="onClaim('tradespot500', claim.bonus_tradespot_500)">
           {{ buttonText('tradespot500', claim.bonus_tradespot_500) }}
         </button>
       </div>
@@ -117,9 +98,7 @@
     <!-- Card 4: COPY Trade >= 1000 (show progress) -->
     <div class="border border-gray-200 rounded-lg mb-3 p-3">
       <div class="flex items-center space-x-3 mb-1">
-        <div
-          class="flex justify-center items-center w-8 h-8 rounded-full border border-gray-300 text-teal-500"
-        >
+        <div class="flex justify-center items-center w-8 h-8 rounded-full border border-gray-300 text-teal-500">
           <Icon icon="tabler:currency-dollar" class="w-4 h-4" />
         </div>
         <p class="text-gray-700 text-sm leading-5">
@@ -129,15 +108,11 @@
       </div>
       <div class="flex justify-between items-center text-xs text-gray-400">
         <span>Reward <span class="text-teal-500 font-semibold">$200.00</span></span>
-        <button
-          class="text-white text-xs rounded px-3 py-0.5 transition-colors"
-          :class="[
-            btnClass(copyTradeStatus),
-            isClaiming.copytrade1000 ? 'opacity-70 cursor-wait' : '',
-          ]"
-          :disabled="isDisabled(copyTradeStatus) || isClaiming.copytrade1000"
-          @click="onClaim('copytrade1000', copyTradeStatus)"
-        >
+        <button class="text-white text-xs rounded px-3 py-0.5 transition-colors" :class="[
+          btnClass(copyTradeStatus),
+          isClaiming.copytrade1000 ? 'opacity-70 cursor-wait' : '',
+        ]" :disabled="isDisabled(copyTradeStatus) || isClaiming.copytrade1000"
+          @click="onClaim('copytrade1000', copyTradeStatus)">
           {{ buttonText('copytrade1000', copyTradeStatus) }}
         </button>
       </div>
@@ -146,9 +121,7 @@
     <p class="text-center text-gray-300 text-xs mt-6 select-none">No more data</p>
 
     <!-- Bottom Nav -->
-    <div
-      class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50"
-    >
+    <div class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50">
       <div class="flex justify-around items-center py-2 space-x-3">
         <RouterLink to="/dashboard" class="flex flex-col items-center text-gray-400">
           <img alt="Home" src="/img/home-alt.png" class="w-4 h-4 object-contain" />
@@ -162,12 +135,8 @@
     </div>
 
     <!-- Modal -->
-    <div
-      v-if="showModalTerm"
-      class="fixed inset-0 z-50 flex items-center justify-center"
-      aria-modal="true"
-      role="dialog"
-    >
+    <div v-if="showModalTerm" class="fixed inset-0 z-50 flex items-center justify-center" aria-modal="true"
+      role="dialog">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/30" @click="closeModalTerm"></div>
 
@@ -176,22 +145,14 @@
         <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 class="text-[12px] font-semibold">Terms &amp; Conditions</h3>
-          <button
-            type="button"
-            class="p-1 rounded hover:bg-gray-100"
-            @click="closeModalTerm"
-            aria-label="Close"
-          >
+          <button type="button" class="p-1 rounded hover:bg-gray-100" @click="closeModalTerm" aria-label="Close">
             <Icon icon="tabler:x" class="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         <!-- Body -->
-        <div
-          ref="scrollArea"
-          class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700"
-          @scroll="onScroll"
-        >
+        <div ref="scrollArea" class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700"
+          @scroll="onScroll">
           <p class="font-semibold">Terms &amp; Conditions – First-Time User Bonus</p>
 
           <h4 class="mt-3 font-semibold">Eligibility</h4>
@@ -240,17 +201,10 @@
 
         <!-- Footer -->
         <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-lg font-medium text-[12px]"
-            :class="
-              readDone
-                ? 'bg-teal-600 text-white hover:bg-teal-700'
-                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            "
-            :disabled="!readDone"
-            @click="acknowledge"
-          >
+          <button type="button" class="px-4 py-2 rounded-lg font-medium text-[12px]" :class="readDone
+              ? 'bg-teal-600 text-white hover:bg-teal-700'
+              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            " :disabled="!readDone" @click="acknowledge">
             I understand
           </button>
         </div>
@@ -262,7 +216,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
-// import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
@@ -271,8 +224,7 @@ const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 const getToken = (): string =>
   typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
 
-/** ===== Router & Alert ===== */
-// const router = useRouter()
+/** ===== Alert ===== */
 const modal = useApiAlertStore()
 
 /** ===== Countdown ===== */
@@ -312,10 +264,6 @@ onBeforeUnmount(() => {
   if (intervalId) clearInterval(intervalId)
 })
 
-// function goBack(): void {
-//   router.back()
-// }
-
 /** ===== Terms Modal ===== */
 const showModalTerm = ref(false)
 const readDone = ref(false)
@@ -346,6 +294,8 @@ type ApiClaimData = {
   bonus_deposit_1000: Tri
   bonus_tradespot_500: Tri
   bonus_copytrade_1000: number
+  /** true jika sudah pernah klaim copytrade1000 (dari tabel transaksi_klaim) */
+  status_bonus_copytrade_1000: boolean
   notif: 0 | 1
 }
 type ApiClaimResp = {
@@ -359,6 +309,7 @@ const claim = ref<ApiClaimData>({
   bonus_deposit_1000: 0,
   bonus_tradespot_500: 0,
   bonus_copytrade_1000: 0,
+  status_bonus_copytrade_1000: false,
   notif: 0,
 })
 
@@ -380,7 +331,15 @@ async function loadClaimData(): Promise<void> {
     }
     const json = (await res.json()) as ApiClaimResp
     if (!json?.success || !json.data) throw new Error('Invalid response payload.')
-    claim.value = json.data
+    const d = json.data as Partial<ApiClaimData> & Record<string, unknown>
+    claim.value = {
+      bonus_deposit_100: (d.bonus_deposit_100 as Tri) ?? 0,
+      bonus_deposit_1000: (d.bonus_deposit_1000 as Tri) ?? 0,
+      bonus_tradespot_500: (d.bonus_tradespot_500 as Tri) ?? 0,
+      bonus_copytrade_1000: Number(d.bonus_copytrade_1000 ?? 0),
+      status_bonus_copytrade_1000: Boolean(d.status_bonus_copytrade_1000),
+      notif: (d.notif as 0 | 1) ?? 0,
+    }
   } catch (e: unknown) {
     modal.open('Error', e instanceof Error ? e.message : 'Failed to load claim data.')
   }
@@ -417,7 +376,7 @@ async function callClaimApi(kind: ClaimKind): Promise<ApiClaimCreateResp> {
     body: JSON.stringify({ jenis: kind }),
   })
   const txt = await res.text()
-  const json = txt ? (JSON.parse(txt) as ApiClaimCreateResp) : { success: false }
+  const json: ApiClaimCreateResp = txt ? (JSON.parse(txt) as ApiClaimCreateResp) : { success: false }
   if (!res.ok || !json.success) {
     throw new Error(json?.message || `HTTP ${res.status}`)
   }
@@ -440,15 +399,20 @@ function buttonText(kind: ClaimKind, status: Tri): string {
   return labelText(status)
 }
 
-/** COPY Trade status:
- *  0 = locked (progress < 5)
- *  1 = claimable (progress >= 5 and not yet claimed)
- *  2 = claimed
+/**
+ * COPY Trade status (Tri):
+ * 0 = locked (progress < 5)
+ * 1 = claimable (progress >= 5) dan belum pernah klaim (status_bonus_copytrade_1000 = false)
+ * 2 = claimed (sudah pernah klaim di server ATAU baru diklaim di sesi ini)
  */
 const copyTradeStatus = computed<Tri>(() => {
+  // sudah klaim di server
+  if (claim.value.status_bonus_copytrade_1000) return 2
+  // baru saja klaim di sesi ini
   if (claimedKinds.value.has('copytrade1000')) return 2
-  const val = Number(claim.value.bonus_copytrade_1000) || 0
-  return val >= 5 ? 1 : 0
+  // cek progres
+  const progress = Number(claim.value.bonus_copytrade_1000) || 0
+  return progress >= 5 ? 1 : 0
 })
 
 /** Handle Claim click */
