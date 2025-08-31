@@ -264,7 +264,8 @@
           </ul>
 
           <h4 class="mt-3 font-semibold">12. Governing Law</h4>
-          <p>These Terms are governed by the laws of Insert Jurisdiction. Any disputes shall be resolved through
+          <p>These Terms are governed by the laws of the State of New York, United States. Any disputes shall be
+            resolved through
             arbitration or courts in that jurisdiction.</p>
 
           <div class="h-2"></div>
