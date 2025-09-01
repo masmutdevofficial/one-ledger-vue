@@ -2,9 +2,6 @@
   <div class="max-w-md mx-auto p-4">
     <!-- Header -->
     <header class="flex items-center mb-6">
-      <!-- <button aria-label="Go back" class="text-gray-900 text-xl" @click="goBack">
-        <Icon icon="tabler:arrow-left" />
-      </button> -->
       <h1 class="flex-grow text-center font-semibold text-lg leading-6">Account Info</h1>
       <div class="w-6"></div>
     </header>
@@ -23,15 +20,24 @@
       </div>
 
       <!-- Avatar + Name -->
-      <div class="flex items-center space-x-4 mb-4">
+      <div class="flex items-center mb-4">
         <img
           :src="displayAvatar"
           :alt="user.name || 'Default Profile'"
-          class="w-12 h-12 rounded-full object-cover"
+          class="w-12 h-12 rounded-full object-cover mr-4"
         />
-        <h2 class="font-semibold text-gray-900 text-base leading-5">
+        <h2 class="font-semibold text-gray-900 text-base leading-5 mr-2">
           {{ user.name || 'No Name' }}
         </h2>
+
+        <!-- Centang biru hanya jika status_ktp === 1 (Verified) -->
+        <Icon
+          v-if="isKtpVerified"
+          icon="tabler:circle-check-filled"
+          class="w-4 h-4 text-blue-500"
+          aria-label="Verified"
+          title="Verified"
+        />
       </div>
 
       <!-- Info -->
@@ -190,6 +196,8 @@ const user = ref<User>({
   progress: 0,
 })
 
+const isKtpVerified = ref<boolean>(false) // ← status centang biru
+
 const showEditModal = ref(false)
 const formInisial = ref<string>('')
 
@@ -199,42 +207,30 @@ const previewUrl = ref<string | null>(null)
 
 const modal = useApiAlertStore()
 
-// ====== Helpers ======
-// function goBack(): void {
-//   window.history.back()
-// }
-
+// ====== Email helpers ======
 const showEmail = ref(false)
 
 function maskEmail(email: string | null | undefined): string {
   if (!email) return '-'
   const [local, domainRaw = ''] = email.split('@')
 
-  // Mask bagian local fix: huruf pertama + ••• + huruf terakhir
   let maskedLocal = ''
-  if (local.length === 0) {
-    maskedLocal = '•••'
-  } else if (local.length === 1) {
-    maskedLocal = local[0] + '•••'
-  } else {
-    maskedLocal = local[0] + '•••' + local[local.length - 1]
-  }
+  if (local.length === 0) maskedLocal = '•••'
+  else if (local.length === 1) maskedLocal = local[0] + '•••'
+  else maskedLocal = local[0] + '•••' + local[local.length - 1]
 
-  // Mask domain fix: hanya tampilkan TLD (setelah titik terakhir)
   const lastDotIndex = domainRaw.lastIndexOf('.')
   let maskedDomain = '•••'
   if (lastDotIndex !== -1) {
-    const tld = domainRaw.slice(lastDotIndex) // contoh ".com"
+    const tld = domainRaw.slice(lastDotIndex)
     maskedDomain = '•••' + tld
   }
-
   return `${maskedLocal}@${maskedDomain}`
 }
 
 function truncateEmail(email: string, maxLength = 5): string {
   if (email.length <= maxLength) return email
   const [local, domain] = email.split('@')
-  // kalau domain ada, simpan domain utuh, potong bagian local saja
   if (domain) {
     const truncatedLocal = local.length > maxLength ? local.slice(0, maxLength) + '...' : local
     return `${truncatedLocal}@${domain}`
@@ -260,6 +256,7 @@ async function copyUid(): Promise<void> {
 function toggleEmailVisibility(): void {
   showEmail.value = !showEmail.value
 }
+
 const displayAvatar = computed(() =>
   user.value.avatar && user.value.avatar.trim() !== ''
     ? user.value.avatar
@@ -276,25 +273,40 @@ async function fetchAccount(): Promise<void> {
     })
     const data = (await res.json()) as UserApi
 
-    // map ke tampilanmu
     user.value = {
       uid: data.uid ?? '',
       name: data.inisial ?? '',
       email: data.email ?? '',
       avatar: data.avatar ?? '',
-      // progress tidak disediakan API; isi 0/atau hitung dari endpoint lain jika ada
       progress: 1,
     }
     formInisial.value = user.value.name ?? ''
   } catch (e) {
-    // fallback tetap pakai default kosong
     console.error(e)
+  }
+}
+
+// ====== Fetch Verify Status (untuk centang biru) ======
+async function fetchVerifyStatus(): Promise<void> {
+  const token = getToken()
+  if (!token) {
+    isKtpVerified.value = false
+    return
+  }
+  try {
+    const res = await fetch(`${API_BASE}/cek-status-verify`, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) throw new Error(await res.text())
+    const data = (await res.json()) as { status_ktp: number; label: string }
+    isKtpVerified.value = Number(data?.status_ktp) === 1
+  } catch {
+    isKtpVerified.value = false
   }
 }
 
 // ====== Modal Edit ======
 function openEdit(): void {
-  // set form dari nilai user sekarang
   formInisial.value = user.value.name ?? ''
   previewUrl.value = null
   avatarFile.value = null
@@ -302,7 +314,6 @@ function openEdit(): void {
 }
 function closeEdit(): void {
   showEditModal.value = false
-  // bersihkan preview
   if (previewUrl.value) {
     URL.revokeObjectURL(previewUrl.value)
     previewUrl.value = null
@@ -329,7 +340,6 @@ async function submitEdit(): Promise<void> {
   if (!token) return
 
   const initial = (formInisial.value ?? '').trim()
-
   if (initial && !/^[A-Za-z]+$/.test(initial)) {
     modal.open('Invalid Initial', 'Initial must contain only letters (A–Z).')
     return
@@ -361,11 +371,12 @@ async function submitEdit(): Promise<void> {
       if (data?.data?.avatar) user.value.avatar = data.data.avatar
       closeEdit()
     })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     modal.open('Error', err?.message || 'Failed to update profile.')
   }
 }
 
-onMounted(fetchAccount)
+onMounted(async () => {
+  await Promise.all([fetchAccount(), fetchVerifyStatus()])
+})
 </script>

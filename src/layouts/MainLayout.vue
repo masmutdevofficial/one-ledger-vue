@@ -53,7 +53,9 @@ const hideBottomNav = computed(
     route.name === 'event' ||
     route.path.includes('/event') ||
     route.name === 'more' ||
-    route.path.includes('/more'),
+    route.path.includes('/more') ||
+    route.name === 'profile-copy-trade' ||
+    route.path.includes('/profile-copy-trade'),
 )
 
 const teal600Filter = {

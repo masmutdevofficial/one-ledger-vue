@@ -34,7 +34,7 @@
     </div>
 
     <!-- Star badge -->
-    <div class="flex justify-end mb-4 absolute top-18 right-6">
+    <div class="flex justify-end mb-4 absolute top-[72px] right-6">
       <button
         type="button"
         class="flex items-center space-x-1 bg-white border border-gray-300 rounded-md px-3 py-1 text-gray-700 text-sm shadow-sm"
@@ -45,7 +45,7 @@
     </div>
 
     <!-- Collapse arrow (visual only) -->
-    <div class="flex justify-end mb-2 absolute top-33 right-6">
+    <div class="flex justify-end mb-2 absolute top-[132px] right-6">
       <button aria-label="Toggle details" type="button" class="text-gray-600">
         <Icon icon="tabler:chevron-down" class="w-5 h-5" />
       </button>
@@ -164,21 +164,182 @@
             <div class="w-3 h-3 rounded-sm" :style="{ backgroundColor: it.color }"></div>
             <span class="text-gray-400">{{ it.label }}</span>
           </div>
-          <div class="text-right tabular-nums">{{ it.value.toFixed(2) }}%</div>
+          <div class="text-right">{{ it.value.toFixed(2) }}%</div>
         </template>
       </div>
     </div>
+
+    <!-- Bottom Nav -->
+    <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50">
+      <div class="flex justify-around items-center py-2 space-x-3">
+        <RouterLink to="/dashboard" class="flex flex-col items-center text-gray-400">
+          <img alt="Home" src="/img/home-alt.png" class="w-4 h-4 object-contain" />
+          <span class="text-xs mt-1 font-semibold">Home</span>
+        </RouterLink>
+        <div @click="openModalTerm" class="flex flex-col items-center cursor-pointer text-gray-400">
+          <img alt="Term" src="/img/term.png" class="w-4 h-4 object-contain" />
+          <span class="text-xs mt-1 font-semibold">Term</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div
+      v-if="showModalTerm"
+      class="fixed inset-0 z-50 flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+    >
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/30" @click="closeModalTerm"></div>
+
+      <!-- Panel -->
+      <div class="relative z-10 w-full max-w-lg mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <h3 class="text-[12px] font-semibold">Terms &amp; Conditions</h3>
+          <button
+            type="button"
+            class="p-1 rounded hover:bg-gray-100"
+            @click="closeModalTerm"
+            aria-label="Close"
+          >
+            <Icon icon="tabler:x" class="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div
+          ref="scrollArea"
+          class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700 space-y-4"
+          @scroll="onScroll"
+        >
+          <p class="font-semibold">Terms &amp; Conditions – Collective Copy Trading</p>
+
+          <!-- 1. Join the Pool -->
+          <div>
+            <h4 class="mt-1 font-semibold">1. Join the Pool</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                Each member who wishes to participate in the collective trading pool must deposit
+                funds according to the agreed amount.
+              </li>
+              <li>
+                Funds will be automatically secured in the smart contract for the duration of the
+                trading session.
+              </li>
+              <li>
+                All trading activities within the Pool are executed under the direction of the
+                Master Trader, with positions opened and closed on behalf of all members.
+              </li>
+              <li>By joining, you agree to follow the Pool rules.</li>
+            </ul>
+          </div>
+
+          <!-- 2. How Trading Works -->
+          <div>
+            <h4 class="mt-1 font-semibold">2. How Trading Works</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                Trading positions are opened and closed collectively according to the applied
+                strategy.
+              </li>
+              <li>During the session, members cannot close positions individually.</li>
+              <li>
+                All profit and loss calculations are performed automatically by the smart contract.
+              </li>
+            </ul>
+          </div>
+
+          <!-- 3. Profit Distribution -->
+          <div>
+            <h4 class="mt-1 font-semibold">3. Profit Distribution</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                Profits and losses are shared proportionally based on each member’s contribution.
+              </li>
+              <li>
+                Final results will be displayed on the dashboard and can be withdrawn once the
+                session is completed.
+              </li>
+              <li>If service fees apply, they will be automatically deducted from the profit.</li>
+            </ul>
+          </div>
+
+          <!-- 4. Discipline Rules -->
+          <div>
+            <h4 class="mt-1 font-semibold">4. Discipline Rules</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                If a member fails to meet obligations (e.g., cancels participation, insufficient
+                balance, or attempts to withdraw funds early), their funds will remain locked until
+                the entire trading session ends.
+              </li>
+              <li>In such cases, the member cannot withdraw early.</li>
+              <li>
+                This rule ensures fairness, consistency, and avoids disruptions to the collective
+                session.
+              </li>
+            </ul>
+          </div>
+
+          <!-- 5. Things to Understand -->
+          <div>
+            <h4 class="mt-1 font-semibold">5. Things to Understand</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>Trading cryptocurrencies offers potential profit, but also involves risk.</li>
+              <li>
+                Profit is not guaranteed in every session as results depend on market conditions.
+              </li>
+              <li>By participating, members acknowledge and accept the risks involved.</li>
+            </ul>
+          </div>
+
+          <!-- 6. Smart Contract Transparency -->
+          <div>
+            <h4 class="mt-1 font-semibold">6. Smart Contract Transparency</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                All rules are coded into the smart contract, ensuring transparency and automation.
+              </li>
+              <li>No party can alter the final outcome once the session is in progress.</li>
+            </ul>
+          </div>
+
+          <div class="h-2"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg font-medium text-[12px]"
+            :class="
+              readDone
+                ? 'bg-teal-600 text-white hover:bg-teal-700'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            "
+            :disabled="!readDone"
+            @click="acknowledge"
+          >
+            I understand
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- /Modal -->
   </div>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
+import { ref } from 'vue'
 
 const router = useRouter()
 function onClose() {
   if (window.history.length > 1) router.back()
-  else router.push('/copy') // fallback rute, sesuaikan jika perlu
+  else router.push('/copy')
 }
 
 /* ---- Data default ---- */
@@ -211,7 +372,7 @@ const totalPositions = 486
 
 /* Legend data (warna harus match gambar chart-profile.png) */
 const assetPrefs = [
-  { label: 'BTC', value: 52.1, color: '#2563EB' }, // sesuaikan warna dengan chart
+  { label: 'BTC', value: 52.1, color: '#2563EB' },
   { label: 'ETH', value: 34.55, color: '#F59E0B' },
   { label: 'SOL', value: 8.2, color: '#7DD3FC' },
   { label: 'OTHER', value: 5.15, color: '#9CA3AF' },
@@ -223,5 +384,28 @@ function formatMoney(n: number) {
 }
 function formatInt(n: number) {
   return n.toLocaleString('en-US', { maximumFractionDigits: 0 })
+}
+
+/* ===== Modal Terms (state & handlers) ===== */
+const showModalTerm = ref(false)
+const readDone = ref(false)
+const scrollArea = ref<HTMLDivElement | null>(null)
+
+function openModalTerm(): void {
+  showModalTerm.value = true
+  readDone.value = false
+  document.documentElement.style.overflow = 'hidden'
+}
+function closeModalTerm(): void {
+  showModalTerm.value = false
+  document.documentElement.style.overflow = ''
+}
+function onScroll(e: Event): void {
+  const el = e.target as HTMLDivElement
+  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 4
+  if (atBottom) readDone.value = true
+}
+function acknowledge(): void {
+  closeModalTerm()
 }
 </script>
