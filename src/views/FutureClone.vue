@@ -1,55 +1,76 @@
 <template>
   <div>
-    <!-- HEADER: pair dropdown + toggle chart -->
-    <div class="flex items-center justify-between max-w-md mx-4 mt-4">
-      <div class="flex flex-row items-center">
-        <button
-          v-if="showChart"
-          class="rounded-lg pr-2 py-1 text-black"
-          @click="showChart = false"
-          :aria-pressed="false"
-        >
-          <Icon icon="tabler:arrow-left" class="w-5 h-5" />
-        </button>
+    <!-- TOP NAV -->
+    <header class="flex items-center justify-between px-4 py-2 border-b border-gray-200">
+      <nav class="flex items-center space-x-6 text-gray-600 text-sm font-semibold">
+        <a href="#" class="text-black font-extrabold flex items-center space-x-1">
+          <span>USD</span>
+          <span class="text-xs font-normal">ⓢ-M</span>
+        </a>
+        <a href="#" class="hover:text-gray-800">COIN-M</a>
+        <a href="#" class="hover:text-gray-800">Options</a>
+        <a href="#" class="hover:text-gray-800 flex items-center relative">
+          <span>Smart Money</span>
+          <span
+            class="absolute -top-3 right-0 text-[10px] font-semibold bg-yellow-300 text-black rounded-full px-[6px] py-[1px] leading-none">New</span>
+        </a>
+      </nav>
 
-        <div class="relative inline-block">
-          <!-- Trigger Dropdown -->
-          <div
-            class="flex items-center space-x-1 cursor-pointer"
-            @click="dropdownOpen = !dropdownOpen"
-          >
-            <span class="font-semibold text-black text-base">{{ selectedPair }}</span>
-            <Icon icon="tabler:chevron-down" class="text-black text-base" />
-          </div>
+      <button aria-label="Menu" class="text-gray-700">
+        <Icon icon="tabler:menu-2" class="w-6 h-6" />
+      </button>
+    </header>
 
-          <!-- Dropdown -->
-          <div
-            v-if="dropdownOpen"
-            class="absolute z-50 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md"
-          >
-            <ul class="max-h-64 overflow-auto">
-              <li
-                v-for="pair in tradingPairs"
-                :key="pair"
-                @click="selectPair(pair)"
-                class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
-              >
-                {{ pair }}
-              </li>
-            </ul>
+    <!-- SYMBOL ROW -->
+    <section class="flex items-center justify-between px-4 py-2 pb-0">
+      <!-- HEADER: pair dropdown + toggle chart -->
+      <div class="flex items-center justify-between">
+        <div class="flex flex-row items-center">
+          <button v-if="showChart" class="rounded-lg pr-2 py-1 text-black" @click="showChart = false"
+            :aria-pressed="false">
+            <Icon icon="tabler:arrow-left" class="w-5 h-5" />
+          </button>
+
+          <div class="relative inline-block">
+            <!-- Trigger Dropdown -->
+            <div class="flex items-center space-x-1 cursor-pointer" @click="dropdownOpen = !dropdownOpen">
+              <span class="font-semibold text-black text-base">{{ selectedPair }}</span>
+              <span class="font-bold text-xs text-gray-800">Perp</span>
+              <Icon icon="tabler:chevron-down" class="text-black text-base" />
+            </div>
+
+            <!-- Dropdown -->
+            <div v-if="dropdownOpen" class="absolute z-50 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md">
+              <ul class="max-h-64 overflow-auto">
+                <li v-for="pair in tradingPairs" :key="pair" @click="selectPair(pair)"
+                  class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black">
+                  {{ pair }}
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center space-x-4 text-gray-400 text-lg">
-        <Icon
-          :icon="showChart ? 'tabler:brand-databricks' : 'tabler:chart-bar'"
-          class="w-5 h-5 cursor-pointer"
-          :aria-pressed="showChart"
-          @click="showChart = !showChart"
-        />
+      <div class="flex items-center space-x-4 text-gray-400">
+        <button aria-label="Gift" class="relative">
+          <Icon icon="tabler:gift" class="w-5 h-5" />
+          <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
+        </button>
+        <button aria-label="Chart" class="relative">
+          <Icon icon="tabler:chart-candle" class="w-5 h-5" />
+        </button>
+        <button aria-label="Percentage" class="relative">
+          <Icon icon="tabler:plus-equal" class="w-5 h-5" />
+        </button>
+        <button aria-label="More options" class="relative">
+          <Icon icon="tabler:dots" class="w-5 h-5" />
+          <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
+        </button>
       </div>
-    </div>
+    </section>
+
+
 
     <!-- PRICE + CHANGE -->
     <div class="max-w-md mx-4 mt-1">
@@ -67,10 +88,8 @@
               })
             }}
           </p>
-          <span
-            class="ml-1 text-[10px] font-semibold"
-            :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
-          >
+          <span class="ml-1 text-[10px] font-semibold"
+            :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'">
             {{
               percentChange !== null
                 ? (percentChange > 0 ? '+' : '') + percentChange.toFixed(2) + '%'
@@ -80,11 +99,8 @@
         </div>
       </div>
 
-      <span
-        v-else
-        class="text-sm font-semibold"
-        :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
-      >
+      <span v-else class="text-sm font-semibold"
+        :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'">
         {{
           percentChange !== null
             ? (percentChange > 0 ? '+' : '') + percentChange.toFixed(2) + '%'
@@ -97,75 +113,42 @@
     <div v-if="showChart" class="grid grid-cols-[50px_1fr] gap-2 items-stretch w-full relative">
       <aside class="rounded-xl border border-white/10 p-2">
         <div class="flex flex-col gap-2 text-xs">
-          <button
-            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
-            :class="{
-              'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
-              'hover:bg-white/5': kind !== 'candlestick',
-            }"
-            :aria-pressed="kind === 'candlestick'"
-            @click="kind = 'candlestick'"
-          >
+          <button class="pl-1 px-2 py-1 rounded-lg border transition-colors" :class="{
+            'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
+            'hover:bg-white/5': kind !== 'candlestick',
+          }" :aria-pressed="kind === 'candlestick'" @click="kind = 'candlestick'">
             <Icon icon="tabler:chart-candle" class="w-5 h-5" />
           </button>
 
-          <button
-            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
-            :class="{
-              'bg-teal-500 text-white border-teal-500': kind === 'line',
-              'hover:bg-white/5': kind !== 'line',
-            }"
-            :aria-pressed="kind === 'line'"
-            @click="kind = 'line'"
-          >
+          <button class="pl-1 px-2 py-1 rounded-lg border transition-colors" :class="{
+            'bg-teal-500 text-white border-teal-500': kind === 'line',
+            'hover:bg-white/5': kind !== 'line',
+          }" :aria-pressed="kind === 'line'" @click="kind = 'line'">
             <Icon icon="tabler:chart-line" class="w-5 h-5" />
           </button>
 
-          <button
-            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
-            :class="{
-              'bg-teal-500 text-white border-teal-500': kind === 'area',
-              'hover:bg-white/5': kind !== 'area',
-            }"
-            :aria-pressed="kind === 'area'"
-            @click="kind = 'area'"
-          >
+          <button class="pl-1 px-2 py-1 rounded-lg border transition-colors" :class="{
+            'bg-teal-500 text-white border-teal-500': kind === 'area',
+            'hover:bg-white/5': kind !== 'area',
+          }" :aria-pressed="kind === 'area'" @click="kind = 'area'">
             <Icon icon="tabler:chart-area" class="w-5 h-5" />
           </button>
         </div>
       </aside>
 
       <section class="rounded-2xl min-w-0 overflow-hidden">
-        <LightChart
-          :series-type="kind"
-          :candle-data="dataForChart.candleData"
-          :data="dataForChart.data"
-          :options="{
-            timeScale: {
-              // typical defaults:
-              rightOffset: 12,
-              barSpacing: 5,
-            },
-          }"
-          :fit="false"
-          :initial-bars="180"
-          :right-offset="12"
-          :auto-follow="true"
-        />
+        <!-- Stub chart (UI-only, no library) -->
+        <LightChart :series-type="kind" :candle-data="[]" :data="[]"
+          :options="{ timeScale: { rightOffset: 12, barSpacing: 5 } }" :fit="false" :initial-bars="180"
+          :right-offset="12" :auto-follow="true" />
       </section>
 
       <div class="flex flex-row items-center absolute -top-8.5 right-4 space-x-2">
-        <button
-          v-for="t in tfs"
-          :key="t"
-          class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors"
-          :class="{
+        <button v-for="t in tfs" :key="t"
+          class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors" :class="{
             'bg-teal-500 text-white border-teal-500': tf === t,
             'hover:bg-white/5': tf !== t,
-          }"
-          :aria-pressed="tf === t"
-          @click="tf = t"
-        >
+          }" :aria-pressed="tf === t" @click="tf = t">
           {{ t }}
         </button>
       </div>
@@ -184,16 +167,10 @@
     <div v-if="showChart" class="flex w-full justify-between items-center">
       <!-- BIDS -->
       <div class="space-y-1 w-full" v-if="depthData">
-        <div
-          v-for="bid in top12Bids"
-          :key="bid[0]"
-          class="relative flex justify-between overflow-hidden rounded"
-          style="height: 17.5px"
-        >
-          <div
-            class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
-            :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
-          />
+        <div v-for="bid in top12Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
+          style="height: 17.5px">
+          <div class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+            :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }" />
           <p class="text-black text-[10px] z-10 px-2 w-1/2">
             {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
           </p>
@@ -205,16 +182,10 @@
 
       <!-- ASKS -->
       <div class="space-y-1 w-full" v-if="depthData">
-        <div
-          v-for="ask in top12Asks"
-          :key="ask[0]"
-          class="relative flex justify-between overflow-hidden rounded"
-          style="height: 17.5px"
-        >
-          <div
-            class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
-            :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
-          />
+        <div v-for="ask in top12Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
+          style="height: 17.5px">
+          <div class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+            :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }" />
           <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
             {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
           </p>
@@ -225,19 +196,18 @@
       </div>
     </div>
 
+
     <!-- QUICK BUY/SELL -->
     <div v-if="showChart" class="flex justify-between items-center mx-1 my-2 mb-20">
       <div class="w-full flex items-center gap-2">
         <button
           class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-          @click="showChart = false"
-        >
+          @click="showChart = false">
           Buy
         </button>
         <button
           class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-red-500 text-white hover:bg-red-600 transition-colors"
-          @click="showChart = false"
-        >
+          @click="showChart = false">
           Sell
         </button>
       </div>
@@ -247,6 +217,14 @@
     <div v-else class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-4">
       <!-- LEFT: ORDERBOOK -->
       <div>
+        <!-- Funding & Countdown in 2 columns -->
+        <div class="text-[12px] flex flex-col justify-start items-start mb-3">
+          <span class="underline decoration-dotted underline-offset-2 text-gray-400 font-semibold">Funding /
+            Countdown</span>
+          <span class=" text-gray-900 font-semibold">0,0052% / 00:08:44</span>
+        </div>
+
+
         <div class="flex justify-between text-gray-400 text-xs pb-1">
           <span>Price (USDT)</span>
           <span>Amount ({{ baseAsset }})</span>
@@ -254,16 +232,10 @@
 
         <!-- ASKS -->
         <div class="space-y-1" v-if="depthData">
-          <div
-            v-for="ask in top12Asks"
-            :key="ask[0]"
-            class="relative flex justify-between overflow-hidden rounded"
-            style="height: 17.5px"
-          >
-            <div
-              class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
-              :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
-            />
+          <div v-for="ask in top12Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
+            style="height: 17.5px">
+            <div class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+              :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }" />
             <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
               {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
@@ -293,16 +265,10 @@
 
         <!-- BIDS -->
         <div class="space-y-1" v-if="depthData">
-          <div
-            v-for="bid in top12Bids"
-            :key="bid[0]"
-            class="relative flex justify-between overflow-hidden rounded"
-            style="height: 17.5px"
-          >
-            <div
-              class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
-              :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
-            />
+          <div v-for="bid in top12Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
+            style="height: 17.5px">
+            <div class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+              :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }" />
             <p class="text-[#2DBE87] text-[10px] z-10 px-2 w-1/2">
               {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
@@ -315,160 +281,179 @@
 
       <!-- RIGHT: ORDER FORM -->
       <div class="space-y-3">
-        <!-- TOGGLE -->
-        <div
-          class="flex rounded-lg border border-gray-300 overflow-hidden text-sm font-semibold select-none"
-        >
+        <!-- Mode / Leverage / Side -->
+        <div class="grid grid-cols-3 gap-2">
           <button
-            class="flex-1 py-1.5 px-4 transition-colors"
-            :class="[activeTab === 'buy' ? 'bg-teal-500 text-white' : 'text-gray-400']"
-            @click="activeTab = 'buy'"
-          >
-            Buy
+            class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none">
+            Isolated
           </button>
           <button
-            class="flex-1 py-1.5 px-4 transition-colors"
-            :class="[activeTab === 'sell' ? 'bg-red-500 text-white' : 'text-gray-400']"
-            @click="activeTab = 'sell'"
-          >
-            Sell
+            class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none">
+            150x
+          </button>
+          <button
+            class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none">
+            S
           </button>
         </div>
 
-        <!-- MARKET -->
-        <div>
-          <button
-            class="w-full flex items-center justify-center bg-gray-100 text-gray-900 text-sm font-bold px-3 py-2 rounded"
-          >
-            <span>Market</span>
-          </button>
-        </div>
+        <div class="space-y-2 text-sm">
+          <!-- Avbl -->
+          <div class="flex items-center justify-between">
+            <span class="text-gray-400 text-xs">Avbl</span>
+            <div class="flex items-center space-x-1 text-gray-900 text-xs">
+              <span>0,00 USDT</span>
+              <Icon icon="tabler:arrows-left-right" class="w-4 h-4 text-yellow-400" />
+            </div>
+          </div>
 
-        <!-- MARKET PRICE (disabled) -->
-        <input
-          type="text"
-          disabled
-          placeholder="Market Price"
-          :value="
-            marketPrice ? marketPrice.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '-'
-          "
-          class="w-full bg-gray-200 text-gray-400 text-sm font-normal rounded px-3 py-2 cursor-not-allowed"
-        />
+          <!-- Order type -->
+          <div class="flex items-center justify-between bg-gray-100 rounded-lg px-3 py-2 text-[12px]">
+            <div class="flex items-center justify-between space-x-2 w-full">
+              <Icon icon="tabler:info-circle-filled" class="w-4 h-4 text-gray-400" />
+              <button type="button" class="flex items-center font-semibold text-gray-900">
+                Limit
+              </button>
+              <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
+            </div>
+          </div>
 
-        <!-- TOTAL -->
-        <div
-          class="flex justify-between items-center bg-gray-100 rounded px-3 py-2 text-sm text-gray-500 font-normal mt-3"
-        >
-          <label for="totalAmount" class="cursor-text">Total</label>
+          <!-- Price -->
+          <div class="flex items-center justify-between  text-[12px] w-full space-x-2">
+            <div class="bg-gray-100 flex-row flex items-center justify-between px-2 rounded-lg w-[97%] py-[4px]">
+              <Icon icon="tabler:minus" class="w-4 h-4" />
+              <div class="flex-1 text-center ">
+                <div class="text-[10px] text-gray-400 leading-none mb-1 ">Price (USDT)</div>
+                <div class="font-semibold text-[12px] text-gray-900 leading-tight">{{ marketPrice ?
+                  marketPrice.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '-'
+                  }}</div>
+              </div>
+              <Icon icon="tabler:plus" class="w-4 h-4" />
+            </div>
 
-          <div class="relative z-50 text-gray-900 font-bold inline-block shrink-0">
-            <input
-              id="totalAmount"
-              ref="amountInputEl"
-              type="text"
-              inputmode="decimal"
-              autocomplete="off"
-              class="bg-transparent text-right outline-none w-28 sm:w-32 md:w-36 pr-12"
-              :disabled="availableLoading || availableError"
-              v-model="totalAmountInput"
-              :placeholder="activeTab === 'buy' ? '0,00' : '0,00000000'"
-              @focus="onAmountFocus"
-              @blur="onAmountBlur"
-              @input="onAmountTyping"
-              @keydown.enter.prevent="onAmountCommit"
-            />
-            <span
-              class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-black font-medium"
-            >
-              {{ availableUnit }}
-            </span>
+            <div class="flex items-center space-x-2 bg-gray-100 rounded-lg py-[4px]">
+              <button type="button" class="h-8 px-3 text-gray-900 font-semibold">
+                BBO
+              </button>
+            </div>
+          </div>
+
+          <!-- Amount -->
+          <div class="flex items-center justify-between bg-gray-100 rounded-lg px-2 py-[4px] text-[12px]">
+            <Icon icon="tabler:minus" class="w-4 h-4" />
+
+            <div class="flex-1 text-center">
+              <div class="text-[10px] text-gray-400 leading-none">Amount (USDT)</div>
+            </div>
+            <Icon icon="tabler:plus" class="w-4 h-4" />
+            <div class="flex items-center space-x-2">
+              <button type="button" class="h-8 px-3 rounded-md text-gray-900 font-semibold flex items-center">
+                USDT
+                <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- SLIDER -->
         <div class="w-full">
-          <input
-            type="range"
-            v-model.number="rawPercent"
-            min="0"
-            max="100"
-            step="1"
-            :disabled="!canSlide"
-            :style="sliderStyle"
-            @input="onInput(($event.target as HTMLInputElement).valueAsNumber)"
-            @change="commitSnap"
-            @pointerdown="isDragging = true"
-            @pointerup="handlePointerUp"
-            class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:mt-[-4px] disabled:cursor-not-allowed disabled:[&::-webkit-slider-thumb]:bg-gray-300"
-          />
+          <input type="range" v-model.number="rawPercent" min="0" max="100" step="1" :style="sliderStyle"
+            @input="onInput(($event.target as HTMLInputElement).valueAsNumber)" @change="commitSnap"
+            @pointerdown="isDragging = true" @pointerup="handlePointerUp"
+            class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:mt-[-4px]" />
 
           <div class="flex justify-between text-xs text-gray-400 mt-1">
-            <button
-              v-for="m in marks"
-              :key="m"
-              type="button"
-              @click="setPercent(m)"
-              class="select-none transition"
-              :class="[
-                canSlide ? 'hover:text-gray-600' : 'cursor-not-allowed',
-                amountPercent === m ? 'text-gray-900 font-semibold' : '',
-              ]"
-            >
+            <button v-for="m in marks" :key="m" type="button" @click="setPercent(m)" class="select-none transition"
+              :class="[amountPercent === m ? 'text-gray-900 font-semibold' : '']">
               {{ m }}%
             </button>
           </div>
         </div>
 
-        <!-- AVBL -->
-        <div class="text-xs space-y-1">
-          <div class="flex justify-between text-gray-400 italic">
-            <span>Avbl</span>
-            <span class="text-gray-900 not-italic flex items-center gap-1">
-              <template v-if="availableLoading">...</template>
-              <template v-else-if="availableError">-</template>
-              <template v-else>
-                {{ available.toLocaleString('en-US', { maximumFractionDigits: 8 }) }}
-                {{ availableUnit }}
-              </template>
-              <Icon icon="tabler:plus" class="text-yellow-400 text-[10px]" />
-            </span>
-          </div>
-          <div class="flex justify-between text-gray-300 italic">
-            <span>Max Buy</span>
-            <span class="text-gray-900 not-italic">—</span>
-          </div>
-          <div class="flex justify-between text-gray-300 italic">
-            <span>Est. Fee</span>
-            <span class="text-gray-900 not-italic">—</span>
-          </div>
-        </div>
+        <form class="space-y-4 text-sm text-gray-800">
+          <!-- Options -->
+          <fieldset class="space-y-2">
+            <legend class="sr-only">Order options</legend>
 
-        <!-- SUBMIT -->
-        <button
-          :class="[
-            'w-full text-white text-sm font-medium py-2 rounded mt-3',
-            activeTab === 'buy' ? 'bg-teal-600' : 'bg-red-600',
-          ]"
-          :disabled="submitting || !marketPrice || totalAmount <= 0"
-          @click="submitTrade"
-        >
-          {{ (activeTab === 'buy' ? 'Buy ' : 'Sell ') + baseAsset }}
-        </button>
-        <p v-if="submitError" class="text-red-600 text-xs mt-2">{{ submitError }}</p>
+            <label for="opt-tpsl" class="flex items-center gap-2 cursor-pointer">
+              <input id="opt-tpsl" type="radio" name="orderType" class="h-4 w-4 accent-teal-500" />
+              <span>TP/SL</span>
+            </label>
+
+            <div class="flex items-center gap-2">
+              <label for="opt-reduce" class="flex items-center gap-2 flex-1 cursor-pointer">
+                <input id="opt-reduce" type="radio" name="orderType" class="h-4 w-4 accent-teal-500" />
+                <span>Reduce Only</span>
+              </label>
+
+              <label for="tif" class="sr-only">Time in Force</label>
+              <select id="tif" name="timeInForce"
+                class="ml-auto text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-600">
+                <option>GTC</option>
+              </select>
+            </div>
+          </fieldset>
+
+          <!-- Buy/Long -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs text-gray-600">
+              <span>Max</span><span>0,0 USDT</span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-600">
+              <span>Cost</span><span>0 USDT</span>
+            </div>
+            <button type="button"
+              class="w-full bg-teal-500 text-white rounded-md py-2 font-medium hover:bg-green-700 transition-colors">
+              Buy/Long
+            </button>
+          </div>
+
+          <!-- Sell/Short -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs text-gray-600">
+              <span>Max</span><span>0,0 USDT</span>
+            </div>
+            <div class="flex justify-between text-xs text-gray-600">
+              <span>Cost</span><span>0 USDT</span>
+            </div>
+            <button type="button"
+              class="w-full bg-red-500 text-white rounded-md py-2 font-medium hover:bg-red-700 transition-colors">
+              Sell/Short
+            </button>
+          </div>
+        </form>
+
       </div>
     </div>
 
-    <!-- CTA BAWAH -->
-    <div v-if="!showChart" class="max-w-md mx-auto border border-gray-200 rounded-md p-5 mb-20">
-      <div class="text-center">
-        <p class="text-gray-400 text-sm font-normal mb-2">Let Top Traders Trade for You</p>
-        <RouterLink
-          to="/futures"
-          role="button"
-          class="inline-flex items-center justify-center text-gray-700 text-xs font-normal border border-gray-300 rounded px-4 py-1.5 hover:bg-gray-100 transition"
-        >
-          Copy Trading
-        </RouterLink>
+    <div class="max-w-md mx-auto p-4 mb-10">
+      <!-- Tabs + History icon -->
+      <nav class="flex items-center gap-6 text-sm font-normal text-gray-500">
+        <button type="button" class="relative font-semibold text-black hover:text-black">
+          Positions (0)
+          <span class="absolute -bottom-1 left-0 w-8 h-0.5 bg-yellow-400 rounded-full"></span>
+        </button>
+
+        <button type="button" class="hover:text-gray-800">Open Orders (0)</button>
+        <button type="button" class="hover:text-gray-800">Futures Grid</button>
+
+        <!-- Riwayat (history) icon di paling kanan -->
+        <button type="button" aria-label="History"
+          class="ml-auto inline-flex items-center justify-end p-1 text-gray-400 hover:text-gray-600 hover:border-gray-400">
+          <Icon icon="tabler:file-report" class="w-4 h-4" />
+        </button>
+      </nav>
+
+      <!-- Empty state -->
+      <div class="mt-20 flex flex-col items-center text-center px-4">
+        <img src="https://storage.googleapis.com/a1aa/image/b275b4fd-4166-4f3b-ab7c-794a25a1615e.jpg"
+          alt="Empty state illustration" class="w-10 h-10 mb-4" width="40" height="40" />
+        <p class="font-semibold text-black text-sm mb-1">Available funds: 0,00 USDT</p>
+        <p class="text-xs text-gray-400 mb-4">Transfer funds to your Futures Wallet</p>
+        <button type="button"
+          class="bg-gray-100 text-gray-700 text-xs rounded px-4 py-1 border border-gray-300 hover:bg-gray-200">
+          Transfer
+        </button>
       </div>
     </div>
   </div>
@@ -476,201 +461,49 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onUnmounted,
+  defineComponent,
+  h,
+} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApiAlertStore } from '@/stores/apiAlert'
-import LightChart from '@/components/trade/LightChart.vue'
-import type { CandlestickData, LineData, AreaData, UTCTimestamp } from 'lightweight-charts'
 
+/** =========================
+ *  UI STATE (tetap ditampilkan)
+ *  ========================= */
 const showChart = ref(false)
-
 type SeriesKind = 'candlestick' | 'line' | 'area'
 const kind = ref<SeriesKind>('candlestick')
-
-// ===== TF yang dipakai klien =====
 const tfs = ['5m', '15m', '1h', '1d'] as const
 type TF = (typeof tfs)[number]
 const tf = ref<TF>('1h')
-
-const modal = useApiAlertStore()
-const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
-
-interface DepthTick {
-  asks: [number, number][]
-  bids: [number, number][]
-}
-interface DepthData {
-  ch: string
-  ts: number
-  tick: DepthTick
-}
-
-// include 60min utk 1h
-type OriginPeriod = '5min' | '15min' | '30min' | '60min' | '1day'
-
-type ObCacheEntry = {
-  k1d?: { open: number; close: number; ts: number }
-  depth?: { bids: [number, number][]; asks: [number, number][]; ts: number }
-}
-type ObCache = Record<string, ObCacheEntry>
-
-const OB_LS_KEY = 'obCache:v1'
-const DEPTH_CACHE_TTL = 10_000
-const KLINE_CACHE_TTL = 5 * 60_000
-const DEPTH_TOP_N = 20
-const WANT_BARS = 300
-
-let obCache: ObCache = {}
-let obSaveTimer: ReturnType<typeof setTimeout> | null = null
-
-function loadObCache() {
-  if (!isBrowser()) return
-  try {
-    obCache = JSON.parse(localStorage.getItem(OB_LS_KEY) || '{}')
-  } catch {
-    obCache = {}
-  }
-}
-function saveObCacheDebounced() {
-  if (!isBrowser()) return
-  if (obSaveTimer) clearTimeout(obSaveTimer)
-  obSaveTimer = window.setTimeout(() => {
-    try {
-      localStorage.setItem(OB_LS_KEY, JSON.stringify(obCache))
-    } catch {}
-    obSaveTimer = null
-  }, 250)
-}
-function setObCache(key: string, patch: Partial<ObCacheEntry>) {
-  obCache[key] = { ...(obCache[key] || {}), ...patch }
-  saveObCacheDebounced()
-}
-function flushObCacheNow() {
-  if (!isBrowser()) return
-  try {
-    localStorage.setItem(OB_LS_KEY, JSON.stringify(obCache))
-  } catch {}
-}
-function hydrateFromCache(pair: string) {
-  const key = pairToQuery(pair)
-  const entry = obCache[key]
-  if (!entry) return
-  const now = Date.now()
-
-  if (entry.depth && now - entry.depth.ts <= DEPTH_CACHE_TTL) {
-    depthData.value = {
-      ch: `market.${key}.depth.step0`,
-      ts: entry.depth.ts,
-      tick: {
-        bids: [...(entry.depth.bids || [])].slice(0, DEPTH_TOP_N).sort((a, b) => b[0] - a[0]),
-        asks: [...(entry.depth.asks || [])].slice(0, DEPTH_TOP_N).sort((a, b) => a[0] - b[0]),
-      },
-    }
-    asksTop.value = depthData.value.tick.asks.slice(0, 12)
-    bidsTop.value = depthData.value.tick.bids.slice(0, 12)
-  }
-  if (entry.k1d && now - entry.k1d.ts <= KLINE_CACHE_TTL) {
-    klineDailyOHLC.value = { open: entry.k1d.open, close: entry.k1d.close, ts: entry.k1d.ts }
-    upsertCandleBuffer('1day', entry.k1d.ts, {
-      open: entry.k1d.open,
-      high: entry.k1d.open,
-      low: entry.k1d.open,
-      close: entry.k1d.close,
-      vol: 0,
-    })
-    scheduleChartFlush()
-  }
-}
 
 const activeTab = ref<'buy' | 'sell'>('buy')
 const dropdownOpen = ref(false)
 const selectedPair = ref('BTC/USDT')
 
 const tradingPairs = [
-  'BTC/USDT',
-  'ETH/USDT',
-  'BNB/USDT',
-  'SOL/USDT',
-  'LTC/USDT',
-  'LINK/USDT',
-  'TON/USDT',
-  'SUI/USDT',
-  'XRP/USDT',
-  'QTUM/USDT',
-  'THETA/USDT',
-  'ADA/USDT',
-  'RAD/USDT',
-  'BAND/USDT',
-  'ALGO/USDT',
-  'POL/USDT',
-  'DOGE/USDT',
-  'LUNA/USDT',
-  'GALA/USDT',
-  'PEPE/USDT',
-  'CFX/USDT',
-  'TRX/USDT',
-  'TRUMP/USDT',
-  'SHIB/USDT',
-  'ARB/USDT',
-  'FIL/USDT',
-  'API3/USDT',
-  'ENA/USDT',
-  'BIO/USDT',
-  'UNI/USDT',
-  'BTT/USDT',
-  'SATS/USDT',
-  'MEME/USDT',
-  'GT/USDT',
-  'OP/USDT',
-  'AAVE/USDT',
-  'SNAKES/USDT',
-  'TIA/USDT',
-  'SOON/USDT',
-  'ONDO/USDT',
-  'NEO/USDT',
-  'SKL/USDT',
-  'MX/USDT',
-  'FARTCOIN/USDT',
-  'RATS/USDT',
-  'ETC/USDT',
-  'TRB/USDT',
-  'AVAX/USDT',
-  'BCH/USDT',
-  'BSV/USDT',
-  'IOTA/USDT',
-  'CYBER/USDT',
-  'WIF/USDT',
-  'CORE/USDT',
-  'WLD/USDT',
-  'SEI/USDT',
-  'VIRTUAL/USDT',
-  'RENDER/USDT',
-  'MOODENG/USDT',
-  'JUP/USDT',
-  'PONKE/USDT',
-  'MNT/USDT',
-  'PNUT/USDT',
-  'EIGEN/USDT',
-  'GRASS/USDT',
-  'RAY/USDT',
-  'EPIC/USDT',
-  'ZRO/USDT',
-  'BERA/USDT',
-  'CA/USDT',
-  'IP/USDT',
-  'KAITO/USDT',
-  'OMNI/USDT',
-  'A8/USDT',
-  'OBOL/USDT',
-  'SAGA/USDT',
-  'ORCA/USDT',
-  'SHELL/USDT',
-  'NAKA/USDT',
+  'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'LTC/USDT', 'LINK/USDT', 'TON/USDT', 'SUI/USDT', 'XRP/USDT',
+  'QTUM/USDT', 'THETA/USDT', 'ADA/USDT', 'RAD/USDT', 'BAND/USDT', 'ALGO/USDT', 'POL/USDT', 'DOGE/USDT',
+  'LUNA/USDT', 'GALA/USDT', 'PEPE/USDT', 'CFX/USDT', 'TRX/USDT', 'TRUMP/USDT', 'SHIB/USDT', 'ARB/USDT',
+  'FIL/USDT', 'API3/USDT', 'ENA/USDT', 'BIO/USDT', 'UNI/USDT', 'BTT/USDT', 'SATS/USDT', 'MEME/USDT',
+  'GT/USDT', 'OP/USDT', 'AAVE/USDT', 'SNAKES/USDT', 'TIA/USDT', 'SOON/USDT', 'ONDO/USDT', 'NEO/USDT',
+  'SKL/USDT', 'MX/USDT', 'FARTCOIN/USDT', 'RATS/USDT', 'ETC/USDT', 'TRB/USDT', 'AVAX/USDT', 'BCH/USDT',
+  'BSV/USDT', 'IOTA/USDT', 'CYBER/USDT', 'WIF/USDT', 'CORE/USDT', 'WLD/USDT', 'SEI/USDT', 'VIRTUAL/USDT',
+  'RENDER/USDT', 'MOODENG/USDT', 'JUP/USDT', 'PONKE/USDT', 'MNT/USDT', 'PNUT/USDT', 'EIGEN/USDT',
+  'GRASS/USDT', 'RAY/USDT', 'EPIC/USDT', 'ZRO/USDT', 'BERA/USDT', 'CA/USDT', 'IP/USDT', 'KAITO/USDT',
+  'OMNI/USDT', 'A8/USDT', 'OBOL/USDT', 'SAGA/USDT', 'ORCA/USDT', 'SHELL/USDT', 'NAKA/USDT'
 ]
 
+/** =========================
+ *  Helpers Pair & Route
+ *  ========================= */
 const route = useRoute()
 const router = useRouter()
-
 function toPair(input?: string): string {
   if (!input) return ''
   const v = input.toUpperCase().replace('/', '')
@@ -686,169 +519,82 @@ function pairToApiSymbol(pair: string): string {
   return pair.replace('/', '').toUpperCase()
 }
 const baseAsset = computed(() => selectedPair.value.split('/')[0])
+function rawSymbolFromRoute(): string {
+  return (route.query.symbol as string) ?? (route.query.pairSymbol as string) ?? ''
+}
+function selectPair(pair: string) {
+  if (!tradingPairs.includes(pair)) return
+  if (pair === selectedPair.value) {
+    dropdownOpen.value = false
+    return
+  }
+  selectedPair.value = pair
+  dropdownOpen.value = false
+  router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } })
+  scheduleResubscribe()
+}
 
+/** =========================
+ *  Orderbook + % Change
+ *  ========================= */
+interface DepthTick { asks: [number, number][], bids: [number, number][] }
+interface DepthData { ch: string; ts: number; tick: DepthTick }
 const depthData = ref<DepthData | null>(null)
 const asksTop = ref<[number, number][]>([])
 const bidsTop = ref<[number, number][]>([])
-
-const aggWS = ref<WebSocket | null>(null)
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null
-
-let flushTimer: ReturnType<typeof setTimeout> | null = null
-let pendingDepth: {
-  ts: number
-  asks: [number, number][]
-  bids: [number, number][]
-  sym: string
-} | null = null
-
 const klineDailyOHLC = ref<{ open: number; close: number; ts: number } | null>(null)
 
-type CandleBuf = {
-  time: UTCTimestamp
-  open: number
-  high: number
-  low: number
-  close: number
-  vol: number
-}
-const buf5m = new Map<number, CandleBuf>()
-const buf15m = new Map<number, CandleBuf>()
-const buf30m = new Map<number, CandleBuf>() // (dipertahankan bila sewaktu-waktu dipakai)
-const buf60m = new Map<number, CandleBuf>()
-const buf1d = new Map<number, CandleBuf>()
+const top12Asks = computed(() => asksTop.value)
+const top12Bids = computed(() => bidsTop.value)
+const maxAskAmount = computed(() => top12Asks.value.length ? Math.max(...top12Asks.value.map(a => a[1])) : 1)
+const maxBidAmount = computed(() => top12Bids.value.length ? Math.max(...top12Bids.value.map(b => b[1])) : 1)
 
-function mapForPeriod(p: OriginPeriod) {
-  if (p === '5min') return buf5m
-  if (p === '15min') return buf15m
-  if (p === '30min') return buf30m
-  if (p === '60min') return buf60m
-  return buf1d
+function bestBid(): number {
+  const bids = depthData.value?.tick?.bids
+  return Array.isArray(bids) && bids.length ? Number(bids[0][0]) : 0
 }
-function periodMs(p: OriginPeriod) {
-  if (p === '5min') return 300_000 // ← harus 300.000 ms
-  if (p === '15min') return 900_000
-  if (p === '30min') return 1_800_000
-  if (p === '60min') return 3_600_000
-  return 86_400_000
+function bestAsk(): number {
+  const asks = depthData.value?.tick?.asks
+  return Array.isArray(asks) && asks.length ? Number(asks[0][0]) : 0
 }
-function bucketSec(tsMs: number, p: OriginPeriod) {
-  const ms = periodMs(p)
-  return Math.floor(tsMs / ms) * (ms / 1000)
-}
-function upsertCandleBuffer(
-  p: OriginPeriod,
-  tsMs: number,
-  ohlc: { open: number; high: number; low: number; close: number; vol: number },
-) {
-  const m = mapForPeriod(p)
-  const key = bucketSec(tsMs, p)
-  const prev = m.get(key)
-  if (!prev) {
-    m.set(key, { time: key as UTCTimestamp, ...ohlc })
-  } else {
-    prev.high = Math.max(prev.high, ohlc.high)
-    prev.low = Math.min(prev.low, ohlc.low)
-    prev.close = ohlc.close
-    prev.vol = (prev.vol || 0) + (ohlc.vol || 0)
-  }
-}
+const marketPrice = computed<number>(() => (activeTab.value === 'buy' ? bestAsk() : bestBid()))
+const percentChange = computed(() => {
+  const k = klineDailyOHLC.value
+  if (!k || !k.open) return null
+  return ((k.close - k.open) / k.open) * 100
+})
 
-/* ============ TF → OriginPeriod + limit (300 bar) ============ */
-function tfPlan(x: TF): { base: OriginPeriod; baseLimit: number; dailyLimit: number } {
-  if (x === '5m') return { base: '5min', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
-  if (x === '15m') return { base: '15min', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
-  if (x === '1h') return { base: '60min', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
-  // '1d'
-  return { base: '1day', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
-}
-function needPeriodsForTF(x: TF): OriginPeriod[] {
-  const { base } = tfPlan(x)
-  const set = new Set<OriginPeriod>([base, '1day']) // 1day utk % change
-  return Array.from(set)
-}
-
-/* ============ Subscribe/Unsubscribe/Snapshot (dengan limit) ============ */
-let subscribedSym: string | null = null
-const subscribedPeriods = new Set<OriginPeriod>()
-let resubTimer: ReturnType<typeof setTimeout> | null = null
+/** =========================
+ *  WebSocket (Only)
+ *  ========================= */
+const aggWS = ref<WebSocket | null>(null)
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let flushTimer: ReturnType<typeof setTimeout> | null = null
+let pendingDepth: { ts: number; asks: [number, number][]; bids: [number, number][]; sym: string } | null = null
 
 function wsSend(obj: unknown) {
   if (aggWS.value && aggWS.value.readyState === WebSocket.OPEN) {
-    try {
-      aggWS.value.send(JSON.stringify(obj))
-    } catch {}
+    try { aggWS.value.send(JSON.stringify(obj)) } catch { }
   }
 }
-function subscribeFor(
-  symLower: string,
-  periods: OriginPeriod[],
-  limit: number,
-  withBookTicker = false,
-) {
-  const channels = withBookTicker ? ['depth', 'ticker', 'kline'] : ['kline']
-  wsSend({ type: 'subscribe', channels, symbols: [symLower], periods, limit })
+function subscribe(symLower: string) {
+  // Depth + 1day kline (for % change)
+  wsSend({ type: 'subscribe', channels: ['depth', 'kline'], symbols: [symLower], periods: ['1day'], limit: 300 })
+  wsSend({ type: 'snapshot', symbols: [symLower], periods: ['1day'], limit: 300 })
 }
-function snapshotFor(symLower: string, periods: OriginPeriod[], limit: number) {
-  wsSend({ type: 'snapshot', symbols: [symLower], periods, limit })
+function unsubscribe(symLower: string) {
+  wsSend({ type: 'unsubscribe', channels: ['depth', 'kline'], symbols: [symLower], periods: ['1day'] })
 }
-function doUnsubscribe(symLower: string, periods: OriginPeriod[]) {
-  wsSend({
-    type: 'unsubscribe',
-    channels: ['depth', 'ticker', 'kline'],
-    symbols: [symLower],
-    periods,
-  })
-}
-
-/*
-  Resubscribe strategy:
-  - Unsub yang tidak dibutuhkan (jika ganti symbol / TF)
-  - Sub base period dengan limit sesuai tfPlan + depth/ticker sekali
-  - Sub 1day (kalau beda dari base) dengan limit 300, hanya kline
-  - Kirim snapshot per grup agar limit-nya pas
-*/
+let subscribedSym: string | null = null
 function scheduleResubscribe() {
-  if (resubTimer) return
-  resubTimer = window.setTimeout(() => {
-    resubTimer = null
-    const ws = aggWS.value
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
-
-    const sym = pairToQuery(selectedPair.value)
-    const plan = tfPlan(tf.value)
-    const wantPeriods = new Set<OriginPeriod>(needPeriodsForTF(tf.value))
-
-    // ganti symbol ⇒ lepas semua lama
-    if (subscribedSym && subscribedSym !== sym) {
-      if (subscribedPeriods.size) doUnsubscribe(subscribedSym, Array.from(subscribedPeriods))
-      subscribedPeriods.clear()
-    } else if (subscribedSym === sym) {
-      // symbol sama ⇒ lepas period yang tak dibutuhkan
-      const toUnsub: OriginPeriod[] = []
-      for (const p of subscribedPeriods) if (!wantPeriods.has(p)) toUnsub.push(p)
-      if (toUnsub.length) doUnsubscribe(sym, toUnsub)
-      for (const p of toUnsub) subscribedPeriods.delete(p)
-    }
-
-    const needBook = !subscribedSym || subscribedSym !== sym || subscribedPeriods.size === 0
-
-    // SUB base
-    if (!subscribedPeriods.has(plan.base)) {
-      subscribeFor(sym, [plan.base], plan.baseLimit, needBook)
-      snapshotFor(sym, [plan.base], plan.baseLimit)
-      subscribedPeriods.add(plan.base)
-    }
-
-    // SUB 1day utk % (jika base ≠ 1day)
-    if (!subscribedPeriods.has('1day') && plan.base !== '1day') {
-      subscribeFor(sym, ['1day'], plan.dailyLimit, false)
-      snapshotFor(sym, ['1day'], plan.dailyLimit)
-      subscribedPeriods.add('1day')
-    }
-
-    subscribedSym = sym
-  }, 150)
+  const ws = aggWS.value
+  if (!ws || ws.readyState !== WebSocket.OPEN) return
+  const sym = pairToQuery(selectedPair.value)
+  if (subscribedSym && subscribedSym !== sym) {
+    unsubscribe(subscribedSym)
+  }
+  subscribe(sym)
+  subscribedSym = sym
 }
 
 function scheduleFlush() {
@@ -858,91 +604,28 @@ function scheduleFlush() {
     if (pendingDepth && pendingDepth.sym === curPairKey) {
       const asksAsc = [...pendingDepth.asks].sort((a, b) => a[0] - b[0])
       const bidsDesc = [...pendingDepth.bids].sort((a, b) => b[0] - a[0])
-
       depthData.value = {
         ch: `market.${curPairKey}.depth.step0`,
         ts: pendingDepth.ts,
         tick: {
-          asks: asksAsc.slice(0, DEPTH_TOP_N),
-          bids: bidsDesc.slice(0, DEPTH_TOP_N),
+          asks: asksAsc.slice(0, 20),
+          bids: bidsDesc.slice(0, 20),
         },
       }
       asksTop.value = asksAsc.slice(0, 12)
       bidsTop.value = bidsDesc.slice(0, 12)
-
-      setObCache(curPairKey, {
-        depth: {
-          asks: depthData.value.tick.asks,
-          bids: depthData.value.tick.bids,
-          ts: pendingDepth.ts,
-        },
-      })
       pendingDepth = null
     }
     flushTimer = null
   }, 80)
 }
 
-/* ===== Chart ===== */
-const chartCandles = ref<CandlestickData[]>([])
-const chartLine = ref<LineData[]>([])
-const chartArea = ref<AreaData[]>([])
-let chartFlushTimer: ReturnType<typeof setTimeout> | null = null
-
-function seriesFromBufferForTF(): CandlestickData[] {
-  if (tf.value === '5m') {
-    const keys = Array.from(buf5m.keys()).sort((a, b) => a - b)
-    const data = keys.map((k) => {
-      const c = buf5m.get(k)!
-      return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }
-    })
-    return data.slice(-WANT_BARS)
-  }
-  if (tf.value === '15m') {
-    const keys = Array.from(buf15m.keys()).sort((a, b) => a - b)
-    const data = keys.map((k) => {
-      const c = buf15m.get(k)!
-      return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }
-    })
-    return data.slice(-WANT_BARS)
-  }
-  if (tf.value === '1h') {
-    const keys = Array.from(buf60m.keys()).sort((a, b) => a - b)
-    const data = keys.map((k) => {
-      const c = buf60m.get(k)!
-      return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }
-    })
-    return data.slice(-WANT_BARS)
-  }
-  // '1d'
-  const keys = Array.from(buf1d.keys()).sort((a, b) => a - b)
-  const data = keys.map((k) => {
-    const c = buf1d.get(k)!
-    return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }
-  })
-  return data.slice(-WANT_BARS)
-}
-function scheduleChartFlush() {
-  if (chartFlushTimer) return
-  chartFlushTimer = window.setTimeout(() => {
-    const candles = seriesFromBufferForTF()
-    chartCandles.value = candles
-    chartLine.value = candles.map((k) => ({ time: k.time, value: k.close }))
-    chartArea.value = chartLine.value
-    chartFlushTimer = null
-  }, 60)
-}
-
-/* ===== WS Connect & messages ===== */
 function connectAggregatorWS() {
-  try {
-    aggWS.value?.close()
-  } catch {}
+  try { aggWS.value?.close() } catch { }
   aggWS.value = new WebSocket('wss://ledgersocketone.online')
 
   aggWS.value.onopen = () => {
     subscribedSym = null
-    subscribedPeriods.clear()
     scheduleResubscribe()
   }
   aggWS.value.onclose = () => {
@@ -950,208 +633,66 @@ function connectAggregatorWS() {
     reconnectTimer = window.setTimeout(connectAggregatorWS, 2000)
   }
   aggWS.value.onerror = () => {
-    try {
-      aggWS.value?.close()
-    } catch {}
+    try { aggWS.value?.close() } catch { }
   }
-
   aggWS.value.onmessage = (e: MessageEvent) => {
     try {
       const msg = JSON.parse(e.data as string)
 
+      // Snapshot
       if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
         const want = pairToQuery(selectedPair.value)
         for (const it of msg.items) {
           const symLower = String(it.symbol || '').toLowerCase()
           if (!symLower || symLower !== want) continue
           if (it.type === 'depth') {
-            const bids = Array.isArray(it.bids) ? (it.bids as [number, number][]) : []
-            const asks = Array.isArray(it.asks) ? (it.asks as [number, number][]) : []
-            pendingDepth = { ts: it.ts, asks, bids, sym: symLower }
-          } else if (it.type === 'kline') {
-            const p = String(it.period) as OriginPeriod
-            const open = Number(it.open),
-              close = Number(it.close)
-            const high = Number(it.high),
-              low = Number(it.low),
-              vol = Number(it.vol)
+            const bids = Array.isArray(it.bids) ? it.bids as [number, number][] : []
+            const asks = Array.isArray(it.asks) ? it.asks as [number, number][] : []
+            pendingDepth = { ts: Number(it.ts) || Date.now(), asks, bids, sym: symLower }
+          } else if (it.type === 'kline' && it.period === '1day') {
+            const open = Number(it.open), close = Number(it.close)
             if (Number.isFinite(open) && Number.isFinite(close)) {
-              upsertCandleBuffer(p, Number(it.ts), { open, high, low, close, vol })
-              if (p === '1day') {
-                klineDailyOHLC.value = { open, close, ts: Number(it.ts) }
-                setObCache(want, { k1d: { open, close, ts: Number(it.ts) } })
-              }
+              klineDailyOHLC.value = { open, close, ts: Number(it.ts) || Date.now() }
             }
           }
         }
         scheduleFlush()
-        scheduleChartFlush()
         return
       }
 
+      // Stream
       const type: string | undefined = msg?.type
       const symLower = String(msg.symbol || '').toLowerCase()
       if (!type || !symLower || symLower !== pairToQuery(selectedPair.value)) return
 
       if (type === 'depth') {
-        const bids = Array.isArray(msg.bids) ? (msg.bids as [number, number][]) : []
-        const asks = Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : []
-        pendingDepth = { ts: Number(msg.ts), asks, bids, sym: symLower }
+        const bids = Array.isArray(msg.bids) ? msg.bids as [number, number][] : []
+        const asks = Array.isArray(msg.asks) ? msg.asks as [number, number][] : []
+        pendingDepth = { ts: Number(msg.ts) || Date.now(), asks, bids, sym: symLower }
         scheduleFlush()
         return
       }
 
-      if (type === 'kline') {
-        const p = String(msg.period) as OriginPeriod
-        const open = Number(msg.open)
-        const close = Number(msg.close)
-        const high = Number(msg.high)
-        const low = Number(msg.low)
-        const vol = Number(msg.vol)
-        const ts = Number(msg.ts)
+      if (type === 'kline' && msg.period === '1day') {
+        const open = Number(msg.open), close = Number(msg.close)
         if (Number.isFinite(open) && Number.isFinite(close)) {
-          upsertCandleBuffer(p, ts, { open, high, low, close, vol })
-          if (p === '1day') {
-            klineDailyOHLC.value = { open, close, ts }
-            setObCache(symLower, { k1d: { open, close, ts } })
-          }
-          scheduleChartFlush()
+          klineDailyOHLC.value = { open, close, ts: Number(msg.ts) || Date.now() }
         }
         return
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }
 }
 
-/* ===== Derivatives for template ===== */
-const top12Asks = computed(() => asksTop.value)
-const top12Bids = computed(() => bidsTop.value)
-const maxAskAmount = computed(() =>
-  top12Asks.value.length ? Math.max(...top12Asks.value.map((a) => a[1])) : 1,
-)
-const maxBidAmount = computed(() =>
-  top12Bids.value.length ? Math.max(...top12Bids.value.map((b) => b[1])) : 1,
-)
-const percentChange = computed(() => {
-  const k = klineDailyOHLC.value
-  if (!k || !k.open) return null
-  return ((k.close - k.open) / k.open) * 100
-})
-
-function resetLocalData() {
-  depthData.value = null
-  asksTop.value = []
-  bidsTop.value = []
-  pendingDepth = null
-  klineDailyOHLC.value = null
-  buf5m.clear()
-  buf15m.clear()
-  buf30m.clear()
-  buf60m.clear()
-  buf1d.clear()
-  scheduleChartFlush()
-}
-
-/* ===== Slider & saldo (tetap) ===== */
-const amountPercent = ref<number>(0)
-const rawPercent = ref<number>(0)
-const isDragging = ref<boolean>(false)
-const saldo = ref<number | null>(null)
-const coinTotal = ref<number | null>(null)
-const availableLoading = ref(true)
-const availableError = ref(false)
-const marks = [0, 25, 50, 75, 100]
-function snapToNearestMark(v: number) {
-  let nearest = 0,
-    best = Infinity
-  for (const m of marks) {
-    const d = Math.abs(v - m)
-    if (d < best) {
-      best = d
-      nearest = m
-    }
-  }
-  return nearest
-}
-const available = computed<number>(() =>
-  activeTab.value === 'buy' ? (saldo.value ?? 0) : (coinTotal.value ?? 0),
-)
+/** =========================
+ *  Form (UI only; no business logic)
+ *  ========================= */
 const availableUnit = computed(() => (activeTab.value === 'buy' ? 'USDT' : baseAsset.value))
-const canSlide = computed<boolean>(
-  () => !availableLoading.value && !availableError.value && available.value > 0,
-)
-const sliderStyle = computed(() => {
-  if (!canSlide.value)
-    return {
-      background: 'linear-gradient(to right, #e5e7eb 0%, #e5e7eb 100%)',
-      cursor: 'not-allowed',
-    }
-  const p = isDragging.value ? rawPercent.value : amountPercent.value
-  return { background: `linear-gradient(to right, #22c55e ${p}%, #e5e7eb ${p}%)` }
-})
-const totalAmount = ref<number>(0)
 const totalAmountInput = ref<string>('')
-function roundTo(v: number, dp = 8): number {
-  if (!Number.isFinite(v)) return 0
-  return Number.parseFloat(v.toFixed(dp))
-}
-function syncPercentFromTotal() {
-  const a = available.value,
-    v = totalAmount.value
-  const pct = a > 0 ? (v / a) * 100 : 0
-  rawPercent.value = pct
-  amountPercent.value = pct
-}
-function onInput(v: number) {
-  if (!canSlide.value) return
-  rawPercent.value = v
-  const s = available.value
-  totalAmount.value = roundTo((s * v) / 100, 8)
-  if (!isEditingAmount.value) {
-    totalAmountInput.value = formatLocaleDecimal(totalAmount.value)
-  }
-}
-function commitSnap() {
-  if (!canSlide.value) return
-  amountPercent.value = snapToNearestMark(rawPercent.value)
-  rawPercent.value = amountPercent.value
-  const s = available.value
-  totalAmount.value = roundTo((s * amountPercent.value) / 100, 8)
-  if (!isEditingAmount.value) totalAmountInput.value = formatLocaleDecimal(totalAmount.value)
-}
-function setPercent(p: number) {
-  if (!canSlide.value) return
-  amountPercent.value = p
-  rawPercent.value = p
-  const s = available.value
-  totalAmount.value = roundTo((s * p) / 100, 8)
-  totalAmountInput.value =
-    activeTab.value === 'buy' ? totalAmount.value.toFixed(2) : totalAmount.value.toFixed(8)
-}
-function handlePointerUp() {
-  isDragging.value = false
-  commitSnap()
-}
 const amountInputEl = ref<HTMLInputElement | null>(null)
 const isEditingAmount = ref(false)
-const dp = computed(() => (activeTab.value === 'buy' ? 2 : 8))
-function formatLocaleDecimal(num: number): string {
-  if (!Number.isFinite(num)) return ''
-  return num.toLocaleString('id-ID', {
-    minimumFractionDigits: dp.value,
-    maximumFractionDigits: dp.value,
-  })
-}
-function parseLocaleDecimal(str: string): number {
-  if (!str) return NaN
-  const cleaned = str.replace(/\s/g, '').replace(/\./g, '').replace(',', '.')
-  return Number(cleaned)
-}
 function onAmountFocus(e: FocusEvent) {
   isEditingAmount.value = true
-  if (!totalAmount.value) totalAmountInput.value = ''
   requestAnimationFrame(() => (e.target as HTMLInputElement).select())
 }
 function onAmountTyping() {
@@ -1162,275 +703,93 @@ function onAmountCommit() {
 }
 function onAmountBlur() {
   isEditingAmount.value = false
-  const raw = (totalAmountInput.value || '').trim()
-  let v = parseLocaleDecimal(raw)
-  if (!Number.isFinite(v)) v = 0
-  if (v < 0) v = 0
-  const a = available.value
-  if (a > 0 && v > a) v = a
-  v = roundTo(v, dp.value)
-  totalAmount.value = v
-  totalAmountInput.value = v ? formatLocaleDecimal(v) : ''
-  syncPercentFromTotal()
 }
 
-/* ===== URL sync & lifecycle ===== */
-function rawSymbolFromRoute(): string {
-  return (route.query.symbol as string) ?? (route.query.pairSymbol as string) ?? ''
+/* Slider (visual only) */
+const marks = [0, 25, 50, 75, 100]
+const rawPercent = ref<number>(0)
+const amountPercent = ref<number>(0)
+const isDragging = ref<boolean>(false)
+function setPercent(p: number) {
+  amountPercent.value = p
+  rawPercent.value = p
 }
-
-onMounted(() => {
-  loadObCache()
-  if (isBrowser()) {
-    const flush = () => flushObCacheNow()
-    window.addEventListener('beforeunload', flush)
-    onUnmounted(() => window.removeEventListener('beforeunload', flush))
+function onInput(v: number) {
+  rawPercent.value = v
+}
+function commitSnap() {
+  // snap ke marks terdekat (visual)
+  let nearest = 0, best = Infinity
+  for (const m of marks) {
+    const d = Math.abs(rawPercent.value - m)
+    if (d < best) { best = d; nearest = m }
   }
-
-  const pairFromUrl = toPair(rawSymbolFromRoute())
-  selectedPair.value = pairFromUrl || 'BTC/USDT'
-
-  hydrateFromCache(selectedPair.value)
-  connectAggregatorWS()
-  scheduleResubscribe()
-  getAvailable()
+  amountPercent.value = nearest
+  rawPercent.value = nearest
+}
+function handlePointerUp() {
+  isDragging.value = false
+  commitSnap()
+}
+const sliderStyle = computed(() => {
+  const p = isDragging.value ? rawPercent.value : amountPercent.value
+  return { background: `linear-gradient(to right, #22c55e ${p}%, #e5e7eb ${p}%)` }
 })
 
+/** =========================
+ *  Stub Chart Component
+ *  ========================= */
+const LightChart = defineComponent({
+  name: 'LightChartStub',
+  props: {
+    seriesType: { type: String, default: 'candlestick' },
+    candleData: { type: Array, default: () => [] },
+    data: { type: Array, default: () => [] },
+    options: { type: Object, default: () => ({}) },
+    fit: { type: Boolean, default: false },
+    initialBars: { type: Number, default: 180 },
+    rightOffset: { type: Number, default: 12 },
+    autoFollow: { type: Boolean, default: true },
+  },
+  setup() {
+    return () =>
+      h(
+        'div',
+        {
+          class:
+            'w-full h-[240px] bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-center text-xs text-gray-400 select-none',
+        },
+        'Chart preview',
+      )
+  },
+})
+
+/** =========================
+ *  Lifecycle & watchers
+ *  ========================= */
+onMounted(() => {
+  const pairFromUrl = toPair(rawSymbolFromRoute())
+  selectedPair.value = pairFromUrl || 'BTC/USDT'
+  connectAggregatorWS()
+  scheduleResubscribe()
+})
 watch([() => route.query.symbol, () => route.query.pairSymbol], ([sym, pairSym]) => {
   const pair = toPair((sym as string) ?? (pairSym as string))
   if (pair && pair !== selectedPair.value) {
     selectedPair.value = pair
     dropdownOpen.value = false
     router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } })
-    resetLocalData()
     scheduleResubscribe()
-    getAvailable()
   }
 })
-function selectPair(pair: string) {
-  if (!tradingPairs.includes(pair)) return
-  if (pair === selectedPair.value) {
-    dropdownOpen.value = false
-    return
-  }
-  selectedPair.value = pair
-  dropdownOpen.value = false
-  router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } })
-  resetLocalData()
-  scheduleResubscribe()
-  getAvailable()
-}
 watch(tf, () => {
-  scheduleResubscribe()
-  scheduleChartFlush()
+  // keep for UI toggle; no extra logic needed
 })
-
 onUnmounted(() => {
-  try {
-    aggWS.value?.close()
-  } catch {}
+  try { aggWS.value?.close() } catch { }
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
     reconnectTimer = null
   }
-})
-
-/* ===== Order submit (tetap) ===== */
-const submitting = ref(false)
-const submitError = ref<string>('')
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
-function bestBid(): number {
-  const bids = depthData.value?.tick?.bids
-  return Array.isArray(bids) && bids.length ? Number(bids[0][0]) : 0
-}
-function bestAsk(): number {
-  const asks = depthData.value?.tick?.asks
-  return Array.isArray(asks) && asks.length ? Number(asks[0][0]) : 0
-}
-const marketPrice = computed<number>(() => (activeTab.value === 'buy' ? bestAsk() : bestBid()))
-watch(activeTab, () => {
-  totalAmount.value = 0
-  totalAmountInput.value = ''
-  rawPercent.value = 0
-  amountPercent.value = 0
-  getAvailable()
-})
-
-async function getAvailable() {
-  const API = API_BASE
-  availableLoading.value = true
-  availableError.value = false
-  try {
-    const token = isBrowser() ? localStorage.getItem('token') : ''
-    if (!token) throw new Error('No token')
-
-    if (activeTab.value === 'buy') {
-      const res = await fetch(`${API}/saldo`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        credentials: 'include',
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      const s = Number(data?.saldo ?? 0)
-      saldo.value = Number.isFinite(s) ? s : 0
-      coinTotal.value = null
-    } else {
-      const sym = pairToApiSymbol(selectedPair.value)
-      const res = await fetch(`${API}/positions/${sym}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        credentials: 'include',
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      const t = Number(data?.qty ?? 0)
-      coinTotal.value = Number.isFinite(t) ? t : 0
-    }
-
-    const a = available.value
-    if (a <= 0) {
-      totalAmount.value = 0
-      totalAmountInput.value = ''
-      rawPercent.value = 0
-      amountPercent.value = 0
-    } else {
-      if (totalAmount.value > a) totalAmount.value = a
-      totalAmountInput.value =
-        activeTab.value === 'buy'
-          ? (totalAmount.value || 0).toFixed(2)
-          : (totalAmount.value || 0).toFixed(8)
-      syncPercentFromTotal()
-    }
-  } catch {
-    availableError.value = true
-    if (activeTab.value === 'buy') saldo.value = null
-    if (activeTab.value === 'sell') coinTotal.value = null
-    amountPercent.value = 0
-    rawPercent.value = 0
-    totalAmount.value = 0
-    totalAmountInput.value = ''
-  } finally {
-    availableLoading.value = false
-  }
-}
-
-const PENDING_LS_KEY = 'pendingTxs'
-function hasPendingTxs(): boolean {
-  if (!isBrowser()) return false
-  const raw = localStorage.getItem(PENDING_LS_KEY)
-  if (!raw) return false
-  try {
-    const arr = JSON.parse(raw)
-    return Array.isArray(arr) && arr.length > 0
-  } catch {
-    return false
-  }
-}
-
-/* ===== Order submit (updated) ===== */
-type SaveTradePayload = {
-  symbol: string
-  side: 'BUY' | 'SELL'
-  price: number
-  qty: number
-  fee: number
-  event_price: number // ⬅️ NEW
-}
-
-async function submitTrade() {
-  if (submitting.value) return
-  submitError.value = ''
-  if (hasPendingTxs()) {
-    modal.open(
-      'Error',
-      'You already have a pending copy trade. Please wait until it completes before placing a new order.',
-    )
-    return
-  }
-  try {
-    submitting.value = true
-    const token = isBrowser() ? localStorage.getItem('token') : ''
-    if (!token) throw new Error('No token')
-
-    const side = activeTab.value === 'buy' ? 'BUY' : 'SELL'
-    let price = marketPrice.value
-    if (!price || price <= 0) throw new Error('Market price is not available')
-
-    const bid = bestBid(),
-      ask = bestAsk()
-    if (bid > 0 && ask > 0) {
-      const spreadPct = ((ask - bid) / bid) * 100
-      if (spreadPct > 2) throw new Error(`Spread too wide (${spreadPct.toFixed(2)}%).`)
-      if (side === 'BUY' && price !== ask) price = ask
-      if (side === 'SELL' && price !== bid) price = bid
-    }
-
-    const amount = Number(totalAmount.value)
-    if (!(amount > 0)) throw new Error('Invalid total')
-
-    let qty = side === 'BUY' ? amount / price : amount
-    if (side === 'SELL') {
-      const maxQty = Number(coinTotal.value ?? 0)
-      const EPS = 1e-10
-      qty = Math.min(qty, Math.max(0, maxQty - EPS))
-      qty = Math.floor(qty * 1e8) / 1e8
-    } else {
-      qty = Math.floor(qty * 1e8) / 1e8
-    }
-    if (!(qty > 0)) throw new Error('Qty becomes 0 after rounding')
-
-    // event_price as USDT net:
-    // BUY  -> amount + fee  (what you actually spend; if fee=0, same as amount)
-    // SELL -> price*qty - fee (what you actually receive)
-    const netBuy = amount + 0 // fee is 0 in your payload, adjust if you add fee later
-    const netSell = price * qty - 0 // fee=0 in payload; if you add fee, subtract it here
-
-    const payload: SaveTradePayload = {
-      symbol: pairToApiSymbol(selectedPair.value),
-      side,
-      price,
-      qty,
-      fee: 0,
-      event_price: side === 'BUY' ? netBuy : netSell, // ⬅️ send USDT net
-    }
-
-    const res = await fetch(`${API_BASE}/save-trades`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(payload),
-    })
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err?.message || `HTTP ${res.status}`)
-    }
-
-    await res.json()
-    modal.open('Success', 'Order Created')
-
-    await getAvailable()
-    totalAmount.value = 0
-    totalAmountInput.value = ''
-    rawPercent.value = 0
-    amountPercent.value = 0
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Failed to submit order'
-    submitError.value = msg
-    modal.open('Error', msg)
-  } finally {
-    submitting.value = false
-  }
-}
-
-/* ===== Chart props ===== */
-const dataForChart = computed(() => {
-  if (kind.value === 'candlestick')
-    return { candleData: chartCandles.value, data: [] as LineData[] }
-  if (kind.value === 'line') return { candleData: [] as CandlestickData[], data: chartLine.value }
-  return { candleData: [] as CandlestickData[], data: chartArea.value }
 })
 </script>
