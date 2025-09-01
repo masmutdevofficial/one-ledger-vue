@@ -3,9 +3,16 @@
     <!-- Header -->
     <div class="flex justify-between items-start mb-4">
       <div class="flex flex-col items-start space-x-4">
-        <div class="w-16 h-16 rounded-full border border-[#a3b13f] overflow-hidden flex-shrink-0 mb-4">
-          <img :alt="`${name} profile photo`" class="w-full h-full object-cover" :src="profileImageUrl" width="64"
-            height="64" />
+        <div
+          class="w-16 h-16 rounded-full border border-[#a3b13f] overflow-hidden flex-shrink-0 mb-4"
+        >
+          <img
+            :alt="`${name} profile photo`"
+            class="w-full h-full object-cover"
+            :src="profileImageUrl"
+            width="64"
+            height="64"
+          />
         </div>
         <div>
           <h1 class="text-lg font-semibold leading-tight uppercase tracking-wide">
@@ -17,15 +24,21 @@
         </div>
       </div>
 
-      <button aria-label="Close" class="text-black text-2xl font-bold leading-none">
+      <button
+        aria-label="Close"
+        class="text-black text-2xl font-bold leading-none"
+        @click="onClose"
+      >
         <Icon icon="tabler:x" class="w-6 h-6" />
       </button>
     </div>
 
     <!-- Star badge -->
     <div class="flex justify-end mb-4 absolute top-18 right-6">
-      <button type="button"
-        class="flex items-center space-x-1 bg-white border border-gray-300 rounded-md px-3 py-1 text-gray-700 text-sm shadow-sm">
+      <button
+        type="button"
+        class="flex items-center space-x-1 bg-white border border-gray-300 rounded-md px-3 py-1 text-gray-700 text-sm shadow-sm"
+      >
         <Icon icon="tabler:star" class="w-4 h-4" />
         <span>{{ formatInt(starCount) }}</span>
       </button>
@@ -134,19 +147,25 @@
 
     <!-- Asset Preferences -->
     <h3 class="font-bold text-base mb-4">Asset Preferences</h3>
-    <div class="flex items-center justify-between space-x-6 w-full">
+    <div class="flex items-center justify-between space-x-6 pr-4 w-full">
       <!-- Donut (image) -->
       <div class="w-20 h-20 relative">
-        <img src="/img/chart-profile.png" alt="Asset distribution donut chart" class="w-20 h-20 object-contain" />
+        <img
+          src="/img/chart-profile.png"
+          alt="Asset distribution donut chart"
+          class="w-20 h-20 object-contain"
+        />
       </div>
 
       <!-- Legend -->
-      <div class="flex flex-col justify-between space-y-2 text-[12px] text-gray-900 relative right-20">
-        <div v-for="it in assetPrefs" :key="it.label" class="flex items-center space-x-2">
-          <div class="w-3 h-3 rounded-sm" :style="{ backgroundColor: it.color }"></div>
-          <span class="text-gray-400">{{ it.label }}</span>
-          <span class="ml-8 text-gray-900">{{ it.value.toFixed(2) }}%</span>
-        </div>
+      <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-[12px] text-gray-900">
+        <template v-for="it in assetPrefs" :key="it.label">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-sm" :style="{ backgroundColor: it.color }"></div>
+            <span class="text-gray-400">{{ it.label }}</span>
+          </div>
+          <div class="text-right tabular-nums">{{ it.value.toFixed(2) }}%</div>
+        </template>
       </div>
     </div>
   </div>
@@ -154,6 +173,13 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+function onClose() {
+  if (window.history.length > 1) router.back()
+  else router.push('/copy') // fallback rute, sesuaikan jika perlu
+}
 
 /* ---- Data default ---- */
 const name = 'MICHAEL HARTONO'
@@ -185,7 +211,7 @@ const totalPositions = 486
 
 /* Legend data (warna harus match gambar chart-profile.png) */
 const assetPrefs = [
-  { label: 'BTC', value: 52.1, color: '#2563EB' },   // sesuaikan warna dengan chart
+  { label: 'BTC', value: 52.1, color: '#2563EB' }, // sesuaikan warna dengan chart
   { label: 'ETH', value: 34.55, color: '#F59E0B' },
   { label: 'SOL', value: 8.2, color: '#7DD3FC' },
   { label: 'OTHER', value: 5.15, color: '#9CA3AF' },

@@ -123,8 +123,12 @@ const routes = [
         component: () => import('@/views/menu/P2PDetail.vue'),
       },
       {
-        path: 'p2p-profile',
-        component: () => import('@/views/menu/ProfileP2P.vue'),
+        path: 'profile-copy-trade',
+        component: () => import('@/views/ProfileCopyTrade.vue'),
+      },
+      {
+        path: 'future',
+        component: () => import('@/views/FutureClone.vue'),
       },
       {
         path: 'p2p-checkout',

@@ -9,24 +9,46 @@
     <!-- CONTENT -->
     <template v-else>
       <!-- Back -->
-      <button aria-label="Back" class="mb-4 inline-flex items-center text-black" type="button" @click="goBack">
+      <button
+        aria-label="Back"
+        class="mb-4 inline-flex items-center text-black"
+        type="button"
+        @click="goBack"
+      >
         <Icon icon="tabler:arrow-left" class="w-6 h-6" />
       </button>
 
       <!-- Profile & title -->
       <div class="flex items-center justify-between mb-1">
         <div class="flex items-center gap-4">
-          <img :alt="`${trader.name} avatar`" class="w-12 h-12 rounded-full object-cover" :src="avatarUrl"
-            @error="onAvatarError" />
+          <img
+            :alt="`${trader.name} avatar`"
+            class="w-12 h-12 rounded-full object-cover"
+            :src="avatarUrl"
+            @error="onAvatarError"
+          />
           <h1 class="font-extrabold text-lg flex items-center gap-2">
-            <span>{{ trader.name }}</span>
-            <Icon v-if="trader.is_featured" icon="tabler:shield-check" class="w-5 h-5 text-amber-500" />
+            <RouterLink
+              to="/profile-copy-trade"
+              class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded"
+            >
+              {{ trader.name }}
+            </RouterLink>
+            <Icon
+              v-if="trader.is_featured"
+              icon="tabler:shield-check"
+              class="w-5 h-5 text-amber-500"
+            />
           </h1>
         </div>
 
-        <router-link v-if="trader && trader.id" :to="`/chats/${trader.id}`"
+        <router-link
+          v-if="trader && trader.id"
+          :to="`/chats/${trader.id}`"
           class="ml-4 inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200"
-          aria-label="Open chat" title="Message">
+          aria-label="Open chat"
+          title="Message"
+        >
           <img src="/img/chat-copy-trader.png" alt="Menu" class="w-5 h-5 object-contain" />
         </router-link>
       </div>
@@ -34,7 +56,8 @@
       <p class="text-sm mb-2">{{ trader?.description || '' }}</p>
 
       <div
-        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
+        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none"
+      >
         <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
         <span>Profit Sharing 10%</span>
       </div>
@@ -44,19 +67,31 @@
       <label for="copyAmount" class="text-gray-400 text-xs mb-1 block">Copy Amount</label>
 
       <div class="flex items-center bg-gray-100 rounded-md h-10 mb-1 px-3">
-        <input id="copyAmount" aria-label="Copy Amount input" v-model="amount" type="text" inputmode="decimal"
-          class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none" placeholder="Enter amount"
-          :disabled="hasPendingOrder" :class="hasPendingOrder ? 'opacity-60 cursor-not-allowed' : ''" />
+        <input
+          id="copyAmount"
+          aria-label="Copy Amount input"
+          v-model="amount"
+          type="text"
+          inputmode="decimal"
+          class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none"
+          placeholder="Enter amount"
+          :disabled="hasPendingOrder"
+          :class="hasPendingOrder ? 'opacity-60 cursor-not-allowed' : ''"
+        />
         <span class="text-xs font-semibold text-black ml-2">USDT</span>
-        <button class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50" type="button" @click="setMax"
-          :disabled="hasPendingOrder">
+        <button
+          class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50"
+          type="button"
+          @click="setMax"
+          :disabled="hasPendingOrder"
+        >
           Max
         </button>
       </div>
 
       <small v-show="!!amountError" class="block text-red-500 text-xs mb-2">{{
         amountError
-        }}</small>
+      }}</small>
 
       <!-- Available (left)  |  Min Buy (right) -->
       <div class="flex justify-between items-center text-[10px] text-gray-400 mb-5">
@@ -64,10 +99,13 @@
           <span>Available</span>
           <span v-if="!loadingSaldo" class="font-normal"> {{ fmtUSDT(saldo) }} USDT </span>
           <span v-else class="font-normal">...</span>
-          <button aria-label="Add" class="text-[#D6B94D] text-xs font-semibold" type="button" @click.prevent
-            title="Add">
-
-          </button>
+          <button
+            aria-label="Add"
+            class="text-[#D6B94D] text-xs font-semibold"
+            type="button"
+            @click.prevent
+            title="Add"
+          ></button>
         </div>
         <div class="flex items-center gap-1">
           <span>Min Open Position</span>
@@ -80,8 +118,13 @@
       <!-- Position Risk -->
       <div class="flex flex-row justify-between items-start">
         <h2 class="font-semibold text-base mb-2">Position Risk</h2>
-        <button v-if="trader?.slug" type="button" class="inline-flex items-center text-gray-600 hover:text-black"
-          @click="goHistory" aria-label="Open futures history">
+        <button
+          v-if="trader?.slug"
+          type="button"
+          class="inline-flex items-center text-gray-600 hover:text-black"
+          @click="goHistory"
+          aria-label="Open futures history"
+        >
           <Icon icon="tabler:file-description" class="w-4 h-4" />
         </button>
       </div>
@@ -89,14 +132,19 @@
         <div>
           <label for="sl" class="text-gray-400 text-xs mb-1 block">Stop Loss</label>
           <div class="relative">
-            <select id="sl" v-model.number="sl" :disabled="hasPendingOrder"
+            <select
+              id="sl"
+              v-model.number="sl"
+              :disabled="hasPendingOrder"
               :class="hasPendingOrder ? 'opacity-60 cursor-not-allowed' : ''"
-              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none">
+              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none"
+            >
               <option disabled value="">Select</option>
               <option v-for="n in 10" :key="n" :value="n * 10">{{ n * 10 }}%</option>
             </select>
             <span
-              class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none">
+              class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none"
+            >
               % ROI
             </span>
           </div>
@@ -116,8 +164,12 @@
         </div>
 
         <div v-if="!hasPendingOrder" class="pb-5">
-          <button class="mt-3 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 float-right"
-            type="button" :disabled="loadingSubmit" @click="submitWinLose">
+          <button
+            class="mt-3 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 float-right"
+            type="button"
+            :disabled="loadingSubmit"
+            @click="submitWinLose"
+          >
             {{ loadingSubmit ? 'Processing…' : 'Open Position' }}
           </button>
         </div>
@@ -367,7 +419,7 @@ async function fetchTakeProfit(): Promise<void> {
       let msg = `HTTP ${res.status}`
       try {
         msg = await res.text()
-      } catch { }
+      } catch {}
       throw new Error(msg)
     }
     const data = await res.json()
