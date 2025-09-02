@@ -389,16 +389,71 @@
       </div>
     </div>
 
-    <!-- CTA BAWAH -->
-    <div v-if="!showChart" class="max-w-md mx-auto border border-gray-200 rounded-md p-5 mb-20">
-      <div class="text-center">
-        <p class="text-gray-400 text-sm font-normal mb-2">Let Top Traders Trade for You</p>
-        <RouterLink to="/futures" role="button"
-          class="inline-flex items-center justify-center text-gray-700 text-xs font-normal border border-gray-300 rounded px-4 py-1.5 hover:bg-gray-100 transition">
-          Copy Trading
-        </RouterLink>
+    <!-- ===== Assets ===== -->
+    <div class="mb-20">
+      <div v-if="loadingAssets" class="text-sm text-gray-500 px-5 py-3">Loading assets…</div>
+      <div v-else-if="errorAssets" class="text-sm text-red-500 px-5 py-3">{{ errorAssets }}</div>
+      <div v-else-if="assets.length === 0" class="text-sm text-center text-gray-500 px-5 py-3">
+        No Data Available
       </div>
+
+      <section v-else v-for="a in assets" :key="a.symbol"
+        class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md bg-white cursor-pointer hover:ring-2 hover:ring-teal-200 transition"
+        @click="goAsset(a)">
+        <div class="flex justify-between items-center">
+          <p class="text-gray-500 text-[10px] font-normal">Asset</p>
+          <Icon icon="tabler:adjustments-horizontal" class="text-gray-400 text-[10px]" />
+        </div>
+
+        <div class="flex justify-between items-center text-[10px]">
+          <div class="flex items-center space-x-2">
+            <img :alt="`${a.base} logo`" class="rounded-full" :src="a.logoUrl" width="20" height="20" />
+            <p class="font-bold text-black text-xs leading-4">
+              {{ a.base }}
+              <span class="font-normal text-gray-400 text-[10px]">/{{ a.quote }}</span>
+            </p>
+          </div>
+
+          <button aria-label="Share" class="text-gray-400 hover:text-gray-600">
+            <Icon icon="tabler:share-3" class="text-xs" />
+          </button>
+        </div>
+
+        <!-- Unrealized PnL -->
+        <div v-if="a.lastPrice > 0" class="flex justify-between items-center space-x-4 font-semibold text-xs leading-4"
+          :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'">
+          <p>{{ signedMoneyId(a.uPnlAbs, 2) }}</p>
+          <p>{{ signedPercent(a.uPnlPct) }}</p>
+        </div>
+        <div v-else class="text-[10px] text-gray-400">—</div>
+
+        <!-- Balances, Avg Cost, Last Price -->
+        <div class="grid grid-cols-3 gap-2 text-[10px] text-gray-400 font-normal">
+          <div>
+            <span class="text-gray-600 block">Balances</span>
+            <span class="text-black font-normal text-[10px] block">
+              {{ formatNumberId(a.qty, 8) }} {{ a.base }}
+            </span>
+            <span class="block">{{ moneyId(a.valueUsd, 2) }}</span>
+          </div>
+
+          <div class="text-right">
+            <span class="text-gray-600 block">Avg. Cost ({{ a.quote }})</span>
+            <span class="text-black font-normal text-[10px] block">
+              {{ formatNumberId(a.avgCost, 2) }}
+            </span>
+          </div>
+
+          <div class="text-right mt-0.3">
+            <span class="text-gray-600 block">Last Price ({{ a.quote }})</span>
+            <span class="text-black font-normal text-[10px] block">
+              {{ formatNumberId(a.lastPrice, 2) }}
+            </span>
+          </div>
+        </div>
+      </section>
     </div>
+
   </div>
 </template>
 
@@ -422,6 +477,129 @@ const tf = ref<TF>('1h')
 
 const modal = useApiAlertStore()
 const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
+// ===== Assets (state) =====
+type Quote = 'USDT' | 'USDC' | 'USD'
+type PositionRow = {
+  symbol: string
+  qty: string | number
+  avg_cost: string | number
+}
+type AssetItem = {
+  symbol: string
+  base: string
+  quote: Quote
+  logoUrl: string
+  qty: number
+  avgCost: number
+  lastPrice: number
+  valueUsd: number
+  uPnlAbs: number
+  uPnlPct: number
+}
+
+const assets = ref<AssetItem[]>([])
+const loadingAssets = ref(false)
+const errorAssets = ref<string | null>(null)
+
+// ===== Assets (utils) =====
+function splitSymbol(sym: string): { base: string; quote: Quote } {
+  const s = sym.toUpperCase()
+  if (s.endsWith('USDT')) return { base: s.slice(0, -4), quote: 'USDT' }
+  if (s.endsWith('USDC')) return { base: s.slice(0, -4), quote: 'USDC' }
+  if (s.endsWith('USD')) return { base: s.slice(0, -3), quote: 'USD' }
+  return { base: s, quote: 'USDT' }
+}
+const formatNumberId = (nu: number, digits = 2) =>
+  Number.isFinite(nu)
+    ? nu.toLocaleString('id-ID', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+    : '0'
+const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
+const signedPercent = (pct: number) =>
+  (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
+const signedMoneyId = (nu: number, digits = 2) =>
+  (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
+
+// local logo helper
+const BASE = import.meta.env.BASE_URL || '/'
+const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
+
+// ===== Assets (loader) =====
+async function loadAssets() {
+  loadingAssets.value = true
+  errorAssets.value = null
+  try {
+    const token = isBrowser() ? localStorage.getItem('token') : ''
+    if (!token) throw new Error('Token tidak ada.')
+
+    const res = await fetch(`${API_BASE}/positions-all`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      credentials: 'include',
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    const rows: PositionRow[] = await res.json()
+
+    const mapped: AssetItem[] = rows
+      .filter((r) => Number(r.qty) > 0)
+      .map((r) => {
+        const sym = String(r.symbol).toUpperCase()
+        const { base, quote } = splitSymbol(sym)
+        const qty = Number(r.qty) || 0
+        const avg = Number(r.avg_cost) || 0
+        const last = 0 // tanpa WS realtime
+        return {
+          symbol: sym,
+          base,
+          quote,
+          logoUrl: localLogo(base),
+          qty,
+          avgCost: avg,
+          lastPrice: last,
+          valueUsd: qty * last,
+          uPnlAbs: (last - avg) * qty,
+          uPnlPct: avg > 0 ? ((last - avg) / avg) * 100 : 0,
+        }
+      })
+
+    mapped.sort((a, b) => b.valueUsd - a.valueUsd)
+    assets.value = mapped
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Gagal memuat assets.'
+    errorAssets.value = msg
+    assets.value = []
+    // pakai Pinia alert sesuai aturan proyek
+    modal.open('Error', msg)
+  } finally {
+    loadingAssets.value = false
+  }
+}
+
+// ===== Assets (nav) =====
+function goAsset(a: { symbol: string }) {
+  const sym = String(a.symbol || '').toLowerCase()
+  if (!sym) return
+  router.push({ path: '/trade', query: { symbol: sym } })
+}
+
+// ====== Assets realtime WS (ticker + kline 1day) ======
+type KlinePeriod = '1day'
+const ASSETS_WS_URL = 'wss://ledgersocketone.online'
+
+// fast lookup untuk update harga
+const assetMap = new Map<string, AssetItem>()
+function rebuildAssetMap() {
+  assetMap.clear()
+  for (const a of assets.value) assetMap.set(a.symbol.toUpperCase(), a)
+}
+
+// WS state
+let assetsWs: WebSocket | null = null
+let assetsReconnectTimer: ReturnType<typeof setTimeout> | null = null
+
+const ASSET_KLINE_PERIODS: KlinePeriod[] = ['1day']
+let assetsSubscribedLower = new Set<string>() // symbols lower yang sudah disubscribe
+let assetsResubTimer: ReturnType<typeof setTimeout> | null = null
+
 
 interface DepthTick {
   asks: [number, number][]
@@ -1101,6 +1279,189 @@ function onAmountBlur() {
   totalAmountInput.value = v ? formatLocaleDecimal(v) : ''
   syncPercentFromTotal()
 }
+
+function assetSymbolsLower(): string[] {
+  return Array.from(new Set(assets.value.map((a) => a.symbol.toLowerCase())))
+}
+
+function assetsWsSend(obj: unknown) {
+  if (assetsWs && assetsWs.readyState === WebSocket.OPEN) {
+    try { assetsWs.send(JSON.stringify(obj)) } catch { }
+  }
+}
+
+function assetsDoSubscribe(symbolsLower: string[]) {
+  if (!symbolsLower.length) return
+  assetsWsSend({
+    type: 'subscribe',
+    channels: ['ticker', 'kline'],
+    symbols: symbolsLower,
+    periods: ASSET_KLINE_PERIODS,
+  })
+}
+function assetsDoUnsubscribe(symbolsLower: string[]) {
+  if (!symbolsLower.length) return
+  assetsWsSend({
+    type: 'unsubscribe',
+    channels: ['ticker', 'kline'],
+    symbols: symbolsLower,
+    periods: ASSET_KLINE_PERIODS,
+  })
+}
+function assetsRequestSnapshot(symbolsLower: string[]) {
+  if (!symbolsLower.length) return
+  assetsWsSend({ type: 'snapshot', symbols: symbolsLower, periods: ASSET_KLINE_PERIODS })
+}
+
+// resubscribe ketika daftar aset berubah
+function assetsScheduleResubscribe() {
+  if (assetsResubTimer) return
+  assetsResubTimer = window.setTimeout(() => {
+    assetsResubTimer = null
+    if (!assetsWs || assetsWs.readyState !== WebSocket.OPEN) return
+
+    const want = new Set(assetSymbolsLower())
+    const curr = new Set(assetsSubscribedLower)
+
+    const toSub: string[] = []
+    const toUnsub: string[] = []
+
+    for (const s of want) if (!curr.has(s)) toSub.push(s)
+    for (const s of curr) if (!want.has(s)) toUnsub.push(s)
+
+    if (toUnsub.length) {
+      assetsDoUnsubscribe(toUnsub)
+      for (const s of toUnsub) assetsSubscribedLower.delete(s)
+    }
+    if (toSub.length) {
+      assetsDoSubscribe(toSub)
+      assetsRequestSnapshot(toSub)
+      for (const s of toSub) assetsSubscribedLower.add(s)
+    }
+  }, 200)
+}
+
+// buffer untuk mengurangi rerender
+const assetsPending: Record<string, { last?: number; klineClose?: number }> = {}
+let assetsFlushTimer: ReturnType<typeof setTimeout> | null = null
+
+function assetsScheduleFlush() {
+  if (assetsFlushTimer) return
+  assetsFlushTimer = window.setTimeout(() => {
+    for (const [symLower, payload] of Object.entries(assetsPending)) {
+      const a = assetMap.get(symLower.toUpperCase())
+      if (!a) { delete assetsPending[symLower]; continue }
+
+      let changed = false
+      if (payload.last !== undefined && a.lastPrice !== payload.last) {
+        a.lastPrice = payload.last
+        changed = true
+      }
+      if (payload.klineClose !== undefined && a.lastPrice !== payload.klineClose) {
+        a.lastPrice = payload.klineClose
+        changed = true
+      }
+      if (changed) {
+        a.valueUsd = a.qty * a.lastPrice
+        a.uPnlAbs = (a.lastPrice - a.avgCost) * a.qty
+        a.uPnlPct = a.avgCost > 0 ? ((a.lastPrice - a.avgCost) / a.avgCost) * 100 : 0
+      }
+      delete assetsPending[symLower]
+    }
+    assetsFlushTimer = null
+  }, 300)
+}
+
+function connectAssetsWs() {
+  if (assetsWs) {
+    try { assetsWs.close() } catch { }
+    assetsWs = null
+  }
+
+  assetsWs = new WebSocket(ASSETS_WS_URL)
+
+  assetsWs.onopen = () => {
+    assetsSubscribedLower = new Set()
+    assetsScheduleResubscribe()
+  }
+
+  assetsWs.onclose = () => {
+    assetsWs = null
+    if (assetsReconnectTimer) clearTimeout(assetsReconnectTimer)
+    assetsReconnectTimer = window.setTimeout(connectAssetsWs, 2000)
+  }
+
+  assetsWs.onerror = () => {
+    try { assetsWs?.close() } catch { }
+  }
+
+  assetsWs.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data as string)
+
+      // snapshot batched
+      if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
+        for (const it of msg.items) {
+          const symLower = String(it.symbol || '').toLowerCase()
+          if (!symLower) continue
+          if (it.type === 'ticker' && Number.isFinite(Number(it.last))) {
+            (assetsPending[symLower] ||= {}).last = Number(it.last)
+          } else if (it.type === 'kline' && it.period === '1day') {
+            const c = Number(it.close)
+            if (Number.isFinite(c)) (assetsPending[symLower] ||= {}).klineClose = c
+          }
+        }
+        assetsScheduleFlush()
+        return
+      }
+
+      // event individual
+      const symLower = String(msg.symbol || '').toLowerCase()
+      if (!symLower) return
+
+      if (msg.type === 'ticker' && Number.isFinite(Number(msg.last))) {
+        (assetsPending[symLower] ||= {}).last = Number(msg.last)
+        assetsScheduleFlush()
+        return
+      }
+      if (msg.type === 'kline' && msg.period === '1day') {
+        const close = Number(msg.close)
+        if (Number.isFinite(close)) {
+          (assetsPending[symLower] ||= {}).klineClose = close
+          assetsScheduleFlush()
+        }
+        return
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+// panggil saat mounted
+onMounted(async () => {
+  await loadAssets()
+  rebuildAssetMap()
+  connectAssetsWs()
+})
+watch(
+  assets,
+  () => {
+    rebuildAssetMap()
+    assetsScheduleResubscribe()
+  },
+  { deep: true },
+)
+onUnmounted(() => {
+  if (assetsWs) {
+    try { assetsWs.close() } catch { }
+    assetsWs = null
+  }
+  if (assetsReconnectTimer) {
+    clearTimeout(assetsReconnectTimer)
+    assetsReconnectTimer = null
+  }
+})
 
 /* ===== URL sync & lifecycle ===== */
 function rawSymbolFromRoute(): string {

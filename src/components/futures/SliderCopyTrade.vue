@@ -3,7 +3,7 @@
     class="rounded-2xl overflow-hidden mb-6">
     <SwiperSlide v-for="s in slides" :key="s.to">
       <RouterLink :to="s.to" class="block">
-        <img :src="s.src" :alt="s.alt" class="block w-full h-36 sm:h-44" />
+        <img :src="s.src" :alt="s.alt" class="block w-full h-full" />
       </RouterLink>
     </SwiperSlide>
   </Swiper>
