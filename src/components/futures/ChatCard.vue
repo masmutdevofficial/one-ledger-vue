@@ -1,11 +1,11 @@
 <template>
-  <div class="w-full max-w-xl rounded-lg border border-gray-200 shadow-sm bg-white overflow-hidden">
+  <div class="w-full max-w-xl rounded-lg border border-teal-500 shadow-sm bg-white overflow-hidden">
     <div class="h-[560px] flex flex-col overflow-hidden">
       <!-- List chat -->
       <div ref="listEl" class="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
         <!-- NOTIF TICKER (1x marquee, lalu hilang; notif baru replace lama) -->
         <div v-if="showBanner"
-          class="sticky top-0 z-10 -mx-4 px-4 pb-2 bg-white/90 backdrop-blur border-b border-gray-200 pointer-events-none">
+          class="sticky top-0 z-10 -mx-4 px-4 pb-2 bg-white/90 backdrop-blur border-b border-teal-500 pointer-events-none">
           <div class="relative overflow-hidden h-7">
             <div class="inline-block whitespace-nowrap marquee" :key="bannerKey" aria-live="polite"
               @animationend="onMarqueeEnd">
