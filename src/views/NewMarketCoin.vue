@@ -14,7 +14,6 @@
             <!-- Trigger Dropdown -->
             <div class="flex items-center space-x-1 cursor-pointer" @click="dropdownOpen = !dropdownOpen">
               <span class="font-semibold text-black text-base">{{ selectedPair }}</span>
-              <span class="font-bold text-xs text-gray-800">Perp</span>
               <Icon icon="tabler:chevron-down" class="text-black text-base" />
             </div>
 
@@ -40,10 +39,10 @@
           <Icon :icon="showChart ? 'tabler:brand-databricks' : 'tabler:chart-bar'" class="w-5 h-5 cursor-pointer"
             :aria-pressed="showChart" @click="showChart = !showChart" />
         </button>
-        <button aria-label="More options" class="relative">
+        <RouterLink to="/history" aria-label="More options" class="relative">
           <Icon icon="tabler:dots" class="w-5 h-5" />
           <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
-        </button>
+        </RouterLink>
       </div>
     </section>
 
