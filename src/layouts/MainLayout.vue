@@ -404,10 +404,10 @@ onBeforeUnmount(() => {
                 <span class="text-xs mt-1">Trade</span>
               </RouterLink>
 
-              <RouterLink to="/futures" class="flex flex-col items-center"
-                :class="isActive('/futures') ? 'text-teal-600' : 'text-gray-400'">
+              <RouterLink to="/future" class="flex flex-col items-center"
+                :class="isActive('/future') ? 'text-teal-600' : 'text-gray-400'">
                 <img alt="Trade" src="/img/futures.png" class="w-4 h-4 object-contain filter"
-                  :style="isActive('/futures') ? teal600Filter : null" />
+                  :style="isActive('/future') ? teal600Filter : null" />
                 <span class="text-xs mt-1 text-center">Futures</span>
               </RouterLink>
 
