@@ -134,7 +134,7 @@
             <span class="text-[10px] leading-none">•</span>
             <span>{{ news.date }}</span>
           </div>
-          <div class="font-extrabold text-sm text-black">News</div>
+          <div class="font-extrabold text-xs text-black">News</div>
         </div>
 
         <div class="text-gray-400 text-xs font-normal select-none">
@@ -145,7 +145,7 @@
           <img v-if="news && news.image" :src="`https://one-ledger.masmutpanel.my.id${news.image}`" alt="News Image"
             class="w-24 h-16 object-cover rounded-lg" />
           <div class="flex-1 space-y-1">
-            <div class="font-extrabold text-black text-sm leading-[1.1]">
+            <div class="font-extrabold text-black text-xs leading-[1.1]">
               {{ news.title }}
             </div>
             <div class="text-xs text-gray-500">

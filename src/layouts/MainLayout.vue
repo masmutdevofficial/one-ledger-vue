@@ -301,52 +301,35 @@ onBeforeUnmount(() => {
     <div class="w-full max-w-md bg-white min-h-screen flex flex-col relative">
       <!-- Header -->
       <!-- Top Navbar -->
-      <nav
-        v-if="!hideHeader"
-        class="flex items-center justify-between px-4 py-3 w-full sticky top-0 z-50 bg-white shadow-sm"
-      >
+      <nav v-if="!hideHeader"
+        class="flex items-center justify-between px-4 py-3 w-full sticky top-0 z-50 bg-white shadow-sm">
         <!-- Left Buttons -->
         <div class="flex space-x-6 items-center">
           <RouterLink to="/account" aria-label="Menu" class="focus:outline-none">
             <img src="/img/newmenu/menu.png" alt="Menu" class="w-7 h-7 object-contain" />
           </RouterLink>
-          <RouterLink
-            to="/notification"
-            aria-label="Chat"
-            class="focus:outline-none relative inline-block"
-            @click.prevent="handleClickNotification"
-          >
+          <RouterLink to="/notification" aria-label="Chat" class="focus:outline-none relative inline-block"
+            @click.prevent="handleClickNotification">
             <img src="/img/newmenu/notification.png" alt="Menu" class="w-7 h-7 object-contain" />
 
-            <span
-              v-if="notificationCount > 0"
-              :class="[
-                'absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse min-w-[1rem] px-1',
-                badgeClass,
-              ]"
-            >
+            <span v-if="notificationCount > 0" :class="[
+              'absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse min-w-[1rem] px-1',
+              badgeClass,
+            ]">
               {{ notificationLabel }}
             </span>
           </RouterLink>
         </div>
 
         <!-- Spot/Futures Toggle -->
-        <div
-          class="relative flex items-center bg-gray-100 rounded-lg px-1.5 py-1 mr-5 text-sm font-medium"
-        >
-          <RouterLink
-            to="/dashboard"
-            class="px-3 py-1 rounded-lg transition"
-            :class="isActive('/dashboard') ? 'bg-white text-black' : 'text-gray-600'"
-          >
+        <div class="relative flex items-center bg-gray-100 rounded-lg px-1.5 py-1 mr-5 text-sm font-medium">
+          <RouterLink to="/dashboard" class="px-3 py-1 rounded-lg transition"
+            :class="isActive('/dashboard') ? 'bg-white text-black' : 'text-gray-600'">
             Spot
           </RouterLink>
-          <RouterLink
-            to="/future"
-            class="px-3 py-1 rounded-lg transition"
-            :class="isActive('/future') ? 'bg-white text-black' : 'text-gray-600'"
-          >
-            Future
+          <RouterLink to="/futures" class="px-3 py-1 rounded-lg transition"
+            :class="isActive('/futures') ? 'bg-white text-black' : 'text-gray-600'">
+            Copy Trade
           </RouterLink>
         </div>
 
@@ -360,32 +343,18 @@ onBeforeUnmount(() => {
       <div v-if="$route.path === '/dashboard'">
         <div class="w-full px-4 pb-4 mt-3">
           <div class="relative w-full">
-            <input
-              v-model="searchQuery"
-              type="search"
-              placeholder="#HotJulyPPI"
+            <input v-model="searchQuery" type="search" placeholder="#HotJulyPPI"
               class="w-full rounded-xl bg-gray-100 text-gray-700 placeholder-gray-500 px-4 py-2 text-sm focus:outline-none pr-10"
-              @focus="onFocus"
-              @blur="onBlur"
-              autocomplete="off"
-            />
-            <Icon
-              icon="tabler:search"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none"
-            />
+              @focus="onFocus" @blur="onBlur" autocomplete="off" />
+            <Icon icon="tabler:search"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none" />
 
             <!-- Suggestions -->
-            <div
-              v-if="isFocused && filteredCoins.length > 0"
-              class="absolute left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto"
-            >
-              <button
-                v-for="coin in filteredCoins"
-                :key="coin.symbol"
-                type="button"
+            <div v-if="isFocused && filteredCoins.length > 0"
+              class="absolute left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto">
+              <button v-for="coin in filteredCoins" :key="coin.symbol" type="button"
                 class="w-full flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer text-left"
-                @mousedown.prevent="chooseCoin(coin)"
-              >
+                @mousedown.prevent="chooseCoin(coin)">
                 <img :src="coin.logoUrl" alt="" class="w-5 h-5 mr-2" />
                 <span class="font-semibold text-gray-800 mr-1">{{ coin.symbol }}</span>
                 <span class="text-gray-500 text-sm">({{ coin.name }})</span>
@@ -396,29 +365,13 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <!-- Main Content -->
-      <main
-        class="flex-1 overflow-y-auto relative"
-        :class="$route.path === '/dashboard' ? '-pt-5' : 'pt-5'"
-      >
+      <main class="flex-1 overflow-y-auto relative" :class="$route.path === '/dashboard' ? '-pt-5' : 'pt-5'">
         <!-- Loader -->
-        <div
-          v-if="isLoading && !isPublicPage"
-          class="absolute inset-0 flex flex-col items-center justify-center bg-white z-50"
-        >
-          <svg
-            class="animate-spin h-8 w-8 text-teal-600 mb-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
+        <div v-if="isLoading && !isPublicPage"
+          class="absolute inset-0 flex flex-col items-center justify-center bg-white z-50">
+          <svg class="animate-spin h-8 w-8 text-teal-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
           </svg>
           <span class="text-gray-600">Loading...</span>
@@ -428,62 +381,38 @@ onBeforeUnmount(() => {
           <router-view />
 
           <!-- Bottom Navigation -->
-          <div
-            v-if="!hideBottomNav"
-            class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50"
-          >
+          <div v-if="!hideBottomNav"
+            class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50">
             <div class="flex justify-around items-center py-2">
-              <RouterLink
-                to="/dashboard"
-                class="flex flex-col items-center"
-                :class="isActive('/dashboard') ? 'text-teal-600' : 'text-gray-400'"
-              >
+              <RouterLink to="/dashboard" class="flex flex-col items-center"
+                :class="isActive('/dashboard') ? 'text-teal-600' : 'text-gray-400'">
                 <img alt="Home" src="/img/logo-symetric.png" class="w-4 h-4 object-contain" />
                 <span class="text-xs mt-1 font-semibold">Home</span>
               </RouterLink>
 
-              <RouterLink
-                to="/market"
-                class="flex flex-col items-center ml-2"
-                :class="isActive('/market') ? 'text-teal-600' : 'text-gray-400'"
-              >
-                <img
-                  alt="Market"
-                  src="/img/markets-icon.png"
-                  class="w-4 h-4 object-contain filter"
-                  :style="isActive('/market') ? teal600Filter : null"
-                />
+              <RouterLink to="/market" class="flex flex-col items-center ml-2"
+                :class="isActive('/market') ? 'text-teal-600' : 'text-gray-400'">
+                <img alt="Market" src="/img/markets-icon.png" class="w-4 h-4 object-contain filter"
+                  :style="isActive('/market') ? teal600Filter : null" />
                 <span class="text-xs mt-1">Market</span>
               </RouterLink>
 
-              <RouterLink
-                to="/trade"
-                class="flex flex-col items-center ml-4"
-                :class="isActive('/trade') ? 'text-teal-600' : 'text-gray-400'"
-              >
-                <img
-                  alt="Trade"
-                  src="/img/trade-icon.png"
-                  class="w-4 h-4 object-contain filter"
-                  :style="isActive('/trade') ? teal600Filter : null"
-                />
+              <RouterLink to="/trade" class="flex flex-col items-center ml-4"
+                :class="isActive('/trade') ? 'text-teal-600' : 'text-gray-400'">
+                <img alt="Trade" src="/img/trade-icon.png" class="w-4 h-4 object-contain filter"
+                  :style="isActive('/trade') ? teal600Filter : null" />
                 <span class="text-xs mt-1">Trade</span>
               </RouterLink>
 
-              <RouterLink
-                to="/history"
-                class="flex flex-col items-center"
-                :class="isActive('/history') ? 'text-teal-600' : 'text-gray-400'"
-              >
-                <Icon icon="tabler:history" class="w-4 h-4 mt-[2px]" />
-                <span class="text-xs mt-1 text-center">Order History</span>
+              <RouterLink to="/futures" class="flex flex-col items-center"
+                :class="isActive('/futures') ? 'text-teal-600' : 'text-gray-400'">
+                <img alt="Trade" src="/img/futures.png" class="w-4 h-4 object-contain filter"
+                  :style="isActive('/futures') ? teal600Filter : null" />
+                <span class="text-xs mt-1 text-center">Futures</span>
               </RouterLink>
 
-              <RouterLink
-                to="/assets"
-                class="flex flex-col items-center"
-                :class="isActive('/assets') ? 'text-teal-600' : 'text-gray-400'"
-              >
+              <RouterLink to="/assets" class="flex flex-col items-center"
+                :class="isActive('/assets') ? 'text-teal-600' : 'text-gray-400'">
                 <Icon icon="tabler:wallet" class="w-4 h-4 mt-[2px]" />
                 <span class="text-xs mt-1">Assets</span>
               </RouterLink>

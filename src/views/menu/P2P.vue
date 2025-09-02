@@ -11,21 +11,13 @@
         </div>
 
         <!-- Amount filter (jumlah USDT) -->
-        <button
-          type="button"
-          class="flex items-center space-x-1 select-none"
-          @click="toggleAmount()"
-        >
+        <button type="button" class="flex items-center space-x-1 select-none" @click="toggleAmount()">
           <span>Amount</span>
           <Icon icon="tabler:chevron-down" class="w-3 h-3" />
         </button>
 
         <!-- Payment filter (berdasarkan Limit fiat) -->
-        <button
-          type="button"
-          class="flex items-center space-x-1 select-none"
-          @click="toggleLimit()"
-        >
+        <button type="button" class="flex items-center space-x-1 select-none" @click="toggleLimit()">
           <span>Payment</span>
           <Icon icon="tabler:chevron-down" class="w-3 h-3" />
         </button>
@@ -36,20 +28,11 @@
     </div>
 
     <!-- POPUP: Amount -->
-    <div
-      v-if="showAmount"
-      class="absolute z-10 bg-white border border-gray-200 rounded-lg p-3 shadow w-90"
-    >
+    <div v-if="showAmount" class="absolute z-10 bg-white border border-gray-200 rounded-lg p-3 shadow w-90">
       <label class="block text-xs text-gray-500 mb-1">Jumlah USDT</label>
       <div class="flex items-center space-x-2">
-        <input
-          v-model.number="amountUsdt"
-          type="number"
-          min="0"
-          step="0.0001"
-          class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
-          placeholder="mis. 150"
-        />
+        <input v-model.number="amountUsdt" type="number" min="0" step="0.0001"
+          class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm" placeholder="mis. 150" />
         <button type="button" class="text-xs px-2 py-1 border rounded" @click="applyAmount">
           Apply
         </button>
@@ -64,10 +47,7 @@
     </div>
 
     <!-- POPUP: Limit (Payment) -->
-    <div
-      v-if="showLimit"
-      class="absolute z-10 bg-white border border-gray-200 rounded-lg p-3 shadow w-64 left-40"
-    >
+    <div v-if="showLimit" class="absolute z-10 bg-white border border-gray-200 rounded-lg p-3 shadow w-64 left-40">
       <label class="block text-xs text-gray-500 mb-2">Filter berdasarkan Limit (IDR)</label>
       <div class="space-y-1 text-sm">
         <label class="flex items-center space-x-2">
@@ -105,41 +85,34 @@
     </div>
 
     <!-- Trade items -->
-    <div v-for="trade in filteredTrades" :key="trade.id" class="mb-6">
+    <div v-for="trade in filteredTrades" :key="trade.id" class="mb-3 border border-gray-200 rounded-lg p-3 text-[11px]">
       <div class="flex items-center space-x-2 mb-1">
-        <div class="w-6 h-6">
-          <img
-            v-if="trade.avatarUrl && !trade.avatarBroken"
-            :src="trade.avatarUrl"
-            alt="Avatar"
-            class="w-6 h-6 rounded-full object-cover"
-            @error="trade.avatarBroken = true"
-          />
-          <div
-            v-else
-            class="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold select-none"
-          >
+        <div class="w-5 h-5">
+          <img v-if="trade.avatarUrl && !trade.avatarBroken" :src="trade.avatarUrl" alt="Avatar"
+            class="w-5 h-5 rounded-full object-cover" @error="trade.avatarBroken = true" />
+          <div v-else
+            class="bg-black text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold select-none">
             {{ trade.avatarText }}
           </div>
         </div>
-        <span class="text-sm font-semibold text-gray-900">
+        <span class="font-semibold text-gray-900">
           {{ trade.username }}
         </span>
       </div>
 
-      <div class="text-xs text-gray-500 mb-1">
+      <div class="text-[10px] text-gray-500 mb-1">
         Trade(s) {{ trade.trades }} ({{ trade.successRate }})
         <span class="ml-2"> ⚡ {{ trade.completionRate }} </span>
       </div>
 
       <div class="flex items-center justify-between mb-1">
         <div>
-          <span class="text-base font-extrabold text-gray-900">
+          <span class="text-[13px] font-extrabold text-gray-900">
             {{ trade.price }}
           </span>
-          <span class="text-xs text-gray-500 ml-1">USDT</span>
+          <span class="text-[10px] text-gray-500 ml-1">USDT</span>
         </div>
-        <div class="text-xs text-gray-400 text-right">
+        <div class="text-[10px] text-gray-400 text-right">
           <template v-if="Array.isArray(trade.payment)">
             <div v-for="(pay, idx) in trade.payment" :key="idx">{{ pay }}</div>
           </template>
@@ -149,46 +122,39 @@
         </div>
       </div>
 
-      <div class="text-xs text-gray-500 mb-1">
+      <div class="text-[10px] text-gray-500 mb-1">
         Limit <span class="font-semibold">{{ trade.limit }}</span>
       </div>
-      <div class="text-xs text-gray-500 mb-3">
+      <div class="text-[10px] text-gray-500 mb-3">
         Available <span class="font-semibold">{{ trade.available }}</span>
       </div>
 
       <div class="flex items-center justify-between">
-        <div class="text-xs text-gray-400 flex items-center space-x-1">
+        <div class="text-[10px] text-gray-400 flex items-center space-x-1">
           <Icon icon="tabler:clock" class="w-3 h-3" />
           <span>{{ trade.time }}</span>
         </div>
 
         <!-- BUY & SELL buttons -->
         <div class="flex items-center gap-2">
-          <button
-            class="bg-teal-500 text-white text-xs font-semibold rounded-md px-6 py-1"
-            type="button"
-            @click="goDetail(trade.id)"
-          >
+          <button class="bg-teal-500 text-white text-[10px] font-semibold rounded-md px-4 py-[3px]" type="button"
+            @click="goDetail(trade.id)">
             Buy
           </button>
-          <button
-            class="bg-red-500 text-white text-xs font-semibold rounded-md px-6 py-1"
-            type="button"
-            @click="goDetailSell(trade.id)"
-          >
+          <button class="bg-red-500 text-white text-[10px] font-semibold rounded-md px-4 py-[3px]" type="button"
+            @click="goDetailSell(trade.id)">
             Sell
           </button>
         </div>
       </div>
 
-      <div
-        v-if="trade.verified"
-        class="mt-2 inline-block border border-gray-300 rounded px-1 text-xs text-gray-600 font-semibold select-none"
-      >
+      <div v-if="trade.verified"
+        class="mt-2 inline-block border border-gray-300 rounded px-1 text-[10px] text-gray-600 font-semibold select-none">
         <Icon icon="tabler:check" class="inline-block w-3 h-3 mr-1" />
         Verification
       </div>
     </div>
+
 
     <div v-if="loading" class="text-center text-xs text-gray-400 select-none">Loading…</div>
     <div v-else-if="errorMsg" class="text-center text-xs text-red-500 select-none">

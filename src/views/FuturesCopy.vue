@@ -1,16 +1,13 @@
 <template>
   <div class="px-4 mb-20 relative">
     <div class="flex flex-row justify-start items-center mb-4">
-      <button
-        aria-label="Back"
-        class="mr-2 inline-flex items-center text-black"
-        type="button"
-        @click="goBack"
-      >
+      <button aria-label="Back" class="mr-2 inline-flex items-center text-black" type="button" @click="goBack">
         <Icon icon="tabler:arrow-left" class="w-6 h-6" />
       </button>
       <h2 class="font-semibold text-base select-none">Collective Copy Trade</h2>
     </div>
+
+    <SliderCopyTrade />
 
     <div class="text-sm font-semibold mb-4 select-none">Private</div>
 
@@ -22,19 +19,12 @@
 
       <!-- PnL filter -->
       <div class="relative">
-        <button
-          type="button"
-          class="flex items-center space-x-1 cursor-pointer"
-          @click="togglePnlMenu"
-        >
+        <button type="button" class="flex items-center space-x-1 cursor-pointer" @click="togglePnlMenu">
           <span>PnL</span>
           <Icon icon="tabler:chevron-down" class="w-3 h-3" />
         </button>
 
-        <div
-          v-if="showPnl"
-          class="absolute z-20 mt-2 bg-white border border-gray-200 rounded-lg p-3 shadow w-56"
-        >
+        <div v-if="showPnl" class="absolute z-20 mt-2 bg-white border border-gray-200 rounded-lg p-3 shadow w-56">
           <div class="text-[11px] text-gray-500 mb-2">Urutkan PnL</div>
           <div class="space-y-2 text-sm">
             <label class="flex items-center space-x-2">
@@ -60,59 +50,32 @@
 
     <!-- List items -->
     <ul class="space-y-6">
-      <li
-        v-for="item in sortedTraders"
-        :key="item.id"
-        class="flex flex-col space-y-2 border-b border-gray-100 pb-4"
-      >
+      <li v-for="item in sortedTraders" :key="item.id" class="flex flex-col space-y-2 border-b border-gray-100 pb-4">
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-2">
-            <img
-              :alt="item.avatarAlt"
-              class="w-8 h-8 rounded-full"
-              height="32"
-              :src="item.avatar"
-              width="32"
-            />
+            <img :alt="item.avatarAlt" class="w-8 h-8 rounded-full" height="32" :src="item.avatar" width="32" />
             <div class="flex flex-col justify-start">
               <div class="font-semibold text-sm flex items-center space-x-1 select-none">
                 <span>{{ item.username }}</span>
-                <Icon
-                  v-if="item.badge === 'crown'"
-                  icon="tabler:crown"
-                  class="text-yellow-400 w-4 h-4"
-                />
-                <Icon
-                  v-else-if="item.badge === 'graduation-cap'"
-                  icon="tabler:school"
-                  class="text-yellow-600 w-4 h-4"
-                />
+                <Icon v-if="item.badge === 'crown'" icon="tabler:crown" class="text-yellow-400 w-4 h-4" />
+                <Icon v-else-if="item.badge === 'graduation-cap'" icon="tabler:school"
+                  class="text-yellow-600 w-4 h-4" />
               </div>
               <div class="text-xs text-gray-400 flex items-center space-x-0.5 select-none">
                 <Icon icon="tabler:users" class="w-3 h-3" />
-                <span
-                  ><b>{{ item.followerLabel1 }}</b
-                  >{{ item.followerLabel2 }}</span
-                >
+                <span><b>{{ item.followerLabel1 }}</b>{{ item.followerLabel2 }}</span>
                 <Icon v-if="item.showClock" icon="tabler:clock" class="w-3 h-3" />
               </div>
             </div>
           </div>
 
-          <button
-            v-if="item.button === 'Join'"
+          <button v-if="item.button === 'Join'"
             class="bg-teal-300 text-white text-sm rounded-lg px-4 py-1 shadow-[0_0_8px_rgba(0,0,0,0.1)] select-none"
-            type="button"
-            @click="join(item)"
-          >
+            type="button" @click="join(item)">
             Join
           </button>
-          <button
-            v-else
-            class="bg-red-100 text-red-600 text-sm rounded-lg px-4 py-1 select-none"
-            type="button"
-            disabled
-          >
+          <button v-else class="bg-red-100 text-red-600 text-sm rounded-lg px-4 py-1 select-none" type="button"
+            disabled>
             Full
           </button>
         </div>
@@ -135,9 +98,7 @@
             <div class="flex items-start justify-between text-xs text-gray-400 select-none">
               <div class="flex flex-col justify-start">
                 <span>{{ item.labelMdd }}</span>
-                <span
-                  :class="item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none'"
-                >
+                <span :class="item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none'">
                   {{ item.mddValue }}
                 </span>
               </div>
@@ -159,18 +120,10 @@
   </div>
 
   <!-- Modal Password -->
-  <div
-    v-if="modal.open"
-    class="fixed inset-0 z-51 flex items-center justify-center"
-    aria-modal="true"
-    role="dialog"
-  >
+  <div v-if="modal.open" class="fixed inset-0 z-51 flex items-center justify-center" aria-modal="true" role="dialog">
     <div class="absolute inset-0 bg-black/30" @click="closeModal"></div>
 
-    <form
-      class="relative z-10 w-[92%] max-w-sm rounded-2xl bg-white p-5 shadow-lg"
-      @submit.prevent="submitPassword"
-    >
+    <form class="relative z-10 w-[92%] max-w-sm rounded-2xl bg-white p-5 shadow-lg" @submit.prevent="submitPassword">
       <div class="mb-3">
         <h3 class="text-base font-semibold">Enter Password</h3>
         <p class="mt-1 text-xs text-gray-500 select-none">
@@ -179,30 +132,17 @@
       </div>
 
       <label class="block text-xs text-gray-600 mb-1 select-none">Password</label>
-      <input
-        v-model="modal.password"
-        type="password"
-        inputmode="text"
-        autocomplete="current-password"
-        required
-        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
-      />
+      <input v-model="modal.password" type="password" inputmode="text" autocomplete="current-password" required
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" />
 
       <p v-if="modal.error" class="mt-2 text-xs text-red-600">{{ modal.error }}</p>
 
       <div class="mt-4 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          class="text-xs px-3 py-1.5 rounded border border-gray-300"
-          @click="closeModal"
-        >
+        <button type="button" class="text-xs px-3 py-1.5 rounded border border-gray-300" @click="closeModal">
           Cancel
         </button>
-        <button
-          type="submit"
-          class="text-xs px-3 py-1.5 rounded bg-teal-500 text-white disabled:opacity-60"
-          :disabled="modal.loading"
-        >
+        <button type="submit" class="text-xs px-3 py-1.5 rounded bg-teal-500 text-white disabled:opacity-60"
+          :disabled="modal.loading">
           {{ modal.loading ? 'Checking…' : 'Sign In' }}
         </button>
       </div>
@@ -210,29 +150,14 @@
   </div>
 
   <!-- ALERT (lokal) -->
-  <div
-    v-if="alert.open"
-    class="fixed z-[60] top-4 left-1/2 -translate-x-1/2 max-w-md mx-4"
-    role="alert"
-    aria-live="assertive"
-  >
-    <div
-      class="flex items-start gap-2 rounded-xl border px-3 py-2 shadow bg-white"
-      :class="alert.type === 'success' ? 'border-teal-300' : 'border-red-300'"
-    >
-      <Icon
-        v-if="alert.type === 'success'"
-        icon="tabler:circle-check"
-        class="w-5 h-5 text-teal-600 mt-0.5"
-      />
+  <div v-if="alert.open" class="fixed z-[60] top-4 left-1/2 -translate-x-1/2 max-w-md mx-4" role="alert"
+    aria-live="assertive">
+    <div class="flex items-start gap-2 rounded-xl border px-3 py-2 shadow bg-white"
+      :class="alert.type === 'success' ? 'border-teal-300' : 'border-red-300'">
+      <Icon v-if="alert.type === 'success'" icon="tabler:circle-check" class="w-5 h-5 text-teal-600 mt-0.5" />
       <Icon v-else icon="tabler:alert-triangle" class="w-5 h-5 text-red-600 mt-0.5" />
       <div class="text-sm text-gray-900 flex-1">{{ alert.message }}</div>
-      <button
-        type="button"
-        class="shrink-0 p-1 rounded hover:bg-gray-100"
-        aria-label="Tutup"
-        @click="closeAlert()"
-      >
+      <button type="button" class="shrink-0 p-1 rounded hover:bg-gray-100" aria-label="Tutup" @click="closeAlert()">
         <Icon icon="tabler:x" class="w-4 h-4 text-gray-500" />
       </button>
     </div>
@@ -243,6 +168,7 @@
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
 import { ref, onMounted, computed, onUnmounted, nextTick } from 'vue'
+import SliderCopyTrade from '@/components/futures/SliderCopyTrade.vue'
 
 const router = useRouter()
 

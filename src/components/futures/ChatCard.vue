@@ -1,20 +1,14 @@
 <template>
-  <div class="w-full max-w-xl rounded-lg border shadow-sm bg-white overflow-hidden">
+  <div class="w-full max-w-xl rounded-lg border border-gray-200 shadow-sm bg-white overflow-hidden">
     <div class="h-[560px] flex flex-col overflow-hidden">
       <!-- List chat -->
       <div ref="listEl" class="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
         <!-- NOTIF TICKER (1x marquee, lalu hilang; notif baru replace lama) -->
-        <div
-          v-if="showBanner"
-          class="sticky top-0 z-10 -mx-4 px-4 pb-2 bg-white/90 backdrop-blur border-b pointer-events-none"
-        >
+        <div v-if="showBanner"
+          class="sticky top-0 z-10 -mx-4 px-4 pb-2 bg-white/90 backdrop-blur border-b border-gray-200 pointer-events-none">
           <div class="relative overflow-hidden h-7">
-            <div
-              class="inline-block whitespace-nowrap marquee"
-              :key="bannerKey"
-              aria-live="polite"
-              @animationend="onMarqueeEnd"
-            >
+            <div class="inline-block whitespace-nowrap marquee" :key="bannerKey" aria-live="polite"
+              @animationend="onMarqueeEnd">
               <span class="mx-6 text-xs font-medium text-gray-800">
                 {{ bannerText }}
               </span>
@@ -29,10 +23,8 @@
             </span>
             <p class="whitespace-pre-wrap break-words">
               {{ m.text }}
-              <span
-                v-if="m.streaming"
-                class="inline-block w-[7px] h-[1.1em] align-[-0.2em] bg-gray-400 animate-pulse ml-0.5"
-              />
+              <span v-if="m.streaming"
+                class="inline-block w-[7px] h-[1.1em] align-[-0.2em] bg-gray-400 animate-pulse ml-0.5" />
             </p>
           </div>
         </template>
@@ -44,31 +36,19 @@
       <div class="sticky bottom-0 bg-white/90 backdrop-blur px-3 py-2 shadow-md">
         <form @submit.prevent="handleSend" class="relative flex items-end gap-2">
           <div class="relative">
-            <button
-              type="button"
-              @click="onToggleEmoji"
+            <button type="button" @click="onToggleEmoji"
               class="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100 active:bg-gray-200"
-              title="Emoji"
-              ref="emojiBtnRef"
-            >
+              title="Emoji" ref="emojiBtnRef">
               <Icon icon="tabler:mood-smile" class="w-5 h-5 text-gray-700" />
             </button>
 
-            <div
-              v-if="emoji.open.value"
-              ref="emojiPanelRef"
-              class="absolute bottom-full left-0 mb-2 w-64 rounded-xl border bg-white shadow p-2 z-10"
-            >
+            <div v-if="emoji.open.value" ref="emojiPanelRef"
+              class="absolute bottom-full left-0 mb-2 w-64 rounded-xl border bg-white shadow p-2 z-10">
               <div class="text-xs text-gray-500 px-1 pb-1">Emoji</div>
               <div class="max-h-56 overflow-y-auto pr-1 overscroll-contain">
                 <div class="grid grid-cols-8 gap-1 text-[22px] leading-none">
-                  <button
-                    v-for="(e, i) in emoji.list"
-                    :key="i"
-                    type="button"
-                    class="h-8 w-8 rounded hover:bg-gray-100"
-                    @click="onInsertEmoji(e)"
-                  >
+                  <button v-for="(e, i) in emoji.list" :key="i" type="button" class="h-8 w-8 rounded hover:bg-gray-100"
+                    @click="onInsertEmoji(e)">
                     {{ e }}
                   </button>
                 </div>
@@ -76,24 +56,13 @@
             </div>
           </div>
 
-          <textarea
-            ref="taRef"
-            v-model="draft"
-            @keydown.enter.exact.prevent="handleSend"
-            @keydown.enter.shift.stop
-            @keyup="onCaptureSelection"
-            @mouseup="onCaptureSelection"
-            @select="onCaptureSelection"
-            rows="1"
+          <textarea ref="taRef" v-model="draft" @keydown.enter.exact.prevent="handleSend" @keydown.enter.shift.stop
+            @keyup="onCaptureSelection" @mouseup="onCaptureSelection" @select="onCaptureSelection" rows="1"
             placeholder="Tulis pesan..."
-            class="w-full resize-none outline-none rounded-xl px-3 py-3 pr-12 text-sm max-h-32 overflow-auto bg-gray-50 border border-gray-200 focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
-          />
-          <button
-            type="submit"
-            :disabled="!canSend || sending || !copyTraderId"
+            class="w-full resize-none outline-none rounded-xl px-3 py-3 pr-12 text-sm max-h-32 overflow-auto bg-gray-50 border border-gray-200 focus:border-teal-300 focus:ring-1 focus:ring-teal-300" />
+          <button type="submit" :disabled="!canSend || sending || !copyTraderId"
             class="inline-flex items-center justify-center rounded-md p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Kirim"
-          >
+            title="Kirim">
             <Icon icon="tabler:send-2" class="w-5 h-5 text-blue-600" />
           </button>
         </form>
@@ -448,10 +417,12 @@ async function handleSend(): Promise<void> {
   0% {
     transform: translateX(100%);
   }
+
   100% {
     transform: translateX(-100%);
   }
 }
+
 .marquee {
   will-change: transform;
   animation: marquee 12s linear 1;
