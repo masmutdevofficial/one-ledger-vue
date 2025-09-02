@@ -75,15 +75,15 @@
           inputmode="decimal"
           class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none"
           placeholder="Enter amount"
-          :disabled="hasPendingOrder"
-          :class="hasPendingOrder ? 'opacity-60 cursor-not-allowed' : ''"
+          :disabled="atCapacity"
+          :class="atCapacity ? 'opacity-60 cursor-not-allowed' : ''"
         />
         <span class="text-xs font-semibold text-black ml-2">USDT</span>
         <button
           class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50"
           type="button"
           @click="setMax"
-          :disabled="hasPendingOrder"
+          :disabled="atCapacity"
         >
           Max
         </button>
@@ -135,8 +135,7 @@
             <select
               id="sl"
               v-model.number="sl"
-              :disabled="hasPendingOrder"
-              :class="hasPendingOrder ? 'opacity-60 cursor-not-allowed' : ''"
+              :disabled="false"
               class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none"
             >
               <option disabled value="">Select</option>
@@ -151,32 +150,91 @@
         </div>
       </div>
 
-      <!-- Summary -->
+      <!-- Summary + Open button -->
       <div class="mb-8" v-if="showSummary">
         <div class="flex justify-between text-xs text-gray-400 mb-1">
           <span class="underline">Net Copy Amount</span>
           <span class="text-black">{{ netCopyAmount }}</span>
         </div>
 
-        <div v-if="hasPendingForPnl" class="flex justify-between text-xs text-gray-400 mb-1">
-          <span class="underline">PNL</span>
-          <span class="text-teal-400">{{ signedMoney(currentProfit, 4) }}</span>
-        </div>
-
-        <div v-if="!hasPendingOrder" class="pb-5">
+        <div class="pb-5">
           <button
-            class="mt-3 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 float-right"
+            class="mt-3 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 float-right disabled:opacity-50"
             type="button"
-            :disabled="loadingSubmit"
+            :disabled="loadingSubmit || atCapacity"
             @click="submitWinLose"
           >
-            {{ loadingSubmit ? 'Processing…' : 'Open Position' }}
+            {{
+              loadingSubmit
+                ? 'Processing…'
+                : atCapacity
+                  ? 'Capacity Reached (5/5)'
+                  : 'Open Position'
+            }}
           </button>
         </div>
 
         <p v-if="submitError" class="text-red-500 text-xs mt-2">{{ submitError }}</p>
         <p v-if="submitSuccess" class="text-green-500 text-xs mt-2">{{ submitSuccess }}</p>
       </div>
+
+      <!-- === Open Positions List (max 5) === -->
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-semibold text-base">Open Positions</h2>
+          <span class="text-xs text-gray-500">{{ pendingList.length }}/5</span>
+        </div>
+
+        <div v-if="!pendingList.length" class="text-xs text-gray-400">Belum ada posisi.</div>
+
+        <ul v-else class="space-y-3">
+          <li
+            v-for="(tx, idx) in sortedPending"
+            :key="tx.id"
+            class="rounded-md border border-gray-200 p-3"
+          >
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                  #{{ idx + 1 }}
+                </span>
+                <span class="text-xs text-gray-500">TX: {{ tx.id }}</span>
+              </div>
+              <span class="text-xs font-semibold">{{ fmtMoney(tx.amount, 4) }} USDT</span>
+            </div>
+
+            <!-- Progress -->
+            <div class="w-full h-2 bg-gray-100 rounded overflow-hidden mb-2">
+              <div
+                class="h-2 bg-teal-400"
+                :style="{ width: (progressFor(tx) * 100).toFixed(2) + '%' }"
+              />
+            </div>
+
+            <!-- Numbers -->
+            <div class="grid grid-cols-3 gap-2 text-[11px]">
+              <div class="flex flex-col">
+                <span class="text-gray-400">TP</span>
+                <span class="font-semibold">{{ tx.tp }}%</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-gray-400">PNL</span>
+                <span
+                  class="font-semibold"
+                  :class="currentProfitFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'"
+                >
+                  {{ signedMoney(currentProfitFor(tx), 4) }}
+                </span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-gray-400">Est. Total</span>
+                <span class="font-semibold">{{ fmtMoney(currentTotalFor(tx), 4) }}</span>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </section>
 
       <ChatCard />
     </template>
@@ -372,7 +430,6 @@ const amount = ref<string>('') // input value
 const amountError = ref<string>('') // input-level error
 
 const netCopyAmount = computed(() => {
-  if (hasPendingOrder.value && activePending.value) return fmtMoney(activePending.value.amount, 4)
   const raw = (amount.value || '').replace(',', '.').trim()
   const n = Number(raw)
   return Number.isFinite(n) && n > 0 ? fmtMoney(n, 4) : '0.0000'
@@ -396,7 +453,6 @@ watch(amount, (val) => {
 })
 
 const showSummary = computed(() => {
-  if (hasPendingForPnl.value) return true
   const raw = (amount.value || '').trim()
   if (!raw) return false
   const n = Number(raw.replace(',', '.'))
@@ -432,10 +488,11 @@ async function fetchTakeProfit(): Promise<void> {
 
 onMounted(fetchTakeProfit)
 
-/* ===== Pending TX & PnL animation ===== */
+/* ===== Pending TX & PnL animation (MULTI up to 5) ===== */
 type PendingTx = { id: number; expiresAt: number; amount: number; tp: number }
 const LS_KEY = 'pendingTxs'
 const TTL_MS = 5 * 60 * 1000
+const MAX_CONCURRENT = 5
 
 const pendingList = ref<PendingTx[]>([])
 
@@ -459,7 +516,6 @@ function loadPending() {
 watch(
   pendingList,
   (newList) => {
-    // skip pengurangan pada load awal: tandai semua id sebagai sudah diproses
     if (!initSaldoSyncDone) {
       processedSaldoTxIds = new Set<number>(newList.map((t) => t.id))
       initSaldoSyncDone = true
@@ -467,7 +523,6 @@ watch(
     }
     for (const tx of newList) {
       if (!processedSaldoTxIds.has(tx.id)) {
-        // tx baru → kurangi saldo lokal agar langsung terlihat
         saldo.value = Math.max(0, saldo.value - tx.amount)
         processedSaldoTxIds.add(tx.id)
       }
@@ -493,32 +548,28 @@ function removePendingTx(id: number) {
 const nowTick = ref(Date.now())
 let tickHandle: number | undefined
 
-const activePending = computed<PendingTx | null>(() => {
-  if (!pendingList.value.length) return null
-  return [...pendingList.value].sort((a, b) => a.expiresAt - b.expiresAt)[0]
+/* === MULTI helpers === */
+const atCapacity = computed(() => pendingList.value.length >= MAX_CONCURRENT)
+const sortedPending = computed(() => {
+  // berurutan sesuai waktu dibuat (append order) → tampilkan apa adanya
+  return pendingList.value.slice()
 })
-const progress = computed(() => {
-  const p = activePending.value
-  if (!p) return 0
-  const startAt = p.expiresAt - TTL_MS
-  const ratio = (nowTick.value - startAt) / TTL_MS
+function startAtFor(p: PendingTx) {
+  return p.expiresAt - TTL_MS
+}
+function progressFor(p: PendingTx) {
+  const ratio = (nowTick.value - startAtFor(p)) / TTL_MS
   return Math.max(0, Math.min(1, ratio))
-})
-const currentProfit = computed(() => {
-  const p = activePending.value
-  if (!p) return 0
+}
+function currentProfitFor(p: PendingTx) {
   const target = p.amount * (p.tp / 100)
-  return target * progress.value
-})
-const currentTotal = computed(() => {
-  const p = activePending.value
-  if (!p) return 0
-  return p.amount + currentProfit.value
-})
-const hasPendingForPnl = computed(() => !!activePending.value)
-const hasPendingOrder = computed(() => hasPendingForPnl.value)
+  return target * progressFor(p)
+}
+function currentTotalFor(p: PendingTx) {
+  return p.amount + currentProfitFor(p)
+}
 
-/* ===== finalize ===== */
+/* ===== finalize per TX ===== */
 async function finalizeWinLose(txId: number) {
   const ctrl = new AbortController()
   finalizeControllers.set(txId, ctrl)
@@ -554,8 +605,8 @@ const submitSuccess = ref<string | null>(null)
 const loadingSubmit = ref(false)
 
 async function submitWinLose() {
-  if (hasPendingOrder.value) {
-    return alertError('You already have a pending order. Please wait to place a new one.')
+  if (atCapacity.value) {
+    return alertError('Kapasitas posisi penuh (5/5). Selesaikan salah satu dulu.')
   }
 
   const normalized = (amount.value || '').replace(',', '.').trim()
@@ -573,7 +624,7 @@ async function submitWinLose() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id_copy_traders: trader.value?.id, // kirim id copy trader
+        id_copy_traders: trader.value?.id,
         amount: amt,
         take_profit: tp.value,
         stop_loss: sl.value,
@@ -582,14 +633,14 @@ async function submitWinLose() {
     })
     const data = json() as { status: 'success'; transaction_id: number }
 
-    // Simpan pending → watcher akan otomatis mengurangi saldo lokal sekali saja
     addPendingTx(data.transaction_id, amt, tp.value)
 
-    // Jadwalkan finalize
-    const p = activePending.value || pendingList.value.find((x) => x.id === data.transaction_id)
+    // Jadwalkan finalize untuk TX baru itu
+    const p = pendingList.value.find((x) => x.id === data.transaction_id)
     if (p) scheduleFinalize(p.id, p.expiresAt)
 
     alertSuccess('Order created.')
+    amount.value = '' // optional: reset input
   } catch (e: any) {
     alertError(e?.message ?? 'Submit failed')
   } finally {
