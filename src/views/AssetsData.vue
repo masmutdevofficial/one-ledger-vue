@@ -71,7 +71,11 @@
         {{ saldoText }}
       </p>
     </div>
-    <div class="flex items-center justify-between px-4 py-3">
+    <RouterLink
+      to="/smart-arbitrage"
+      class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-md transition cursor-pointer"
+      aria-label="Open Smart Arbitrage"
+    >
       <div class="flex items-center space-x-3">
         <img alt="Robot logo" class="w-6 h-6" height="24" :src="ROBOT_ICON" width="24" />
         <div>
@@ -81,7 +85,8 @@
       <p class="text-gray-900 font-bold text-sm leading-tight">
         {{ smartArbText }}
       </p>
-    </div>
+    </RouterLink>
+
     <!-- ===== Assets ===== -->
     <div class="mb-20">
       <div v-if="loadingAssets" class="text-sm text-gray-500 px-5 py-3">Loading assets…</div>
