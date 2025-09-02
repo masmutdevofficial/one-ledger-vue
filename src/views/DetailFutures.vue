@@ -252,12 +252,6 @@ const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error',
 
 /* ===== Helpers API ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
-
-function easeOutCubic(t: number): number {
-  const x = Math.max(0, Math.min(1, t))
-  return 1 - Math.pow(1 - x, 3)
-}
-
 async function authFetch(path: string, init: RequestInit = {}) {
   const token = localStorage.getItem('token')
   if (!token) throw new Error('Token not found')
@@ -607,42 +601,50 @@ function progressFor(p: PendingTx) {
 
 /* ==== RANDOM WALK PNL ==== */
 function stepRandomWalk(p: PendingTx) {
-  const maxProfit = p.amount * (p.tp / 100) // target TP (USDT)
+  const maxProfit = p.amount * (p.tp / 100) // target akhir (+)
   const current = pnlMap.get(p.id) ?? 0
 
-  // progress 0..1 berdasar durasi TX (bukan fix 5 menit)
-  const t = progressFor(p)
+  // progress 0..1
+  const dur = p.durMs ?? DEFAULT_DUR_MS
+  const startAt = startAtFor(p)
+  const prog = Math.max(0, Math.min(1, (nowTick.value - startAt) / dur))
 
-  // kurva panduan yang monoton naik ke target
-  const guide = maxProfit * easeOutCubic(t)
+  // basis volatilitas
+  const baseVol = maxProfit * 0.015
 
-  // noise menyusut saat mendekati akhir
-  const baseVol = maxProfit * 0.03 // volatilitas awal (3% target per tick)
-  const noiseAmp = baseVol * Math.pow(1 - t, 0.7)
-  const noise = (Math.random() - 0.5) * 2 * noiseAmp
+  let next = current
 
-  // drift ke arah guide yang semakin kuat ketika t besar
-  const driftStrength = 0.15 + 0.7 * t // 0.15 → 0.85
-  let next = current + (guide - current) * driftStrength + noise
+  if (prog < 0.8) {
+    // === Fase 1: 0% - 80% → zig-zag bebas + mean reversion
+    const step = (Math.random() - 0.5) * 2 * baseVol
+    const meanRevert = -current * 0.02
+    next = current + step + meanRevert
+  } else {
+    // === Fase 2: 80% - 100% → tarik ke target, tetap ada noise kecil
+    const remainingMs = Math.max(1000, startAt + dur - nowTick.value)
+    const remainingTicks = Math.ceil(remainingMs / 1000)
 
-  // 10% terakhir: jangan turun; paksa selalu minimal tidak kurang dari current
-  if (t > 0.9 && next < current) {
-    // naikin sedikit menuju guide
-    const upStep = Math.max(0.02 * maxProfit, 0.2 * (guide - current))
-    next = current + upStep
+    // laju minimum per detik agar PASTI sampai target di tick terakhir
+    const requiredPerTick = (maxProfit - current) / remainingTicks
+
+    // noise kecil (30% dari base), supaya tetap zig-zag
+    const noise = (Math.random() - 0.5) * 2 * baseVol * 0.3
+
+    // sedikit easing (semakin dekat, drift makin besar)
+    const phase = (prog - 0.8) / 0.2 // 0..1
+    const ease = phase * phase * (3 - 2 * phase) // smoothstep
+
+    // drift = wajib sampai target + easing + noise
+    next = current + requiredPerTick * (1 + 0.5 * ease) + noise
+
+    // jangan sampai turun tajam; tetap boleh “gerigi” kecil
+    const minDip = current - baseVol * 0.1
+    if (next < minDip) next = minDip
   }
 
-  // 99.5% terakhir: kunci dekat guide (supaya finish mulus)
-  if (t > 0.995) next = Math.max(next, guide * 0.985)
-
-  // clamp ke [-target, +target]
-  const floor = -maxProfit
-  const ceil = +maxProfit
-  if (next > ceil) next = ceil
-  if (next < floor) next = floor
-
-  // Detik terakhir: set tepat ke target
-  if (t >= 0.999) next = maxProfit
+  // clamp dalam [-target, +target] dan jangan melewati target
+  if (next > maxProfit) next = maxProfit
+  if (next < -maxProfit) next = -maxProfit
 
   pnlMap.set(p.id, next)
 }
@@ -659,13 +661,6 @@ async function finalizeWinLose(txId: number) {
   const ctrl = new AbortController()
   finalizeControllers.set(txId, ctrl)
   try {
-    // snap ke target sebelum finalize
-    const tx = pendingList.value.find((x) => x.id === txId)
-    if (tx) {
-      const target = tx.amount * (tx.tp / 100)
-      pnlMap.set(txId, target)
-    }
-
     const { json } = await authFetch('/win-lose/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -684,7 +679,6 @@ async function finalizeWinLose(txId: number) {
     finalizeControllers.delete(txId)
   }
 }
-
 function scheduleFinalize(txId: number, expiresAt: number) {
   const delay = Math.max(0, expiresAt - Date.now())
   window.setTimeout(() => {
