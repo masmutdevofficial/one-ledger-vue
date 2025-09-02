@@ -298,7 +298,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="min-h-screen flex justify-center bg-black text-gray-900">
-    <div class="w-full max-w-md bg-white min-h-screen flex flex-col relative">
+    <div class="w-full bg-white min-h-screen flex flex-col relative">
       <!-- Header -->
       <!-- Top Navbar -->
       <nav
@@ -430,7 +430,7 @@ onBeforeUnmount(() => {
           <!-- Bottom Navigation -->
           <div
             v-if="!hideBottomNav"
-            class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50"
+            class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full bg-white shadow-md z-50"
           >
             <div class="flex justify-around items-center py-2">
               <RouterLink

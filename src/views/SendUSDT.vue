@@ -140,6 +140,13 @@ const networks = [
   { label: 'Tron (TRC20)', value: 'trc20' },
   { label: 'Ethereum (ERC20)', value: 'erc20' },
   { label: 'BNB Smart Chain (BEP20)', value: 'bep20' },
+
+  // extra networks
+  { label: 'Polygon (PoS)', value: 'polygon_pos' },
+  { label: 'Solana (SOL)', value: 'sol' },
+  { label: 'Avalanche (AVAX C-Chain)', value: 'avax' },
+  { label: 'The Open Network (TON)', value: 'ton' },
+  { label: 'Aptos', value: 'aptos' },
 ]
 const selectedNetwork = ref(networks[0].value)
 

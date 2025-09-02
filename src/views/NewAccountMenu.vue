@@ -113,6 +113,33 @@
             />
           </div>
 
+          <!-- Bank Account -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Bank Account</label>
+            <input
+              v-model.trim="formBank"
+              type="text"
+              maxlength="255"
+              autocomplete="organization"
+              class="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              placeholder="e.g., Bank Central Asia"
+            />
+          </div>
+
+          <!-- Account Number -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+            <input
+              v-model.trim="formNorek"
+              type="text"
+              maxlength="255"
+              inputmode="numeric"
+              autocomplete="cc-number"
+              class="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              placeholder="e.g., 1234567890"
+            />
+          </div>
+
           <!-- Avatar -->
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">Avatar</label>
@@ -178,6 +205,9 @@ interface UserApi {
   email: string
   inisial: string | null
   avatar: string | null
+  // NEW
+  bank?: string | null
+  norek?: string | null
 }
 interface User {
   uid: string
@@ -200,6 +230,8 @@ const isKtpVerified = ref<boolean>(false) // ← status centang biru
 
 const showEditModal = ref(false)
 const formInisial = ref<string>('')
+const formBank = ref<string>('')
+const formNorek = ref<string>('')
 
 // upload state
 const avatarFile = ref<File | null>(null)
@@ -280,7 +312,11 @@ async function fetchAccount(): Promise<void> {
       avatar: data.avatar ?? '',
       progress: 1,
     }
+
     formInisial.value = user.value.name ?? ''
+    // NEW: isi form bank & norek dari API
+    formBank.value = (data.bank ?? '').toString()
+    formNorek.value = (data.norek ?? '').toString()
   } catch (e) {
     console.error(e)
   }
@@ -310,6 +346,7 @@ function openEdit(): void {
   formInisial.value = user.value.name ?? ''
   previewUrl.value = null
   avatarFile.value = null
+  // pastikan formBank & formNorek tetap isi terakhir (sudah di-set saat fetch)
   showEditModal.value = true
 }
 function closeEdit(): void {
@@ -345,12 +382,21 @@ async function submitEdit(): Promise<void> {
     return
   }
 
+  const bank = (formBank.value ?? '').trim()
+  const norek = (formNorek.value ?? '').trim()
+
   const fd = new FormData()
   if (initial) fd.append('inisial', initial)
   if (avatarFile.value) fd.append('avatar_file', avatarFile.value)
+  // NEW: ikut kirim jika ada isinya
+  if (bank) fd.append('bank', bank)
+  if (norek) fd.append('norek', norek)
 
   if ([...fd.keys()].length === 0) {
-    modal.open('Nothing to update', 'Please change initials or choose a new avatar.')
+    modal.open(
+      'Nothing to update',
+      'Please change initials, bank account, account number, or choose a new avatar.',
+    )
     return
   }
 
@@ -361,14 +407,12 @@ async function submitEdit(): Promise<void> {
       body: fd,
     })
     const data = await res.json()
-    if (!res.ok) {
-      const msg = data?.message || 'Update failed'
-      throw new Error(msg)
-    }
+    if (!res.ok) throw new Error(data?.message || 'Update failed')
 
     modal.open('Success', 'Profile updated!', () => {
       if (initial) user.value.name = initial
       if (data?.data?.avatar) user.value.avatar = data.data.avatar
+      // optional: refresh nilai form dari server, atau biarkan seperti sekarang
       closeEdit()
     })
   } catch (err: any) {
