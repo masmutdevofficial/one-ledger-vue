@@ -211,7 +211,9 @@
             <div class="grid grid-cols-3 gap-2 text-[11px]">
               <div class="flex flex-col">
                 <span class="text-gray-400">SL</span>
-                <span class="font-semibold">{{ tx.tp }}%</span>
+                <span class="font-semibold">{{
+                  Number.isFinite(tx.sl) ? Math.round(tx.sl) + '%' : '—'
+                }}</span>
               </div>
               <div class="flex flex-col">
                 <span class="text-gray-400">PNL</span>
@@ -485,7 +487,14 @@ async function fetchTakeProfit(): Promise<void> {
 onMounted(fetchTakeProfit)
 
 /* ===== Pending TX & PnL animation (MULTI up to 5) ===== */
-type PendingTx = { id: number; expiresAt: number; amount: number; tp: number; durMs?: number }
+type PendingTx = {
+  id: number
+  expiresAt: number
+  amount: number
+  tp: number
+  sl: number
+  durMs?: number
+}
 const LS_KEY = 'pendingTxs'
 const DEFAULT_DUR_MS = 5 * 60 * 1000 // fallback untuk TX lama (sebelum ada time_op)
 const MAX_CONCURRENT = 5
@@ -502,11 +511,22 @@ let initSaldoSyncDone = false
 
 function loadPending() {
   try {
-    const arr = JSON.parse(localStorage.getItem(LS_KEY) || '[]') as PendingTx[]
+    const arr = JSON.parse(localStorage.getItem(LS_KEY) || '[]') as any[]
     const now = Date.now()
-    pendingList.value = arr.filter((x) => x && typeof x.id === 'number' && x.expiresAt > now)
-    // init PNL map untuk TX yang mungkin belum ada entri
-    for (const tx of pendingList.value) if (!pnlMap.has(tx.id)) pnlMap.set(tx.id, 0)
+    const cleaned: PendingTx[] = []
+    for (const x of arr) {
+      if (!x || typeof x.id !== 'number' || x.expiresAt <= now) continue
+      cleaned.push({
+        id: x.id,
+        amount: Number(x.amount) || 0,
+        tp: Number(x.tp) || 0,
+        sl: Number.isFinite(x.sl) ? Number(x.sl) : Number(sl.value) || 10, // fallback
+        expiresAt: Number(x.expiresAt),
+        durMs: Number(x.durMs) || undefined,
+      })
+      if (!pnlMap.has(x.id)) pnlMap.set(x.id, 0)
+    }
+    pendingList.value = cleaned
     localStorage.setItem(LS_KEY, JSON.stringify(pendingList.value))
   } catch {
     pendingList.value = []
@@ -541,10 +561,17 @@ function minutesToMs(m?: number | null) {
   return Math.max(1, mNum) * 60 * 1000
 }
 
-function addPendingTx(id: number, amount: number, tpPct: number, durMs?: number) {
+function addPendingTx(id: number, amount: number, tpPct: number, slPct: number, durMs?: number) {
   loadPending()
   const useDur = durMs ?? minutesToMs(trader.value?.time_op ?? 5)
-  const tx: PendingTx = { id, amount, tp: tpPct, expiresAt: Date.now() + useDur, durMs: useDur }
+  const tx: PendingTx = {
+    id,
+    amount,
+    tp: tpPct,
+    sl: slPct,
+    expiresAt: Date.now() + useDur,
+    durMs: useDur,
+  }
   pendingList.value.push(tx)
   if (!pnlMap.has(id)) pnlMap.set(id, 0)
   savePending()
@@ -668,7 +695,7 @@ async function submitWinLose() {
     const data = json() as { status: 'success'; transaction_id: number }
 
     // simpan pending dengan durasi per-TX dari backend
-    addPendingTx(data.transaction_id, amt, tp.value!, minutesToMs(orderTime))
+    addPendingTx(data.transaction_id, amt, tp.value!, sl.value!, minutesToMs(orderTime))
 
     // Jadwalkan finalize untuk TX baru itu
     const p = pendingList.value.find((x) => x.id === data.transaction_id)
