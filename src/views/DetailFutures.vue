@@ -180,12 +180,7 @@
 
       <!-- === Open Positions List (max 5) === -->
       <section class="mb-8">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="font-semibold text-base">Open Positions</h2>
-          <span class="text-xs text-gray-500">{{ pendingList.length }}/5</span>
-        </div>
-
-        <div v-if="!pendingList.length" class="text-xs text-gray-400">Belum ada posisi.</div>
+        <div v-if="!pendingList.length" class="text-xs text-gray-400">No Data Available.</div>
 
         <ul v-else class="space-y-3">
           <li
@@ -199,7 +194,7 @@
                 <span class="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-600">
                   #{{ idx + 1 }}
                 </span>
-                <span class="text-xs text-gray-500">TX: {{ tx.id }}</span>
+                <span class="text-xs text-gray-500">Open Position: {{ tx.id }}</span>
               </div>
               <span class="text-xs font-semibold">{{ fmtMoney(tx.amount, 4) }} USDT</span>
             </div>
@@ -215,7 +210,7 @@
             <!-- Numbers -->
             <div class="grid grid-cols-3 gap-2 text-[11px]">
               <div class="flex flex-col">
-                <span class="text-gray-400">TP</span>
+                <span class="text-gray-400">SL</span>
                 <span class="font-semibold">{{ tx.tp }}%</span>
               </div>
               <div class="flex flex-col">
