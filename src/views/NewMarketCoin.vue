@@ -1,25 +1,5 @@
 <template>
   <div>
-    <!-- TOP NAV -->
-    <header class="flex items-center justify-between px-4 py-2 border-b border-gray-200">
-      <nav class="flex items-center space-x-6 text-gray-600 text-sm font-semibold">
-        <a href="#" class="text-black font-extrabold flex items-center space-x-1">
-          <span>USD</span>
-          <span class="text-xs font-normal">ⓢ-M</span>
-        </a>
-        <a href="#" class="hover:text-gray-800">COIN-M</a>
-        <a href="#" class="hover:text-gray-800">Options</a>
-        <a href="#" class="hover:text-gray-800 flex items-center relative">
-          <span>Smart Money</span>
-          <span
-            class="absolute -top-3 right-0 text-[10px] font-semibold bg-yellow-300 text-black rounded-full px-[6px] py-[1px] leading-none">New</span>
-        </a>
-      </nav>
-
-      <button aria-label="Menu" class="text-gray-700">
-        <Icon icon="tabler:menu-2" class="w-6 h-6" />
-      </button>
-    </header>
     <!-- SYMBOL ROW -->
     <section class="flex items-center justify-between px-4 py-2 pb-0">
       <!-- HEADER: pair dropdown + toggle chart -->
@@ -276,7 +256,7 @@
           <div class="flex items-center justify-between space-x-2 w-full">
             <Icon icon="tabler:info-circle-filled" class="w-4 h-4 text-gray-400" />
             <button type="button" class="flex items-center font-semibold text-gray-900">
-              Limit
+              Market
             </button>
             <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
           </div>
@@ -335,11 +315,6 @@
           </div>
 
           <Icon icon="tabler:plus" class="w-4 h-4 shrink-0" />
-
-          <button type="button" class="h-8 px-3 rounded-md text-gray-900 font-semibold flex items-center shrink-0">
-            {{ availableUnit }}
-            <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
-          </button>
         </div>
 
         <!-- SLIDER -->
