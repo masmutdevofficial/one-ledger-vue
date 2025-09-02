@@ -210,16 +210,16 @@
             <!-- Numbers -->
             <div class="grid grid-cols-3 gap-2 text-[11px]">
               <div class="flex flex-col">
-                <span class="text-gray-400">SL</span>
+                <span class="text-gray-400">TP</span>
                 <span class="font-semibold">{{ tx.tp }}%</span>
               </div>
               <div class="flex flex-col">
                 <span class="text-gray-400">PNL</span>
                 <span
                   class="font-semibold"
-                  :class="currentProfitFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'"
+                  :class="pnlFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'"
                 >
-                  {{ signedMoney(currentProfitFor(tx), 4) }}
+                  {{ signedMoney(pnlFor(tx), 4) }}
                 </span>
               </div>
               <div class="flex flex-col">
@@ -238,7 +238,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import ChatCard from '@/components/futures/ChatCard.vue'
@@ -303,6 +303,7 @@ type Trader = {
   aum: number
   min_buy: number | null
   sharpe_ratio: number
+  time_op?: number | null
   created_at?: string
   updated_at?: string
 }
@@ -484,12 +485,15 @@ async function fetchTakeProfit(): Promise<void> {
 onMounted(fetchTakeProfit)
 
 /* ===== Pending TX & PnL animation (MULTI up to 5) ===== */
-type PendingTx = { id: number; expiresAt: number; amount: number; tp: number }
+type PendingTx = { id: number; expiresAt: number; amount: number; tp: number; durMs?: number }
 const LS_KEY = 'pendingTxs'
-const TTL_MS = 5 * 60 * 1000
+const DEFAULT_DUR_MS = 5 * 60 * 1000 // fallback untuk TX lama (sebelum ada time_op)
 const MAX_CONCURRENT = 5
 
 const pendingList = ref<PendingTx[]>([])
+
+// random-walk PNL per TX (reactive container)
+const pnlMap = reactive(new Map<number, number>())
 
 // penanda tx yang sudah pernah mengurangi saldo lokal
 let processedSaldoTxIds = new Set<number>()
@@ -501,6 +505,8 @@ function loadPending() {
     const arr = JSON.parse(localStorage.getItem(LS_KEY) || '[]') as PendingTx[]
     const now = Date.now()
     pendingList.value = arr.filter((x) => x && typeof x.id === 'number' && x.expiresAt > now)
+    // init PNL map untuk TX yang mungkin belum ada entri
+    for (const tx of pendingList.value) if (!pnlMap.has(tx.id)) pnlMap.set(tx.id, 0)
     localStorage.setItem(LS_KEY, JSON.stringify(pendingList.value))
   } catch {
     pendingList.value = []
@@ -530,13 +536,22 @@ function savePending() {
   localStorage.setItem(LS_KEY, JSON.stringify(pendingList.value))
 }
 
-function addPendingTx(id: number, amount: number, tp: number, ttlMs = TTL_MS) {
+function minutesToMs(m?: number | null) {
+  const mNum = Number.isFinite(m as number) ? (m as number) : 5
+  return Math.max(1, mNum) * 60 * 1000
+}
+
+function addPendingTx(id: number, amount: number, tpPct: number, durMs?: number) {
   loadPending()
-  pendingList.value.push({ id, amount, tp, expiresAt: Date.now() + ttlMs })
+  const useDur = durMs ?? minutesToMs(trader.value?.time_op ?? 5)
+  const tx: PendingTx = { id, amount, tp: tpPct, expiresAt: Date.now() + useDur, durMs: useDur }
+  pendingList.value.push(tx)
+  if (!pnlMap.has(id)) pnlMap.set(id, 0)
   savePending()
 }
 function removePendingTx(id: number) {
   pendingList.value = pendingList.value.filter((x) => x.id !== id)
+  pnlMap.delete(id)
   savePending()
 }
 
@@ -545,23 +560,46 @@ let tickHandle: number | undefined
 
 /* === MULTI helpers === */
 const atCapacity = computed(() => pendingList.value.length >= MAX_CONCURRENT)
-const sortedPending = computed(() => {
-  // berurutan sesuai waktu dibuat (append order) → tampilkan apa adanya
-  return pendingList.value.slice()
-})
+const sortedPending = computed(() => pendingList.value.slice())
+
 function startAtFor(p: PendingTx) {
-  return p.expiresAt - TTL_MS
+  const dur = p.durMs ?? DEFAULT_DUR_MS
+  return p.expiresAt - dur
 }
 function progressFor(p: PendingTx) {
-  const ratio = (nowTick.value - startAtFor(p)) / TTL_MS
+  const dur = p.durMs ?? DEFAULT_DUR_MS
+  const ratio = (nowTick.value - startAtFor(p)) / dur
   return Math.max(0, Math.min(1, ratio))
 }
-function currentProfitFor(p: PendingTx) {
-  const target = p.amount * (p.tp / 100)
-  return target * progressFor(p)
+
+/* ==== RANDOM WALK PNL ==== */
+function stepRandomWalk(p: PendingTx) {
+  const maxProfit = p.amount * (p.tp / 100) // target TP sebagai skala
+  const current = pnlMap.get(p.id) ?? 0
+
+  // volatilitas 1.5% dari target per detik
+  const vol = maxProfit * 0.015
+  const step = (Math.random() - 0.5) * 2 * vol
+
+  // sedikit mean-reversion biar gak runaway
+  const meanRevert = -current * 0.02
+
+  let next = current + step + meanRevert
+
+  // batasi kisaran [-target, +target]
+  const floor = -maxProfit
+  const ceil = +maxProfit
+  if (next > ceil) next = ceil
+  if (next < floor) next = floor
+
+  pnlMap.set(p.id, next)
+}
+
+function pnlFor(p: PendingTx) {
+  return pnlMap.get(p.id) ?? 0
 }
 function currentTotalFor(p: PendingTx) {
-  return p.amount + currentProfitFor(p)
+  return p.amount + pnlFor(p)
 }
 
 /* ===== finalize per TX ===== */
@@ -615,6 +653,7 @@ async function submitWinLose() {
 
   loadingSubmit.value = true
   try {
+    const orderTime = trader.value?.time_op ?? 5 // menit dari backend
     const { json } = await authFetch('/win-lose/apply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -623,19 +662,20 @@ async function submitWinLose() {
         amount: amt,
         take_profit: tp.value,
         stop_loss: sl.value,
-        order_time: 5,
+        order_time: orderTime, // <= pakai backend
       }),
     })
     const data = json() as { status: 'success'; transaction_id: number }
 
-    addPendingTx(data.transaction_id, amt, tp.value)
+    // simpan pending dengan durasi per-TX dari backend
+    addPendingTx(data.transaction_id, amt, tp.value!, minutesToMs(orderTime))
 
     // Jadwalkan finalize untuk TX baru itu
     const p = pendingList.value.find((x) => x.id === data.transaction_id)
     if (p) scheduleFinalize(p.id, p.expiresAt)
 
     alertSuccess('Order created.')
-    amount.value = '' // optional: reset input
+    amount.value = '' // reset input
   } catch (e: any) {
     alertError(e?.message ?? 'Submit failed')
   } finally {
@@ -661,6 +701,9 @@ onMounted(() => {
   // 1s ticker
   tickHandle = window.setInterval(() => {
     nowTick.value = Date.now()
+
+    // update random-walk semua TX aktif
+    for (const tx of pendingList.value) stepRandomWalk(tx)
   }, 1000)
 
   // initial saldo + pending tx
