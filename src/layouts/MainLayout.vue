@@ -382,42 +382,43 @@ onBeforeUnmount(() => {
 
           <!-- Bottom Navigation -->
           <div v-if="!hideBottomNav"
-            class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white shadow-md z-50">
-            <div class="flex justify-around items-center py-2">
-              <RouterLink to="/dashboard" class="flex flex-col items-center"
+            class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-100 shadow-md z-50">
+            <nav class="grid grid-cols-5 items-center py-2 px-3">
+              <RouterLink to="/dashboard" class="flex flex-col items-center justify-center gap-1"
                 :class="isActive('/dashboard') ? 'text-teal-600' : 'text-gray-400'">
-                <img alt="Home" src="/img/logo-symetric.png" class="w-4 h-4 object-contain" />
-                <span class="text-xs mt-1 font-semibold">Home</span>
+                <img alt="Home" src="/img/logo-symetric.png" class="w-5 h-5 object-contain" />
+                <span class="text-[11px] leading-none font-semibold">Home</span>
               </RouterLink>
 
-              <RouterLink to="/market" class="flex flex-col items-center ml-2"
+              <RouterLink to="/market" class="flex flex-col items-center justify-center gap-1"
                 :class="isActive('/market') ? 'text-teal-600' : 'text-gray-400'">
-                <img alt="Market" src="/img/markets-icon.png" class="w-4 h-4 object-contain filter"
+                <img alt="Market" src="/img/markets-icon.png" class="w-5 h-5 object-contain filter"
                   :style="isActive('/market') ? teal600Filter : null" />
-                <span class="text-xs mt-1">Market</span>
+                <span class="text-[11px] leading-none font-medium">Market</span>
               </RouterLink>
 
-              <RouterLink to="/trade" class="flex flex-col items-center ml-4"
+              <RouterLink to="/trade" class="flex flex-col items-center justify-center gap-1"
                 :class="isActive('/trade') ? 'text-teal-600' : 'text-gray-400'">
-                <img alt="Trade" src="/img/trade-icon.png" class="w-4 h-4 object-contain filter"
+                <img alt="Trade" src="/img/trade-icon.png" class="w-5 h-5 object-contain filter"
                   :style="isActive('/trade') ? teal600Filter : null" />
-                <span class="text-xs mt-1">Trade</span>
+                <span class="text-[11px] leading-none font-medium">Trade</span>
               </RouterLink>
 
-              <RouterLink to="/future" class="flex flex-col items-center"
+              <RouterLink to="/future" class="flex flex-col items-center justify-center gap-1"
                 :class="isActive('/future') ? 'text-teal-600' : 'text-gray-400'">
-                <img alt="Trade" src="/img/futures.png" class="w-4 h-4 object-contain filter"
+                <img alt="Futures" src="/img/futures.png" class="w-5 h-5 object-contain filter"
                   :style="isActive('/future') ? teal600Filter : null" />
-                <span class="text-xs mt-1 text-center">Futures</span>
+                <span class="text-[11px] leading-none font-medium">Futures</span>
               </RouterLink>
 
-              <RouterLink to="/assets" class="flex flex-col items-center"
+              <RouterLink to="/assets" class="flex flex-col items-center justify-center gap-1"
                 :class="isActive('/assets') ? 'text-teal-600' : 'text-gray-400'">
-                <Icon icon="tabler:wallet" class="w-4 h-4 mt-[2px]" />
-                <span class="text-xs mt-1">Assets</span>
+                <Icon icon="tabler:wallet" class="w-5 h-5" />
+                <span class="text-[11px] leading-none font-medium">Assets</span>
               </RouterLink>
-            </div>
+            </nav>
           </div>
+
         </template>
       </main>
     </div>
