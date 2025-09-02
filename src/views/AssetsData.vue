@@ -71,6 +71,17 @@
         {{ saldoText }}
       </p>
     </div>
+    <div class="flex items-center justify-between px-4 py-3">
+      <div class="flex items-center space-x-3">
+        <img alt="Robot logo" class="w-6 h-6" height="24" :src="ROBOT_ICON" width="24" />
+        <div>
+          <p class="text-gray-900 font-semibold text-sm leading-tight">Smart Arbitrage</p>
+        </div>
+      </div>
+      <p class="text-gray-900 font-bold text-sm leading-tight">
+        {{ smartArbText }}
+      </p>
+    </div>
     <!-- ===== Assets ===== -->
     <div class="mb-20">
       <div v-if="loadingAssets" class="text-sm text-gray-500 px-5 py-3">Loading assets…</div>
@@ -197,16 +208,28 @@ const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !==
 interface SaldoResponse {
   status: 'success' | 'error' | string
   saldo: number
+  saldo_smart_arbitrage?: number
   koin: number
 }
 
 const saldoAwal = ref<number | null>(null)
 const koinAwal = ref<number | null>(null)
 const USDT_ICON = '/img/crypto/usdt.svg'
+const ROBOT_ICON = '/img/robot-logo.png'
 
 const saldoText = computed(() =>
   saldoAwal.value !== null
     ? saldoAwal.value.toLocaleString('id-ID', {
+        minimumFractionDigits: 6,
+        maximumFractionDigits: 6,
+      })
+    : '...',
+)
+const smartArbAwal = ref<number | null>(null)
+
+const smartArbText = computed(() =>
+  smartArbAwal.value !== null
+    ? smartArbAwal.value.toLocaleString('id-ID', {
         minimumFractionDigits: 6,
         maximumFractionDigits: 6,
       })
@@ -486,6 +509,7 @@ async function loadSaldo() {
       saldoAwal.value = v
       koinAwal.value = Number(data.koin) || 0
       saldo.value = v
+      smartArbAwal.value = Number(data.saldo_smart_arbitrage) || 0 // <- ini ditambah
       upsertSaldoCache(v)
     } else {
       modal.open('Error', 'Gagal mengambil saldo.')

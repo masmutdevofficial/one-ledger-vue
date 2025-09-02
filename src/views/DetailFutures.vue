@@ -194,7 +194,7 @@
                 <span class="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-600">
                   #{{ idx + 1 }}
                 </span>
-                <span class="text-xs text-gray-500">Open Position: {{ tx.id }}</span>
+                <span class="text-xs text-gray-500">Open Position</span>
               </div>
               <span class="text-xs font-semibold">{{ fmtMoney(tx.amount, 4) }} USDT</span>
             </div>

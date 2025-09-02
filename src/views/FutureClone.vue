@@ -12,7 +12,9 @@
         <a href="#" class="hover:text-gray-800 flex items-center relative">
           <span>Smart Money</span>
           <span
-            class="absolute -top-3 right-0 text-[10px] font-semibold bg-yellow-300 text-black rounded-full px-[6px] py-[1px] leading-none">New</span>
+            class="absolute -top-3 right-0 text-[10px] font-semibold bg-yellow-300 text-black rounded-full px-[6px] py-[1px] leading-none"
+            >New</span
+          >
         </a>
       </nav>
 
@@ -26,24 +28,38 @@
       <!-- HEADER: pair dropdown + toggle chart -->
       <div class="flex items-center justify-between">
         <div class="flex flex-row items-center">
-          <button v-if="showChart" class="rounded-lg pr-2 py-1 text-black" @click="showChart = false"
-            :aria-pressed="false">
+          <button
+            v-if="showChart"
+            class="rounded-lg pr-2 py-1 text-black"
+            @click="showChart = false"
+            :aria-pressed="false"
+          >
             <Icon icon="tabler:arrow-left" class="w-5 h-5" />
           </button>
 
           <div class="relative inline-block">
             <!-- Trigger Dropdown -->
-            <div class="flex items-center space-x-1 cursor-pointer" @click="dropdownOpen = !dropdownOpen">
+            <div
+              class="flex items-center space-x-1 cursor-pointer"
+              @click="dropdownOpen = !dropdownOpen"
+            >
               <span class="font-semibold text-black text-base">{{ selectedPair }}</span>
               <span class="font-bold text-xs text-gray-800">Perp</span>
               <Icon icon="tabler:chevron-down" class="text-black text-base" />
             </div>
 
             <!-- Dropdown -->
-            <div v-if="dropdownOpen" class="absolute z-50 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md">
+            <div
+              v-if="dropdownOpen"
+              class="absolute z-50 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md"
+            >
               <ul class="max-h-64 overflow-auto">
-                <li v-for="pair in tradingPairs" :key="pair" @click="selectPair(pair)"
-                  class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black">
+                <li
+                  v-for="pair in tradingPairs"
+                  :key="pair"
+                  @click="selectPair(pair)"
+                  class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
+                >
                   {{ pair }}
                 </li>
               </ul>
@@ -70,8 +86,6 @@
       </div>
     </section>
 
-
-
     <!-- PRICE + CHANGE -->
     <div class="max-w-md mx-4 mt-1">
       <div class="text-start" v-if="depthData && showChart">
@@ -88,8 +102,10 @@
               })
             }}
           </p>
-          <span class="ml-1 text-[10px] font-semibold"
-            :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'">
+          <span
+            class="ml-1 text-[10px] font-semibold"
+            :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+          >
             {{
               percentChange !== null
                 ? (percentChange > 0 ? '+' : '') + percentChange.toFixed(2) + '%'
@@ -99,8 +115,11 @@
         </div>
       </div>
 
-      <span v-else class="text-sm font-semibold"
-        :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'">
+      <span
+        v-else
+        class="text-sm font-semibold"
+        :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+      >
         {{
           percentChange !== null
             ? (percentChange > 0 ? '+' : '') + percentChange.toFixed(2) + '%'
@@ -113,24 +132,39 @@
     <div v-if="showChart" class="grid grid-cols-[50px_1fr] gap-2 items-stretch w-full relative">
       <aside class="rounded-xl border border-white/10 p-2">
         <div class="flex flex-col gap-2 text-xs">
-          <button class="pl-1 px-2 py-1 rounded-lg border transition-colors" :class="{
-            'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
-            'hover:bg-white/5': kind !== 'candlestick',
-          }" :aria-pressed="kind === 'candlestick'" @click="kind = 'candlestick'">
+          <button
+            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+            :class="{
+              'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
+              'hover:bg-white/5': kind !== 'candlestick',
+            }"
+            :aria-pressed="kind === 'candlestick'"
+            @click="kind = 'candlestick'"
+          >
             <Icon icon="tabler:chart-candle" class="w-5 h-5" />
           </button>
 
-          <button class="pl-1 px-2 py-1 rounded-lg border transition-colors" :class="{
-            'bg-teal-500 text-white border-teal-500': kind === 'line',
-            'hover:bg-white/5': kind !== 'line',
-          }" :aria-pressed="kind === 'line'" @click="kind = 'line'">
+          <button
+            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+            :class="{
+              'bg-teal-500 text-white border-teal-500': kind === 'line',
+              'hover:bg-white/5': kind !== 'line',
+            }"
+            :aria-pressed="kind === 'line'"
+            @click="kind = 'line'"
+          >
             <Icon icon="tabler:chart-line" class="w-5 h-5" />
           </button>
 
-          <button class="pl-1 px-2 py-1 rounded-lg border transition-colors" :class="{
-            'bg-teal-500 text-white border-teal-500': kind === 'area',
-            'hover:bg-white/5': kind !== 'area',
-          }" :aria-pressed="kind === 'area'" @click="kind = 'area'">
+          <button
+            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+            :class="{
+              'bg-teal-500 text-white border-teal-500': kind === 'area',
+              'hover:bg-white/5': kind !== 'area',
+            }"
+            :aria-pressed="kind === 'area'"
+            @click="kind = 'area'"
+          >
             <Icon icon="tabler:chart-area" class="w-5 h-5" />
           </button>
         </div>
@@ -138,17 +172,30 @@
 
       <section class="rounded-2xl min-w-0 overflow-hidden">
         <!-- Stub chart (UI-only, no library) -->
-        <LightChart :series-type="kind" :candle-data="[]" :data="[]"
-          :options="{ timeScale: { rightOffset: 12, barSpacing: 5 } }" :fit="false" :initial-bars="180"
-          :right-offset="12" :auto-follow="true" />
+        <LightChart
+          :series-type="kind"
+          :candle-data="[]"
+          :data="[]"
+          :options="{ timeScale: { rightOffset: 12, barSpacing: 5 } }"
+          :fit="false"
+          :initial-bars="180"
+          :right-offset="12"
+          :auto-follow="true"
+        />
       </section>
 
       <div class="flex flex-row items-center absolute -top-8.5 right-4 space-x-2">
-        <button v-for="t in tfs" :key="t"
-          class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors" :class="{
+        <button
+          v-for="t in tfs"
+          :key="t"
+          class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors"
+          :class="{
             'bg-teal-500 text-white border-teal-500': tf === t,
             'hover:bg-white/5': tf !== t,
-          }" :aria-pressed="tf === t" @click="tf = t">
+          }"
+          :aria-pressed="tf === t"
+          @click="tf = t"
+        >
           {{ t }}
         </button>
       </div>
@@ -167,10 +214,16 @@
     <div v-if="showChart" class="flex w-full justify-between items-center">
       <!-- BIDS -->
       <div class="space-y-1 w-full" v-if="depthData">
-        <div v-for="bid in top12Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
-          style="height: 17.5px">
-          <div class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
-            :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }" />
+        <div
+          v-for="bid in top12Bids"
+          :key="bid[0]"
+          class="relative flex justify-between overflow-hidden rounded"
+          style="height: 17.5px"
+        >
+          <div
+            class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+            :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+          />
           <p class="text-black text-[10px] z-10 px-2 w-1/2">
             {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
           </p>
@@ -182,10 +235,16 @@
 
       <!-- ASKS -->
       <div class="space-y-1 w-full" v-if="depthData">
-        <div v-for="ask in top12Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
-          style="height: 17.5px">
-          <div class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
-            :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }" />
+        <div
+          v-for="ask in top12Asks"
+          :key="ask[0]"
+          class="relative flex justify-between overflow-hidden rounded"
+          style="height: 17.5px"
+        >
+          <div
+            class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+            :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+          />
           <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
             {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
           </p>
@@ -196,18 +255,21 @@
       </div>
     </div>
 
-
     <!-- QUICK BUY/SELL -->
     <div v-if="showChart" class="flex justify-between items-center mx-1 my-2 mb-20">
       <div class="w-full flex items-center gap-2">
         <button
+          type="button"
           class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-          @click="showChart = false">
+          @click.prevent="openRestrict"
+        >
           Buy
         </button>
         <button
+          type="button"
           class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-red-500 text-white hover:bg-red-600 transition-colors"
-          @click="showChart = false">
+          @click.prevent="openRestrict"
+        >
           Sell
         </button>
       </div>
@@ -219,11 +281,11 @@
       <div>
         <!-- Funding & Countdown in 2 columns -->
         <div class="text-[12px] flex flex-col justify-start items-start mb-3">
-          <span class="underline decoration-dotted underline-offset-2 text-gray-400 font-semibold">Funding /
-            Countdown</span>
-          <span class=" text-gray-900 font-semibold">0,0052% / 00:08:44</span>
+          <span class="underline decoration-dotted underline-offset-2 text-gray-400 font-semibold"
+            >Funding / Countdown</span
+          >
+          <span class="text-gray-900 font-semibold">0,0052% / 00:08:44</span>
         </div>
-
 
         <div class="flex justify-between text-gray-400 text-xs pb-1">
           <span>Price (USDT)</span>
@@ -232,10 +294,16 @@
 
         <!-- ASKS -->
         <div class="space-y-1" v-if="depthData">
-          <div v-for="ask in top12Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
-            style="height: 17.5px">
-            <div class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
-              :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }" />
+          <div
+            v-for="ask in top12Asks"
+            :key="ask[0]"
+            class="relative flex justify-between overflow-hidden rounded"
+            style="height: 17.5px"
+          >
+            <div
+              class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+              :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+            />
             <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
               {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
@@ -265,10 +333,16 @@
 
         <!-- BIDS -->
         <div class="space-y-1" v-if="depthData">
-          <div v-for="bid in top12Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
-            style="height: 17.5px">
-            <div class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
-              :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }" />
+          <div
+            v-for="bid in top12Bids"
+            :key="bid[0]"
+            class="relative flex justify-between overflow-hidden rounded"
+            style="height: 17.5px"
+          >
+            <div
+              class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+              :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+            />
             <p class="text-[#2DBE87] text-[10px] z-10 px-2 w-1/2">
               {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
@@ -284,15 +358,18 @@
         <!-- Mode / Leverage / Side -->
         <div class="grid grid-cols-3 gap-2">
           <button
-            class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none">
+            class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none"
+          >
             Isolated
           </button>
           <button
-            class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none">
+            class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none"
+          >
             150x
           </button>
           <button
-            class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none">
+            class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none"
+          >
             S
           </button>
         </div>
@@ -308,7 +385,9 @@
           </div>
 
           <!-- Order type -->
-          <div class="flex items-center justify-between bg-gray-100 rounded-lg px-3 py-2 text-[12px]">
+          <div
+            class="flex items-center justify-between bg-gray-100 rounded-lg px-3 py-2 text-[12px]"
+          >
             <div class="flex items-center justify-between space-x-2 w-full">
               <Icon icon="tabler:info-circle-filled" class="w-4 h-4 text-gray-400" />
               <button type="button" class="flex items-center font-semibold text-gray-900">
@@ -319,27 +398,33 @@
           </div>
 
           <!-- Price -->
-          <div class="flex items-center justify-between  text-[12px] w-full space-x-2">
-            <div class="bg-gray-100 flex-row flex items-center justify-between px-2 rounded-lg w-[97%] py-[4px]">
+          <div class="flex items-center justify-between text-[12px] w-full space-x-2">
+            <div
+              class="bg-gray-100 flex-row flex items-center justify-between px-2 rounded-lg w-[97%] py-[4px]"
+            >
               <Icon icon="tabler:minus" class="w-4 h-4" />
-              <div class="flex-1 text-center ">
-                <div class="text-[10px] text-gray-400 leading-none mb-1 ">Price (USDT)</div>
-                <div class="font-semibold text-[12px] text-gray-900 leading-tight">{{ marketPrice ?
-                  marketPrice.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '-'
-                  }}</div>
+              <div class="flex-1 text-center">
+                <div class="text-[10px] text-gray-400 leading-none mb-1">Price (USDT)</div>
+                <div class="font-semibold text-[12px] text-gray-900 leading-tight">
+                  {{
+                    marketPrice
+                      ? marketPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })
+                      : '-'
+                  }}
+                </div>
               </div>
               <Icon icon="tabler:plus" class="w-4 h-4" />
             </div>
 
             <div class="flex items-center space-x-2 bg-gray-100 rounded-lg py-[4px]">
-              <button type="button" class="h-8 px-3 text-gray-900 font-semibold">
-                BBO
-              </button>
+              <button type="button" class="h-8 px-3 text-gray-900 font-semibold">BBO</button>
             </div>
           </div>
 
           <!-- Amount -->
-          <div class="flex items-center justify-between bg-gray-100 rounded-lg px-2 py-[4px] text-[12px]">
+          <div
+            class="flex items-center justify-between bg-gray-100 rounded-lg px-2 py-[4px] text-[12px]"
+          >
             <Icon icon="tabler:minus" class="w-4 h-4" />
 
             <div class="flex-1 text-center">
@@ -347,7 +432,10 @@
             </div>
             <Icon icon="tabler:plus" class="w-4 h-4" />
             <div class="flex items-center space-x-2">
-              <button type="button" class="h-8 px-3 rounded-md text-gray-900 font-semibold flex items-center">
+              <button
+                type="button"
+                class="h-8 px-3 rounded-md text-gray-900 font-semibold flex items-center"
+              >
                 USDT
                 <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
               </button>
@@ -357,20 +445,35 @@
 
         <!-- SLIDER -->
         <div class="w-full">
-          <input type="range" v-model.number="rawPercent" min="0" max="100" step="1" :style="sliderStyle"
-            @input="onInput(($event.target as HTMLInputElement).valueAsNumber)" @change="commitSnap"
-            @pointerdown="isDragging = true" @pointerup="handlePointerUp"
-            class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:mt-[-4px]" />
+          <input
+            type="range"
+            v-model.number="rawPercent"
+            min="0"
+            max="100"
+            step="1"
+            :style="sliderStyle"
+            @input="onInput(($event.target as HTMLInputElement).valueAsNumber)"
+            @change="commitSnap"
+            @pointerdown="isDragging = true"
+            @pointerup="handlePointerUp"
+            class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:mt-[-4px]"
+          />
 
           <div class="flex justify-between text-xs text-gray-400 mt-1">
-            <button v-for="m in marks" :key="m" type="button" @click="setPercent(m)" class="select-none transition"
-              :class="[amountPercent === m ? 'text-gray-900 font-semibold' : '']">
+            <button
+              v-for="m in marks"
+              :key="m"
+              type="button"
+              @click="setPercent(m)"
+              class="select-none transition"
+              :class="[amountPercent === m ? 'text-gray-900 font-semibold' : '']"
+            >
               {{ m }}%
             </button>
           </div>
         </div>
 
-        <form class="space-y-4 text-sm text-gray-800">
+        <form class="space-y-4 text-sm text-gray-800" @submit.prevent>
           <!-- Options -->
           <fieldset class="space-y-2">
             <legend class="sr-only">Order options</legend>
@@ -382,13 +485,21 @@
 
             <div class="flex items-center gap-2">
               <label for="opt-reduce" class="flex items-center gap-2 flex-1 cursor-pointer">
-                <input id="opt-reduce" type="radio" name="orderType" class="h-4 w-4 accent-teal-500" />
+                <input
+                  id="opt-reduce"
+                  type="radio"
+                  name="orderType"
+                  class="h-4 w-4 accent-teal-500"
+                />
                 <span>Reduce Only</span>
               </label>
 
               <label for="tif" class="sr-only">Time in Force</label>
-              <select id="tif" name="timeInForce"
-                class="ml-auto text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-600">
+              <select
+                id="tif"
+                name="timeInForce"
+                class="ml-auto text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-600"
+              >
                 <option>GTC</option>
               </select>
             </div>
@@ -402,9 +513,12 @@
             <div class="flex justify-between text-xs text-gray-600">
               <span>Cost</span><span>0 USDT</span>
             </div>
-            <button type="button"
-              class="w-full bg-teal-500 text-white rounded-md py-2 font-medium hover:bg-green-700 transition-colors">
-              Buy/Long
+            <button
+              type="button"
+              class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+              @click.prevent="openRestrict"
+            >
+              Buy
             </button>
           </div>
 
@@ -416,13 +530,15 @@
             <div class="flex justify-between text-xs text-gray-600">
               <span>Cost</span><span>0 USDT</span>
             </div>
-            <button type="button"
-              class="w-full bg-red-500 text-white rounded-md py-2 font-medium hover:bg-red-700 transition-colors">
-              Sell/Short
+            <button
+              type="button"
+              class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-red-500 text-white hover:bg-red-600 transition-colors"
+              @click.prevent="openRestrict"
+            >
+              Sell
             </button>
           </div>
         </form>
-
       </div>
     </div>
 
@@ -438,22 +554,72 @@
         <button type="button" class="hover:text-gray-800">Futures Grid</button>
 
         <!-- Riwayat (history) icon di paling kanan -->
-        <button type="button" aria-label="History"
-          class="ml-auto inline-flex items-center justify-end p-1 text-gray-400 hover:text-gray-600 hover:border-gray-400">
+        <button
+          type="button"
+          aria-label="History"
+          class="ml-auto inline-flex items-center justify-end p-1 text-gray-400 hover:text-gray-600 hover:border-gray-400"
+        >
           <Icon icon="tabler:file-report" class="w-4 h-4" />
         </button>
       </nav>
 
       <!-- Empty state -->
       <div class="mt-20 flex flex-col items-center text-center px-4">
-        <img src="https://storage.googleapis.com/a1aa/image/b275b4fd-4166-4f3b-ab7c-794a25a1615e.jpg"
-          alt="Empty state illustration" class="w-10 h-10 mb-4" width="40" height="40" />
+        <img
+          src="https://storage.googleapis.com/a1aa/image/b275b4fd-4166-4f3b-ab7c-794a25a1615e.jpg"
+          alt="Empty state illustration"
+          class="w-10 h-10 mb-4"
+          width="40"
+          height="40"
+        />
         <p class="font-semibold text-black text-sm mb-1">Available funds: 0,00 USDT</p>
         <p class="text-xs text-gray-400 mb-4">Transfer funds to your Futures Wallet</p>
-        <button type="button"
-          class="bg-gray-100 text-gray-700 text-xs rounded px-4 py-1 border border-gray-300 hover:bg-gray-200">
+        <button
+          type="button"
+          class="bg-gray-100 text-gray-700 text-xs rounded px-4 py-1 border border-gray-300 hover:bg-gray-200"
+        >
           Transfer
         </button>
+      </div>
+
+      <div
+        v-if="showRestrict"
+        class="fixed inset-0 z-[1000] flex items-center justify-center"
+        role="dialog"
+        aria-modal="true"
+      >
+        <button
+          type="button"
+          class="absolute inset-0 bg-black/40"
+          aria-label="Close"
+          @click="closeRestrict"
+        />
+
+        <div class="relative mx-4 w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
+          <div class="flex items-start gap-2">
+            <div>
+              <h3 class="font-semibold text-black mb-1">⚠️ Notice</h3>
+              <p class="text-sm text-gray-700">
+                Your account is still new.<br />
+                The Futures Trading feature will be available once your account has been active for
+                a longer period.
+              </p>
+              <p class="text-sm text-gray-500 mt-2">
+                This is to ensure security and provide you with the best trading experience.<br />
+                Thank you for your understanding.
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-md border border-gray-300 text-sm"
+              @click="closeRestrict"
+            >
+              OK
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -461,15 +627,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import {
-  ref,
-  computed,
-  watch,
-  onMounted,
-  onUnmounted,
-  defineComponent,
-  h,
-} from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, defineComponent, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 /** =========================
@@ -487,17 +645,94 @@ const dropdownOpen = ref(false)
 const selectedPair = ref('BTC/USDT')
 
 const tradingPairs = [
-  'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'LTC/USDT', 'LINK/USDT', 'TON/USDT', 'SUI/USDT', 'XRP/USDT',
-  'QTUM/USDT', 'THETA/USDT', 'ADA/USDT', 'RAD/USDT', 'BAND/USDT', 'ALGO/USDT', 'POL/USDT', 'DOGE/USDT',
-  'LUNA/USDT', 'GALA/USDT', 'PEPE/USDT', 'CFX/USDT', 'TRX/USDT', 'TRUMP/USDT', 'SHIB/USDT', 'ARB/USDT',
-  'FIL/USDT', 'API3/USDT', 'ENA/USDT', 'BIO/USDT', 'UNI/USDT', 'BTT/USDT', 'SATS/USDT', 'MEME/USDT',
-  'GT/USDT', 'OP/USDT', 'AAVE/USDT', 'SNAKES/USDT', 'TIA/USDT', 'SOON/USDT', 'ONDO/USDT', 'NEO/USDT',
-  'SKL/USDT', 'MX/USDT', 'FARTCOIN/USDT', 'RATS/USDT', 'ETC/USDT', 'TRB/USDT', 'AVAX/USDT', 'BCH/USDT',
-  'BSV/USDT', 'IOTA/USDT', 'CYBER/USDT', 'WIF/USDT', 'CORE/USDT', 'WLD/USDT', 'SEI/USDT', 'VIRTUAL/USDT',
-  'RENDER/USDT', 'MOODENG/USDT', 'JUP/USDT', 'PONKE/USDT', 'MNT/USDT', 'PNUT/USDT', 'EIGEN/USDT',
-  'GRASS/USDT', 'RAY/USDT', 'EPIC/USDT', 'ZRO/USDT', 'BERA/USDT', 'CA/USDT', 'IP/USDT', 'KAITO/USDT',
-  'OMNI/USDT', 'A8/USDT', 'OBOL/USDT', 'SAGA/USDT', 'ORCA/USDT', 'SHELL/USDT', 'NAKA/USDT'
+  'BTC/USDT',
+  'ETH/USDT',
+  'BNB/USDT',
+  'SOL/USDT',
+  'LTC/USDT',
+  'LINK/USDT',
+  'TON/USDT',
+  'SUI/USDT',
+  'XRP/USDT',
+  'QTUM/USDT',
+  'THETA/USDT',
+  'ADA/USDT',
+  'RAD/USDT',
+  'BAND/USDT',
+  'ALGO/USDT',
+  'POL/USDT',
+  'DOGE/USDT',
+  'LUNA/USDT',
+  'GALA/USDT',
+  'PEPE/USDT',
+  'CFX/USDT',
+  'TRX/USDT',
+  'TRUMP/USDT',
+  'SHIB/USDT',
+  'ARB/USDT',
+  'FIL/USDT',
+  'API3/USDT',
+  'ENA/USDT',
+  'BIO/USDT',
+  'UNI/USDT',
+  'BTT/USDT',
+  'SATS/USDT',
+  'MEME/USDT',
+  'GT/USDT',
+  'OP/USDT',
+  'AAVE/USDT',
+  'SNAKES/USDT',
+  'TIA/USDT',
+  'SOON/USDT',
+  'ONDO/USDT',
+  'NEO/USDT',
+  'SKL/USDT',
+  'MX/USDT',
+  'FARTCOIN/USDT',
+  'RATS/USDT',
+  'ETC/USDT',
+  'TRB/USDT',
+  'AVAX/USDT',
+  'BCH/USDT',
+  'BSV/USDT',
+  'IOTA/USDT',
+  'CYBER/USDT',
+  'WIF/USDT',
+  'CORE/USDT',
+  'WLD/USDT',
+  'SEI/USDT',
+  'VIRTUAL/USDT',
+  'RENDER/USDT',
+  'MOODENG/USDT',
+  'JUP/USDT',
+  'PONKE/USDT',
+  'MNT/USDT',
+  'PNUT/USDT',
+  'EIGEN/USDT',
+  'GRASS/USDT',
+  'RAY/USDT',
+  'EPIC/USDT',
+  'ZRO/USDT',
+  'BERA/USDT',
+  'CA/USDT',
+  'IP/USDT',
+  'KAITO/USDT',
+  'OMNI/USDT',
+  'A8/USDT',
+  'OBOL/USDT',
+  'SAGA/USDT',
+  'ORCA/USDT',
+  'SHELL/USDT',
+  'NAKA/USDT',
 ]
+
+const showRestrict = ref(false)
+function openRestrict() {
+  showRestrict.value = true
+}
+function closeRestrict() {
+  showRestrict.value = false
+}
 
 /** =========================
  *  Helpers Pair & Route
@@ -537,8 +772,15 @@ function selectPair(pair: string) {
 /** =========================
  *  Orderbook + % Change
  *  ========================= */
-interface DepthTick { asks: [number, number][], bids: [number, number][] }
-interface DepthData { ch: string; ts: number; tick: DepthTick }
+interface DepthTick {
+  asks: [number, number][]
+  bids: [number, number][]
+}
+interface DepthData {
+  ch: string
+  ts: number
+  tick: DepthTick
+}
 const depthData = ref<DepthData | null>(null)
 const asksTop = ref<[number, number][]>([])
 const bidsTop = ref<[number, number][]>([])
@@ -546,8 +788,12 @@ const klineDailyOHLC = ref<{ open: number; close: number; ts: number } | null>(n
 
 const top12Asks = computed(() => asksTop.value)
 const top12Bids = computed(() => bidsTop.value)
-const maxAskAmount = computed(() => top12Asks.value.length ? Math.max(...top12Asks.value.map(a => a[1])) : 1)
-const maxBidAmount = computed(() => top12Bids.value.length ? Math.max(...top12Bids.value.map(b => b[1])) : 1)
+const maxAskAmount = computed(() =>
+  top12Asks.value.length ? Math.max(...top12Asks.value.map((a) => a[1])) : 1,
+)
+const maxBidAmount = computed(() =>
+  top12Bids.value.length ? Math.max(...top12Bids.value.map((b) => b[1])) : 1,
+)
 
 function bestBid(): number {
   const bids = depthData.value?.tick?.bids
@@ -570,20 +816,38 @@ const percentChange = computed(() => {
 const aggWS = ref<WebSocket | null>(null)
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let flushTimer: ReturnType<typeof setTimeout> | null = null
-let pendingDepth: { ts: number; asks: [number, number][]; bids: [number, number][]; sym: string } | null = null
+let pendingDepth: {
+  ts: number
+  asks: [number, number][]
+  bids: [number, number][]
+  sym: string
+} | null = null
 
 function wsSend(obj: unknown) {
   if (aggWS.value && aggWS.value.readyState === WebSocket.OPEN) {
-    try { aggWS.value.send(JSON.stringify(obj)) } catch { }
+    try {
+      aggWS.value.send(JSON.stringify(obj))
+    } catch {}
   }
 }
 function subscribe(symLower: string) {
   // Depth + 1day kline (for % change)
-  wsSend({ type: 'subscribe', channels: ['depth', 'kline'], symbols: [symLower], periods: ['1day'], limit: 300 })
+  wsSend({
+    type: 'subscribe',
+    channels: ['depth', 'kline'],
+    symbols: [symLower],
+    periods: ['1day'],
+    limit: 300,
+  })
   wsSend({ type: 'snapshot', symbols: [symLower], periods: ['1day'], limit: 300 })
 }
 function unsubscribe(symLower: string) {
-  wsSend({ type: 'unsubscribe', channels: ['depth', 'kline'], symbols: [symLower], periods: ['1day'] })
+  wsSend({
+    type: 'unsubscribe',
+    channels: ['depth', 'kline'],
+    symbols: [symLower],
+    periods: ['1day'],
+  })
 }
 let subscribedSym: string | null = null
 function scheduleResubscribe() {
@@ -621,7 +885,9 @@ function scheduleFlush() {
 }
 
 function connectAggregatorWS() {
-  try { aggWS.value?.close() } catch { }
+  try {
+    aggWS.value?.close()
+  } catch {}
   aggWS.value = new WebSocket('wss://ledgersocketone.online')
 
   aggWS.value.onopen = () => {
@@ -633,7 +899,9 @@ function connectAggregatorWS() {
     reconnectTimer = window.setTimeout(connectAggregatorWS, 2000)
   }
   aggWS.value.onerror = () => {
-    try { aggWS.value?.close() } catch { }
+    try {
+      aggWS.value?.close()
+    } catch {}
   }
   aggWS.value.onmessage = (e: MessageEvent) => {
     try {
@@ -646,11 +914,12 @@ function connectAggregatorWS() {
           const symLower = String(it.symbol || '').toLowerCase()
           if (!symLower || symLower !== want) continue
           if (it.type === 'depth') {
-            const bids = Array.isArray(it.bids) ? it.bids as [number, number][] : []
-            const asks = Array.isArray(it.asks) ? it.asks as [number, number][] : []
+            const bids = Array.isArray(it.bids) ? (it.bids as [number, number][]) : []
+            const asks = Array.isArray(it.asks) ? (it.asks as [number, number][]) : []
             pendingDepth = { ts: Number(it.ts) || Date.now(), asks, bids, sym: symLower }
           } else if (it.type === 'kline' && it.period === '1day') {
-            const open = Number(it.open), close = Number(it.close)
+            const open = Number(it.open),
+              close = Number(it.close)
             if (Number.isFinite(open) && Number.isFinite(close)) {
               klineDailyOHLC.value = { open, close, ts: Number(it.ts) || Date.now() }
             }
@@ -666,21 +935,24 @@ function connectAggregatorWS() {
       if (!type || !symLower || symLower !== pairToQuery(selectedPair.value)) return
 
       if (type === 'depth') {
-        const bids = Array.isArray(msg.bids) ? msg.bids as [number, number][] : []
-        const asks = Array.isArray(msg.asks) ? msg.asks as [number, number][] : []
+        const bids = Array.isArray(msg.bids) ? (msg.bids as [number, number][]) : []
+        const asks = Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : []
         pendingDepth = { ts: Number(msg.ts) || Date.now(), asks, bids, sym: symLower }
         scheduleFlush()
         return
       }
 
       if (type === 'kline' && msg.period === '1day') {
-        const open = Number(msg.open), close = Number(msg.close)
+        const open = Number(msg.open),
+          close = Number(msg.close)
         if (Number.isFinite(open) && Number.isFinite(close)) {
           klineDailyOHLC.value = { open, close, ts: Number(msg.ts) || Date.now() }
         }
         return
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -719,10 +991,14 @@ function onInput(v: number) {
 }
 function commitSnap() {
   // snap ke marks terdekat (visual)
-  let nearest = 0, best = Infinity
+  let nearest = 0,
+    best = Infinity
   for (const m of marks) {
     const d = Math.abs(rawPercent.value - m)
-    if (d < best) { best = d; nearest = m }
+    if (d < best) {
+      best = d
+      nearest = m
+    }
   }
   amountPercent.value = nearest
   rawPercent.value = nearest
@@ -786,10 +1062,20 @@ watch(tf, () => {
   // keep for UI toggle; no extra logic needed
 })
 onUnmounted(() => {
-  try { aggWS.value?.close() } catch { }
+  try {
+    aggWS.value?.close()
+  } catch {}
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
     reconnectTimer = null
   }
+})
+
+onMounted(() => {
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') closeRestrict()
+  }
+  window.addEventListener('keydown', onKey)
+  onUnmounted(() => window.removeEventListener('keydown', onKey))
 })
 </script>
