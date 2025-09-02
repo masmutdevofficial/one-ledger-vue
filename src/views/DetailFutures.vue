@@ -210,7 +210,7 @@
             <!-- Numbers -->
             <div class="grid grid-cols-3 gap-2 text-[11px]">
               <div class="flex flex-col">
-                <span class="text-gray-400">TP</span>
+                <span class="text-gray-400">SL</span>
                 <span class="font-semibold">{{ tx.tp }}%</span>
               </div>
               <div class="flex flex-col">
