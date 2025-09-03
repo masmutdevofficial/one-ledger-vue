@@ -105,6 +105,7 @@ type NotifRow = {
 type LookupResp = { data: { id: number; name: string; slug: string } }
 type ListResp = { data: ApiMessage[]; last_id: number | null }
 type NewResp = { data: ApiMessage[] }
+type AnyListResp = { data?: ApiMessage[]; last_id?: number | null }
 type NotifResp = { data: NotifRow | null }
 
 const route = useRoute()
@@ -178,10 +179,7 @@ let pollNotifHandle: number | null = null
 const POLL_MS = 2000
 const POLL_NOTIF_MS = 5000
 
-/** ====== NOTIF TICKER ======
- * - tampil 1x marquee, lalu hilang
- * - notif baru menggantikan yang lama
- */
+/** ====== NOTIF TICKER ====== */
 const showBanner = ref(false)
 const bannerText = ref('')
 const bannerKey = ref(0)
@@ -189,24 +187,22 @@ const seenNotifKeys = new Set<string>()
 let lastNotifId: number | null = null
 
 function showBannerOnce(text: string): void {
-  // replace notif lama dengan yang baru
   bannerText.value = text
-  // reset agar animasi bisa start ulang
   showBanner.value = false
-  bannerKey.value++ // paksa re-render elemen animasi
+  bannerKey.value++
   nextTick(() => {
     showBanner.value = true
   })
 }
 function onMarqueeEnd(): void {
-  // setelah 1x animasi, sembunyikan
   showBanner.value = false
   bannerText.value = ''
 }
 
+/** Enter kirim aman (hindari IME & key repeat) */
 function onEnterSend(e: KeyboardEvent): void {
-  if ((e as any).isComposing) return   // IME masih composing
-  if (e.repeat) return                 // tahan Enter -> abaikan repeat
+  if ((e as any).isComposing) return
+  if (e.repeat) return
   handleSend()
 }
 
@@ -258,38 +254,7 @@ function formatAmountEn(amountStr: string): string {
 const emoji = {
   open: ref(false),
   list: [
-    '😀',
-    '😂',
-    '😊',
-    '😍',
-    '😅',
-    '😘',
-    '😢',
-    '👍',
-    '🙏',
-    '🎉',
-    '🔥',
-    '🤔',
-    '😎',
-    '🥰',
-    '👏',
-    '🤯',
-    '🙌',
-    '💪',
-    '💖',
-    '🤝',
-    '🥲',
-    '😴',
-    '😇',
-    '😡',
-    '💯',
-    '💀',
-    '😜',
-    '😏',
-    '🫡',
-    '🤤',
-    '🤗',
-    '🤭',
+    '😀', '😂', '😊', '😍', '😅', '😘', '😢', '👍', '🙏', '🎉', '🔥', '🤔', '😎', '🥰', '👏', '🤯', '🙌', '💪', '💖', '🤝', '🥲', '😴', '😇', '😡', '💯', '💀', '😜', '😏', '🫡', '🤤', '🤗', '🤭',
   ] as readonly string[],
   selStart: ref(0),
   selEnd: ref(0),
@@ -297,14 +262,24 @@ const emoji = {
 const emojiBtnRef = ref<HTMLButtonElement | null>(null)
 const emojiPanelRef = ref<HTMLDivElement | null>(null)
 const taRef = ref<HTMLTextAreaElement | null>(null)
+
+/** --- De-dupe & Poll guards --- */
 const seenMsgIds = new Set<number>()
+let pollBusy = false
+let notifBusy = false
+
+function pushUnique(m: ChatMessage): void {
+  if (seenMsgIds.has(m.id)) return
+  seenMsgIds.add(m.id)
+  messages.value.push(m)
+  if (lastId == null || m.id > lastId) lastId = m.id
+}
 
 function onToggleEmoji(): void {
   emoji.open.value = !emoji.open.value
 }
 function onClickOutsideEmoji(ev: MouseEvent): void {
-  const p = emojiPanelRef.value,
-    b = emojiBtnRef.value
+  const p = emojiPanelRef.value, b = emojiBtnRef.value
   if (!p || !b) return
   const t = ev.target as Node
   if (!p.contains(t) && !b.contains(t)) emoji.open.value = false
@@ -320,8 +295,7 @@ function onCaptureSelection(): void {
 }
 function onInsertEmoji(char: string): void {
   const ta = taRef.value
-  const s = emoji.selStart.value,
-    e = emoji.selEnd.value
+  const s = emoji.selStart.value, e = emoji.selEnd.value
   const v = draft.value
   draft.value = v.slice(0, s) + char + v.slice(e)
   nextTick(() => {
@@ -338,50 +312,62 @@ function onInsertEmoji(char: string): void {
 function mapApiMsg(m: ApiMessage): ChatMessage {
   return { id: m.id, user: m.username, text: m.message, created_at: m.created_at }
 }
+
 async function loadInitial(): Promise<void> {
   if (!copyTraderId.value) return
   const res = await apiRequest<ListResp>(`/copy-traders/${copyTraderId.value}/community?limit=50`)
   messages.value = []
   seenMsgIds.clear()
   for (const m of (res.data ?? []).map(mapApiMsg)) pushUnique(m)
-  lastId = lastId ?? res.last_id ?? null
-}
-async function pollNew(): Promise<void> {
-  if (!copyTraderId.value || lastId == null) return
-  const res = await apiRequest<NewResp>(
-    `/copy-traders/${copyTraderId.value}/community?after_id=${lastId}`,
-  )
-  if (sending.value) return // tahan polling saat kirim untuk hindari race
-  for (const m of (res.data ?? []).map(mapApiMsg)) pushUnique(m)
+  // Jika kosong, siapkan lastId = 0 agar polling berikutnya tetap jalan
+  if (lastId == null) lastId = res.last_id ?? 0
 }
 
-function pushUnique(m: ChatMessage): void {
-  if (seenMsgIds.has(m.id)) return
-  messages.value.push(m)
-  seenMsgIds.add(m.id)
-  if (lastId == null || m.id > lastId) lastId = m.id
+async function pollNew(): Promise<void> {
+  if (!copyTraderId.value) return
+  if (sending.value || pollBusy) return
+  pollBusy = true
+  try {
+    const url =
+      lastId == null
+        ? `/copy-traders/${copyTraderId.value}/community?limit=50`
+        : `/copy-traders/${copyTraderId.value}/community?after_id=${lastId}`
+    const res = await apiRequest<AnyListResp>(url)
+    const arr = (res?.data ?? []) as ApiMessage[]
+    for (const m of arr.map(mapApiMsg)) pushUnique(m)
+    if (lastId == null) {
+      // pertama kali & belum ada id, set dari batch ini atau 0
+      lastId = arr.length ? arr[arr.length - 1].id : 0
+    }
+  } catch (e) {
+    // diamkan error polling agar tidak ganggu UX
+  } finally {
+    pollBusy = false
+  }
 }
 
 async function pollNotif(): Promise<void> {
-  if (!copyTraderId.value) return
-  const res = await apiRequest<NotifResp>(`/copy-traders/${copyTraderId.value}/notif-latest`)
-  const row = res.data
-  if (!row) return
-
-  const key = `${row.id}|${row.username}|${row.amount}`
-  if (lastNotifId === null) {
-    // pertama kali, jangan tampilkan
+  if (!copyTraderId.value || notifBusy) return
+  notifBusy = true
+  try {
+    const res = await apiRequest<NotifResp>(`/copy-traders/${copyTraderId.value}/notif-latest`)
+    const row = res.data
+    if (!row) return
+    const key = `${row.id}|${row.username}|${row.amount}`
+    if (lastNotifId === null) {
+      lastNotifId = row.id
+      seenNotifKeys.add(key)
+      return
+    }
+    if (seenNotifKeys.has(key)) return
     lastNotifId = row.id
     seenNotifKeys.add(key)
-    return
+    showBannerOnce(`New trade from ${row.username} amount ${formatAmountEn(row.amount)} USD`)
+  } catch (e) {
+    // abaikan error notifikasi
+  } finally {
+    notifBusy = false
   }
-  if (seenNotifKeys.has(key)) return
-
-  lastNotifId = row.id
-  seenNotifKeys.add(key)
-
-  // tampilkan 1x, replace notif lama jika ada
-  showBannerOnce(`New trade from ${row.username} amount ${formatAmountEn(row.amount)} USD`)
 }
 
 /** Lifecycle */
