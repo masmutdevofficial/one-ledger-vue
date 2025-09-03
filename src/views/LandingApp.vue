@@ -1,6 +1,5 @@
 <template>
   <div class="w-full h-screen bg-[#eaf3ec] rounded-lg text-center relative p-4">
-    <A2HSButton />
     <!-- Ilustrasi Koin -->
     <div class="flex justify-center">
       <img
@@ -80,7 +79,6 @@ import { RouterLink } from 'vue-router'
 import DashboardSliderCrypto from '@/components/landing/DashboardSliderCrypto.vue'
 import { Icon } from '@iconify/vue'
 import { ref, onMounted, onUnmounted } from 'vue'
-import A2HSButton from '@/components/A2HSButton.vue'
 
 const days = ref(0)
 const hours = ref(0)

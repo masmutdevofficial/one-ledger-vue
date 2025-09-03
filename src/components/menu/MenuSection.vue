@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import LanguageSelector from '@/components/menu/LanguageSelector.vue'
+import { useA2HS } from '@/composables/useA2HS'
 
 interface MenuItem {
   title: string
@@ -12,7 +13,6 @@ interface MenuItem {
 }
 
 const router = useRouter()
-
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 
 const showLanguageSelector = ref(false)
@@ -42,23 +42,35 @@ function updateLanguage(lang: string) {
 
 const logout = async () => {
   const token = localStorage.getItem('token')
-
   try {
     if (token) {
       await fetch(`${API_BASE}/logout`, {
         method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       })
     }
   } catch (_) {
-    // abaikan error jaringan
+    // ignore
   } finally {
     localStorage.removeItem('token')
     showLogoutModal.value = false
     router.replace('/login')
+  }
+}
+
+/* ===== PWA Install (A2HS) ===== */
+const { canInstall, isInstalled, showInstallPrompt } = useA2HS()
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+const isStandalone =
+  window.matchMedia('(display-mode: standalone)').matches ||
+  // iOS legacy
+  (navigator as any).standalone === true
+
+function onInstall() {
+  const ok = showInstallPrompt()
+  if (!ok) {
+    // fallback sederhana (desktop): minta user pakai menu browser
+    alert('Use the browser “Install app” option in the address bar/menu.')
   }
 }
 </script>
@@ -88,18 +100,33 @@ const logout = async () => {
       <Icon icon="tabler:chevron-right" class="text-gray-400" />
     </RouterLink>
 
-    <button
-      v-for="item in menuItems"
-      :key="item.title"
-      class="w-full flex items-center justify-between text-gray-600 text-sm"
-      @click="handleMenuClick(item)"
-    >
-      <div class="flex items-center space-x-3">
-        <img :src="item.icon" :alt="item.title" class="w-6 h-6 object-contain" />
-        <span>{{ item.title }}</span>
-      </div>
-      <Icon v-if="item.title === 'Language'" icon="tabler:chevron-right" class="text-gray-400" />
-    </button>
+    <!-- Render menu + tombol Install tepat setelah Language -->
+    <template v-for="item in menuItems" :key="item.title">
+      <button
+        class="w-full flex items-center justify-between text-gray-600 text-sm"
+        @click="handleMenuClick(item)"
+      >
+        <div class="flex items-center space-x-3">
+          <img :src="item.icon" :alt="item.title" class="w-6 h-6 object-contain" />
+          <span>{{ item.title }}</span>
+        </div>
+        <Icon v-if="item.title === 'Language'" icon="tabler:chevron-right" class="text-gray-400" />
+      </button>
+
+      <!-- PWA Install button (muncul hanya jika eligible, non-iOS, belum terpasang) -->
+      <button
+        v-if="item.title === 'Language' && canInstall && !isInstalled && !isIos"
+        :key="item.title + '-install'"
+        class="w-full flex items-center justify-between text-gray-600 text-sm"
+        @click="onInstall"
+      >
+        <div class="flex items-center space-x-3">
+          <Icon icon="tabler:download" class="w-6 h-6" />
+          <span>Install App</span>
+        </div>
+        <Icon icon="tabler:chevron-right" class="text-gray-400" />
+      </button>
+    </template>
 
     <!-- Language Selector (Slide Up) -->
     <transition
