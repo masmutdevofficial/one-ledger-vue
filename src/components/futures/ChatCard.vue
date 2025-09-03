@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full max-w-xl rounded-lg border border-gray-200 shadow-sm bg-white overflow-hidden">
-    <div class="h-[560px] flex flex-col overflow-hidden">
+  <div class="w-full max-w-xl rounded-lg border border-gray-200 shadow-sm bg-white overflow-hidden  mb-20">
+    <div class="h-[400px] flex flex-col overflow-hidden">
       <!-- List chat -->
       <div ref="listEl" class="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
         <!-- NOTIF TICKER (1x marquee, lalu hilang; notif baru replace lama) -->
