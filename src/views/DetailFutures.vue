@@ -9,27 +9,46 @@
     <!-- CONTENT -->
     <template v-else>
       <!-- Back -->
-      <button aria-label="Back" class="mb-4 inline-flex items-center text-black" type="button" @click="goBack">
+      <button
+        aria-label="Back"
+        class="mb-4 inline-flex items-center text-black"
+        type="button"
+        @click="goBack"
+      >
         <Icon icon="tabler:arrow-left" class="w-6 h-6" />
       </button>
 
       <!-- Profile & title -->
       <div class="flex items-center justify-between mb-1">
         <div class="flex items-center gap-4">
-          <img :alt="`${trader.name} avatar`" class="w-12 h-12 rounded-full object-cover" :src="avatarUrl"
-            @error="onAvatarError" />
+          <img
+            :alt="`${trader.name} avatar`"
+            class="w-12 h-12 rounded-full object-cover"
+            :src="avatarUrl"
+            @error="onAvatarError"
+          />
           <h1 class="font-extrabold text-lg flex items-center gap-2">
-            <RouterLink to="/profile-copy-trade"
-              class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded">
+            <RouterLink
+              to="/profile-copy-trade"
+              class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded"
+            >
               {{ trader.name }}
             </RouterLink>
-            <Icon v-if="trader.is_featured" icon="tabler:shield-check" class="w-5 h-5 text-amber-500" />
+            <Icon
+              v-if="trader.is_featured"
+              icon="tabler:shield-check"
+              class="w-5 h-5 text-amber-500"
+            />
           </h1>
         </div>
 
-        <router-link v-if="trader && trader.id" :to="`/chats/${trader.id}`"
+        <router-link
+          v-if="trader && trader.id"
+          :to="`/chats/${trader.id}`"
           class="ml-4 inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200"
-          aria-label="Open chat" title="Message">
+          aria-label="Open chat"
+          title="Message"
+        >
           <img src="/img/chat-copy-trader.png" alt="Menu" class="w-5 h-5 object-contain" />
         </router-link>
       </div>
@@ -37,7 +56,8 @@
       <p class="text-sm mb-2">{{ trader?.description || '' }}</p>
 
       <div
-        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
+        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none"
+      >
         <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
         <span>Profit Sharing 10%</span>
       </div>
@@ -47,19 +67,31 @@
       <label for="copyAmount" class="text-gray-400 text-xs mb-1 block">Copy Amount</label>
 
       <div class="flex items-center bg-gray-100 rounded-md h-10 mb-1 px-3">
-        <input id="copyAmount" aria-label="Copy Amount input" v-model="amount" type="text" inputmode="decimal"
-          class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none" placeholder="Enter amount"
-          :disabled="atCapacity" :class="atCapacity ? 'opacity-60 cursor-not-allowed' : ''" />
+        <input
+          id="copyAmount"
+          aria-label="Copy Amount input"
+          v-model="amount"
+          type="text"
+          inputmode="decimal"
+          class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none"
+          placeholder="Enter amount"
+          :disabled="atCapacity"
+          :class="atCapacity ? 'opacity-60 cursor-not-allowed' : ''"
+        />
         <span class="text-xs font-semibold text-black ml-2">USDT</span>
-        <button class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50" type="button" @click="setMax"
-          :disabled="atCapacity">
+        <button
+          class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50"
+          type="button"
+          @click="setMax"
+          :disabled="atCapacity"
+        >
           Max
         </button>
       </div>
 
       <small v-show="!!amountError" class="block text-red-500 text-xs mb-2">{{
         amountError
-        }}</small>
+      }}</small>
 
       <!-- Available (left)  |  Min Buy (right) -->
       <div class="flex justify-between items-center text-[10px] text-gray-400 mb-5">
@@ -67,8 +99,13 @@
           <span>Available</span>
           <span v-if="!loadingSaldo" class="font-normal"> {{ fmtUSDT(saldo) }} USDT </span>
           <span v-else class="font-normal">...</span>
-          <button aria-label="Add" class="text-[#D6B94D] text-xs font-semibold" type="button" @click.prevent
-            title="Add"></button>
+          <button
+            aria-label="Add"
+            class="text-[#D6B94D] text-xs font-semibold"
+            type="button"
+            @click.prevent
+            title="Add"
+          ></button>
         </div>
         <div class="flex items-center gap-1">
           <span>Min Open Position</span>
@@ -81,8 +118,13 @@
       <!-- Position Risk -->
       <div class="flex flex-row justify-between items-start">
         <h2 class="font-semibold text-base mb-2">Position Risk</h2>
-        <button v-if="trader?.slug" type="button" class="inline-flex items-center text-gray-600 hover:text-black"
-          @click="goHistory" aria-label="Open futures history">
+        <button
+          v-if="trader?.slug"
+          type="button"
+          class="inline-flex items-center text-gray-600 hover:text-black"
+          @click="goHistory"
+          aria-label="Open futures history"
+        >
           <Icon icon="tabler:file-description" class="w-4 h-4" />
         </button>
       </div>
@@ -90,13 +132,18 @@
         <div>
           <label for="sl" class="text-gray-400 text-xs mb-1 block">Stop Loss</label>
           <div class="relative">
-            <select id="sl" v-model.number="sl" :disabled="false"
-              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none">
+            <select
+              id="sl"
+              v-model.number="sl"
+              :disabled="false"
+              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none"
+            >
               <option disabled value="">Select</option>
               <option v-for="n in 10" :key="n" :value="n * 10">{{ n * 10 }}%</option>
             </select>
             <span
-              class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none">
+              class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none"
+            >
               % ROI
             </span>
           </div>
@@ -113,7 +160,10 @@
         <div class="pb-5">
           <button
             class="mt-3 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 float-right disabled:opacity-50"
-            type="button" :disabled="loadingSubmit || atCapacity" @click="submitWinLose">
+            type="button"
+            :disabled="loadingSubmit || atCapacity"
+            @click="submitWinLose"
+          >
             {{
               loadingSubmit
                 ? 'Processing…'
@@ -133,7 +183,11 @@
         <div v-if="!pendingList.length" class="text-xs text-gray-400">No Data Available.</div>
 
         <ul v-else class="space-y-3">
-          <li v-for="(tx, idx) in sortedPending" :key="tx.id" class="rounded-md border border-gray-200 p-3">
+          <li
+            v-for="(tx, idx) in sortedPending"
+            :key="tx.id"
+            class="rounded-md border border-gray-200 p-3"
+          >
             <!-- Header -->
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
@@ -147,7 +201,10 @@
 
             <!-- Progress -->
             <div class="w-full h-2 bg-gray-100 rounded overflow-hidden mb-2">
-              <div class="h-2 bg-teal-400" :style="{ width: (progressFor(tx) * 100).toFixed(2) + '%' }" />
+              <div
+                class="h-2 bg-teal-400"
+                :style="{ width: (progressFor(tx) * 100).toFixed(2) + '%' }"
+              />
             </div>
 
             <!-- Numbers -->
@@ -156,11 +213,14 @@
                 <span class="text-gray-400">SL</span>
                 <span class="font-semibold">{{
                   Number.isFinite(tx.sl) ? Math.round(tx.sl) + '%' : '—'
-                  }}</span>
+                }}</span>
               </div>
               <div class="flex flex-col">
                 <span class="text-gray-400">PNL</span>
-                <span class="font-semibold" :class="pnlFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'">
+                <span
+                  class="font-semibold"
+                  :class="pnlFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'"
+                >
                   {{ signedMoney(pnlFor(tx), 4) }}
                 </span>
               </div>
@@ -185,7 +245,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import ChatCard from '@/components/futures/ChatCard.vue'
 
-/* ===== ALERT pakai Pinia store ===== */
+/* ===== ALERT via Pinia store ===== */
 const apiAlert = useApiAlertStore()
 const alertSuccess = (msg: string, onClose?: () => void) => apiAlert.open('Success', msg, onClose)
 const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error', msg, onClose)
@@ -250,6 +310,15 @@ type Trader = {
   updated_at?: string
 }
 
+type PendingTx = {
+  id: number
+  amount: number
+  tp: number
+  sl: number
+  createdAtUtc: string
+  orderTimeMin: number
+}
+
 const router = useRouter()
 const route = useRoute()
 
@@ -257,14 +326,6 @@ const trader = ref<Trader | null>(null)
 const loading = ref(true)
 const pageError = ref<string | null>(null)
 const avatarBroken = ref(false)
-
-let isAlive = true
-const finalizeControllers = new Map<number, AbortController>()
-onUnmounted(() => {
-  isAlive = false
-  finalizeControllers.forEach((c) => c.abort())
-  finalizeControllers.clear()
-})
 
 function ensureAbsoluteUrl(u?: string | null): string | null {
   if (!u) return null
@@ -413,7 +474,7 @@ async function fetchTakeProfit(): Promise<void> {
       let msg = `HTTP ${res.status}`
       try {
         msg = await res.text()
-      } catch { }
+      } catch {}
       throw new Error(msg)
     }
     const data = await res.json()
@@ -424,168 +485,62 @@ async function fetchTakeProfit(): Promise<void> {
   }
 }
 
-onMounted(fetchTakeProfit)
-
-/* ===== Pending TX & PnL animation (MULTI up to 5) ===== */
-type PendingTx = {
-  id: number
-  expiresAt: number
-  amount: number
-  tp: number
-  sl: number
-  durMs?: number
-}
-const LS_KEY = 'pendingTxs'
-const DEFAULT_DUR_MS = 5 * 60 * 1000 // fallback untuk TX lama (sebelum ada time_op)
+/* ===== Pending TX (server source of truth) ===== */
 const MAX_CONCURRENT = 5
-
 const pendingList = ref<PendingTx[]>([])
 
 // random-walk PNL per TX (reactive container)
 const pnlMap = reactive(new Map<number, number>())
 
-// penanda tx yang sudah pernah mengurangi saldo lokal
-let processedSaldoTxIds = new Set<number>()
-// guard agar tidak mengurangi saldo pada load awal
-let initSaldoSyncDone = false
-
-function loadPending() {
-  try {
-    const arr = JSON.parse(localStorage.getItem(LS_KEY) || '[]') as any[]
-    const now = Date.now()
-    const cleaned: PendingTx[] = []
-    for (const x of arr) {
-      if (!x || typeof x.id !== 'number' || x.expiresAt <= now) continue
-      cleaned.push({
-        id: x.id,
-        amount: Number(x.amount) || 0,
-        tp: Number(x.tp) || 0,
-        sl: Number.isFinite(x.sl) ? Number(x.sl) : Number(sl.value) || 10, // fallback
-        expiresAt: Number(x.expiresAt),
-        durMs: Number(x.durMs) || undefined,
-      })
-      if (!pnlMap.has(x.id)) pnlMap.set(x.id, 0)
-    }
-    pendingList.value = cleaned
-    localStorage.setItem(LS_KEY, JSON.stringify(pendingList.value))
-  } catch {
-    pendingList.value = []
-  }
-}
-
-// Kurangi saldo lokal ketika ada pending tx BARU
-watch(
-  pendingList,
-  (newList) => {
-    if (!initSaldoSyncDone) {
-      processedSaldoTxIds = new Set<number>(newList.map((t) => t.id))
-      initSaldoSyncDone = true
-      return
-    }
-    for (const tx of newList) {
-      if (!processedSaldoTxIds.has(tx.id)) {
-        saldo.value = Math.max(0, saldo.value - tx.amount)
-        processedSaldoTxIds.add(tx.id)
-      }
-    }
-  },
-  { deep: true },
-)
-
-function savePending() {
-  localStorage.setItem(LS_KEY, JSON.stringify(pendingList.value))
-}
-
-function minutesToMs(m?: number | null) {
-  const mNum = Number.isFinite(m as number) ? (m as number) : 5
-  return Math.max(1, mNum) * 60 * 1000
-}
-
-function addPendingTx(id: number, amount: number, tpPct: number, slPct: number, durMs?: number) {
-  loadPending()
-  const useDur = durMs ?? minutesToMs(trader.value?.time_op ?? 5)
-  const tx: PendingTx = {
-    id,
-    amount,
-    tp: tpPct,
-    sl: slPct,
-    expiresAt: Date.now() + useDur,
-    durMs: useDur,
-  }
-  pendingList.value.push(tx)
-  if (!pnlMap.has(id)) pnlMap.set(id, 0)
-  savePending()
-}
-function removePendingTx(id: number) {
-  pendingList.value = pendingList.value.filter((x) => x.id !== id)
-  pnlMap.delete(id)
-  savePending()
-}
-
 const nowTick = ref(Date.now())
 let tickHandle: number | undefined
+let pollHandle: number | undefined
 
-/* === MULTI helpers === */
 const atCapacity = computed(() => pendingList.value.length >= MAX_CONCURRENT)
 const sortedPending = computed(() => pendingList.value.slice())
 
 function startAtFor(p: PendingTx) {
-  const dur = p.durMs ?? DEFAULT_DUR_MS
-  return p.expiresAt - dur
+  return Date.parse(p.createdAtUtc)
+}
+function durMsFor(p: PendingTx) {
+  return Math.max(1, p.orderTimeMin) * 60 * 1000
+}
+function expiresAtFor(p: PendingTx) {
+  return startAtFor(p) + durMsFor(p)
 }
 function progressFor(p: PendingTx) {
-  const dur = p.durMs ?? DEFAULT_DUR_MS
+  const dur = durMsFor(p)
   const ratio = (nowTick.value - startAtFor(p)) / dur
   return Math.max(0, Math.min(1, ratio))
 }
 
-/* ==== RANDOM WALK PNL ==== */
+/* ==== RANDOM WALK PNL (visual only) ==== */
 function stepRandomWalk(p: PendingTx) {
   const maxProfit = p.amount * (p.tp / 100) // target akhir (+)
   const current = pnlMap.get(p.id) ?? 0
 
-  // progress 0..1
-  const dur = p.durMs ?? DEFAULT_DUR_MS
-  const startAt = startAtFor(p)
-  const prog = Math.max(0, Math.min(1, (nowTick.value - startAt) / dur))
-
-  // basis volatilitas
+  const dur = durMsFor(p)
+  const prog = Math.max(0, Math.min(1, (nowTick.value - startAtFor(p)) / dur))
   const baseVol = maxProfit * 0.015
 
   let next = current
-
   if (prog < 0.8) {
-    // === Fase 1: 0% - 80% → zig-zag bebas + mean reversion
     const step = (Math.random() - 0.5) * 2 * baseVol
     const meanRevert = -current * 0.02
     next = current + step + meanRevert
   } else {
-    // === Fase 2: 80% - 100% → tarik ke target, tetap ada noise kecil
-    const remainingMs = Math.max(1000, startAt + dur - nowTick.value)
+    const remainingMs = Math.max(1000, expiresAtFor(p) - nowTick.value)
     const remainingTicks = Math.ceil(remainingMs / 1000)
-
-    // laju minimum per detik agar PASTI sampai target di tick terakhir
     const requiredPerTick = (maxProfit - current) / remainingTicks
-
-    // noise kecil (30% dari base), supaya tetap zig-zag
     const noise = (Math.random() - 0.5) * 2 * baseVol * 0.3
-
-    // sedikit easing (semakin dekat, drift makin besar)
-    const phase = (prog - 0.8) / 0.2 // 0..1
-    const ease = phase * phase * (3 - 2 * phase) // smoothstep
-
-    // drift = wajib sampai target + easing + noise
+    const phase = (prog - 0.8) / 0.2
+    const ease = phase * phase * (3 - 2 * phase)
     next = current + requiredPerTick * (1 + 0.5 * ease) + noise
-
-    // jangan sampai turun tajam; tetap boleh “gerigi” kecil
     const minDip = current - baseVol * 0.1
     if (next < minDip) next = minDip
   }
-
-  // clamp dalam [-target, +target] dan jangan melewati target
   if (next > maxProfit) next = maxProfit
   if (next < -maxProfit) next = -maxProfit
-
   pnlMap.set(p.id, next)
 }
 
@@ -596,34 +551,63 @@ function currentTotalFor(p: PendingTx) {
   return p.amount + pnlFor(p)
 }
 
-/* ===== finalize per TX ===== */
+/* ===== API pending ===== */
+async function fetchPending() {
+  try {
+    const { json } = await authFetch('/win-lose/pending')
+    const payload = json() as { data: Array<any> }
+    const list: PendingTx[] = (payload.data || []).map((x) => ({
+      id: Number(x.id),
+      amount: Number(x.amount ?? 0),
+      tp: Number(x.take_profit ?? 0),
+      sl: Number(x.stop_loss ?? 0),
+      createdAtUtc: String(x.created_at_utc),
+      orderTimeMin: Number(x.order_time_min ?? 5),
+    }))
+    const newIds = new Set(list.map((t) => t.id))
+    for (const id of Array.from(pnlMap.keys())) {
+      if (!newIds.has(id)) pnlMap.delete(id)
+    }
+    for (const t of list) if (!pnlMap.has(t.id)) pnlMap.set(t.id, 0)
+    pendingList.value = list
+  } catch (e: any) {
+    alertError(e?.message ?? 'Failed to load pending list')
+  }
+}
+
+/* ===== finalize per TX (dipakai saat kadaluarsa jika belum ada scheduler server) ===== */
 async function finalizeWinLose(txId: number) {
-  const ctrl = new AbortController()
-  finalizeControllers.set(txId, ctrl)
   try {
     const { json } = await authFetch('/win-lose/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transaction_id: txId }),
-      signal: ctrl.signal,
     })
-    const data = json()
-    removePendingTx(txId)
-    await fetchSaldo()
-    if (isAlive) alertSuccess('Take Profit Reached. Your position has hit the target profit')
+    const data = json() as { status: string; hasil?: number }
+    await Promise.all([fetchSaldo(), fetchPending()])
+    if (data?.hasil === 1) alertSuccess('Position closed: Win (TP).')
+    else if (data?.hasil === 2) alertSuccess('Position closed: Lose (SL).')
+    else alertSuccess('Position closed.')
     return data
   } catch (e: any) {
-    if (e?.name === 'AbortError') return
     throw e
-  } finally {
-    finalizeControllers.delete(txId)
   }
 }
-function scheduleFinalize(txId: number, expiresAt: number) {
-  const delay = Math.max(0, expiresAt - Date.now())
-  window.setTimeout(() => {
-    finalizeWinLose(txId).catch((e) => console.error('Finalize failed:', e))
-  }, delay)
+
+async function finalizeIfExpired() {
+  const now = Date.now()
+  for (const tx of pendingList.value) {
+    if (expiresAtFor(tx) <= now) {
+      try {
+        await finalizeWinLose(tx.id)
+      } catch (e: any) {
+        const msg = String(e?.message || '')
+        if (msg.includes('already processed')) continue
+        if (msg.includes('Transaction not found')) continue
+        console.error('Finalize error:', e)
+      }
+    }
+  }
 }
 
 /* ===== Submit ===== */
@@ -647,29 +631,22 @@ async function submitWinLose() {
 
   loadingSubmit.value = true
   try {
-    const orderTime = trader.value?.time_op ?? 5 // menit dari backend
+    const orderTime = trader.value?.time_op ?? 5
     const { json } = await authFetch('/win-lose/apply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id_copy_traders: trader.value?.id,
         amount: amt,
-        take_profit: tp.value,
+        take_profit: tp.value, // backend tetap pakai dari users profile
         stop_loss: sl.value,
-        order_time: orderTime, // <= pakai backend
+        order_time: orderTime,
       }),
     })
-    const data = json() as { status: 'success'; transaction_id: number }
-
-    // simpan pending dengan durasi per-TX dari backend
-    addPendingTx(data.transaction_id, amt, tp.value!, sl.value!, minutesToMs(orderTime))
-
-    // Jadwalkan finalize untuk TX baru itu
-    const p = pendingList.value.find((x) => x.id === data.transaction_id)
-    if (p) scheduleFinalize(p.id, p.expiresAt)
-
+    json() as { status: 'success'; transaction_id: number }
     alertSuccess('Order created.')
-    amount.value = '' // reset input
+    amount.value = ''
+    await Promise.all([fetchSaldo(), fetchPending()])
   } catch (e: any) {
     alertError(e?.message ?? 'Submit failed')
   } finally {
@@ -692,31 +669,27 @@ watch(
 )
 
 onMounted(() => {
-  // 1s ticker
+  fetchTakeProfit()
+
+  // 1s ticker: waktu & random-walk animasi
   tickHandle = window.setInterval(() => {
     nowTick.value = Date.now()
-
-    // update random-walk semua TX aktif
     for (const tx of pendingList.value) stepRandomWalk(tx)
   }, 1000)
 
-  // initial saldo + pending tx
+  // load awal
   fetchSaldo()
-  loadPending()
+  fetchPending()
 
-  // schedule existing pending
-  const now = Date.now()
-  pendingList.value.forEach((tx) => {
-    if (tx.expiresAt <= now) finalizeWinLose(tx.id).catch(console.error)
-    else scheduleFinalize(tx.id, tx.expiresAt)
-  })
-
-  // sync across tabs; watcher akan kurangi saldo untuk tx baru dari tab lain
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'pendingTxs') loadPending()
-  })
+  // polling pending + auto finalize client-side (jika belum ada scheduler server)
+  pollHandle = window.setInterval(async () => {
+    await fetchPending()
+    await finalizeIfExpired()
+  }, 3000)
 })
+
 onUnmounted(() => {
   if (tickHandle) clearInterval(tickHandle)
+  if (pollHandle) clearInterval(pollHandle)
 })
 </script>
