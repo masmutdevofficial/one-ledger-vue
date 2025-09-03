@@ -9,16 +9,14 @@ type BeforeInstallPromptEvent = Event & {
 const deferredPrompt = ref<BeforeInstallPromptEvent | null>(null)
 const canInstall = ref(false)
 const isInstalled = ref(false)
+const supportsA2HS = typeof window !== 'undefined' && 'onbeforeinstallprompt' in window
 
 function showInstallPrompt() {
   const dp = deferredPrompt.value
   if (!dp) return false
   dp.prompt()
-  // setelah dipanggil, reset biar nggak dipakai ulang
   deferredPrompt.value = null
   canInstall.value = false
-  // opsional: tracking hasil
-  dp.userChoice.catch(() => {}).finally(() => {})
   return true
 }
 
@@ -34,18 +32,21 @@ export function useA2HS() {
     deferredPrompt.value = null
   }
 
-  onMounted(() => {
+  onMounted(async () => {
     window.addEventListener('beforeinstallprompt', onBeforeInstall as EventListener)
     window.addEventListener('appinstalled', onAppInstalled)
-    // jika sudah standalone, anggap terpasang
+
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      // iOS Safari legacy
       (navigator as any).standalone === true
     if (isStandalone) {
       isInstalled.value = true
       canInstall.value = false
     }
+
+    // DEBUG: ?debugA2HS=1 → paksa tombol muncul untuk uji di desktop
+    const debug = new URLSearchParams(location.search).has('debugA2HS')
+    if (debug && !isInstalled.value) canInstall.value = true
   })
 
   onBeforeUnmount(() => {
@@ -53,5 +54,5 @@ export function useA2HS() {
     window.removeEventListener('appinstalled', onAppInstalled)
   })
 
-  return { canInstall, isInstalled, showInstallPrompt }
+  return { canInstall, isInstalled, supportsA2HS, showInstallPrompt }
 }
