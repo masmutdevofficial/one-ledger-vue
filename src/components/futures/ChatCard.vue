@@ -413,9 +413,7 @@ async function handleSend(): Promise<void> {
       method: 'POST',
       body: JSON.stringify({ message: text }),
     })
-    const mapped = mapApiMsg(created)
-    messages.value.push(mapped)
-    if (lastId == null || mapped.id > lastId) lastId = mapped.id
+    pushUnique(mapApiMsg(created))
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Gagal mengirim pesan'
     modal.open('Error', msg)
