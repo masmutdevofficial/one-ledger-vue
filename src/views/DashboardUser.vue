@@ -1,5 +1,6 @@
 <template>
   <div>
+    <A2HSButton />
     <!-- Section: Total Value Summary -->
     <section class="bg-white mb-6 px-4 mt-2">
       <div class="flex flex-row justify-between items-center">
@@ -386,6 +387,7 @@ import SliderDashboard from '@/components/dashboard/SliderDashboard.vue'
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
+import A2HSButton from '@/components/A2HSButton.vue'
 
 /** ===== Konstanta ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
