@@ -12,22 +12,6 @@
 
     <h1 class="text-2xl font-semibold mb-4">Upload your document</h1>
 
-    <!-- Country -->
-    <div class="mb-4 text-sm flex flex-wrap items-center gap-1">
-      <span class="mr-1 font-normal">Country:</span>
-      <img
-        alt="Flag of Indonesia"
-        src="https://storage.googleapis.com/a1aa/image/a493048a-e3ca-454c-621d-bfce581727db.jpg"
-        class="inline-block"
-        width="20"
-        height="14"
-      />
-      <span class="font-normal ml-1 mr-2">Indonesia</span>
-      <button type="button" class="text-yellow-600 hover:underline">
-        No longer residing here?
-      </button>
-    </div>
-
     <!-- Notes -->
     <p class="text-gray-600 text-sm mb-6 leading-relaxed">
       The document must meet specific requirements in order to be accepted for verification:
@@ -80,39 +64,24 @@
         <label class="block mb-2 text-gray-800">Document</label>
         <div
           class="border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center py-10 mb-10 relative overflow-hidden"
-          style="min-height: 140px"
-        >
+          style="min-height: 140px">
           <!-- hidden input -->
-          <input
-            ref="fileInput"
-            id="upload"
-            name="upload"
-            type="file"
-            class="hidden"
-            accept=".jpg,.jpeg,.png,.pdf"
-            @change="onFileChange"
-          />
+          <input ref="fileInput" id="upload" name="upload" type="file" class="hidden" accept=".jpg,.jpeg,.png,.pdf"
+            @change="onFileChange" />
 
           <!-- area -->
           <template v-if="hasImagePreview">
             <img :src="previewSrc" alt="Preview" class="max-h-64 object-contain" />
-            <button
-              type="button"
-              class="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-              @click="resetUpload"
-              aria-label="Remove uploaded file"
-            >
+            <button type="button" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700" @click="resetUpload"
+              aria-label="Remove uploaded file">
               <Icon icon="tabler:trash" class="w-5 h-5" />
             </button>
           </template>
 
           <template v-else>
-            <button
-              type="button"
+            <button type="button"
               class="cursor-pointer bg-teal-300 hover:bg-teal-400 text-white font-semibold rounded px-6 py-2 select-none disabled:opacity-60"
-              @click="onPickFile"
-              :disabled="uploadLoading"
-            >
+              @click="onPickFile" :disabled="uploadLoading">
               {{ uploadLoading ? 'Uploading…' : 'Upload' }}
             </button>
             <p class="text-xs text-gray-500 mt-2">Max 7 MB in .jpg/.jpeg/.png/.pdf format</p>
@@ -120,12 +89,9 @@
         </div>
 
         <!-- Continue -->
-        <button
-          type="button"
+        <button type="button"
           class="w-full bg-teal-300 hover:bg-teal-400 text-white font-semibold py-3 rounded focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-60"
-          @click="onContinue"
-          :disabled="uploadLoading || !uploadedFile"
-        >
+          @click="onContinue" :disabled="uploadLoading || !uploadedFile">
           {{ uploadLoading ? 'Uploading…' : 'Continue' }}
         </button>
       </template>
@@ -148,20 +114,11 @@
     </template>
 
     <!-- Modal: Edit Account -->
-    <div
-      v-if="showEditAccount"
-      class="fixed inset-0 z-[100] bg-black/30 flex items-end sm:items-center justify-center"
-    >
-      <div
-        class="bg-white w-full sm:w-[90vw] sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 shadow-lg"
-      >
+    <div v-if="showEditAccount" class="fixed inset-0 z-[100] bg-black/30 flex items-end sm:items-center justify-center">
+      <div class="bg-white w-full sm:w-[90vw] sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-semibold text-base">Edit Account</h3>
-          <button
-            class="text-gray-400 hover:text-gray-600"
-            @click="closeEditAccount"
-            aria-label="Close edit account"
-          >
+          <button class="text-gray-400 hover:text-gray-600" @click="closeEditAccount" aria-label="Close edit account">
             <Icon icon="tabler:x" class="w-5 h-5" />
           </button>
         </div>
@@ -169,40 +126,27 @@
         <form class="space-y-4" @submit.prevent="submitEditAccount">
           <div>
             <label class="block text-sm text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              v-model.trim="formEmail"
+            <input type="email" v-model.trim="formEmail"
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
-              placeholder="you@example.com"
-              required
-            />
+              placeholder="you@example.com" required />
           </div>
           <div>
             <label class="block text-sm text-gray-700 mb-1">Username (optional)</label>
-            <input
-              type="text"
-              v-model.trim="formUsername"
+            <input type="text" v-model.trim="formUsername"
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
-              placeholder="your username"
-            />
+              placeholder="your username" />
           </div>
 
           <p v-if="editError" class="text-xs text-red-600 -mt-2">{{ editError }}</p>
 
           <div class="flex gap-3 pt-2">
-            <button
-              type="button"
-              class="flex-1 py-2 rounded-md bg-gray-200 text-gray-700 font-semibold"
-              @click="closeEditAccount"
-              :disabled="editLoading"
-            >
+            <button type="button" class="flex-1 py-2 rounded-md bg-gray-200 text-gray-700 font-semibold"
+              @click="closeEditAccount" :disabled="editLoading">
               Cancel
             </button>
-            <button
-              type="submit"
+            <button type="submit"
               class="flex-1 py-2 rounded-md bg-teal-500 text-white font-semibold hover:bg-teal-600 disabled:opacity-60"
-              :disabled="editLoading"
-            >
+              :disabled="editLoading">
               {{ editLoading ? 'Saving…' : 'Save' }}
             </button>
           </div>

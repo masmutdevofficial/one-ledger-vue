@@ -30,7 +30,6 @@
       <div ref="scrollArea"
         class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700 space-y-4"
         @scroll="onScroll">
-
         <!-- 1. Join the Pool -->
         <div>
           <h4 class="mt-1 font-semibold">1. Join the Pool</h4>
@@ -60,9 +59,8 @@
               strategy.
             </li>
             <li>During the session, members cannot close positions individually.</li>
-            <li>
-              All profit and loss calculations are performed automatically by the smart contract.
-            </li>
+            <li>All profit and loss calculations are performed automatically by the smart contract.</li>
+            <li>Followers can only participate in a maximum of 5 open positions at the same time.</li>
           </ul>
         </div>
 
@@ -70,14 +68,15 @@
         <div>
           <h4 class="mt-1 font-semibold">3. Profit Distribution</h4>
           <ul class="list-disc pl-5 space-y-1 mt-1">
-            <li>
-              Profits and losses are shared proportionally based on each member’s contribution.
-            </li>
+            <li>Profits and losses are shared proportionally based on each member’s contribution.</li>
             <li>
               Final results will be displayed on the dashboard and can be withdrawn once the
               session is completed.
             </li>
-            <li>If service fees apply, they will be automatically deducted from the profit.</li>
+            <li>
+              If service fees apply, they are not automatically deducted from profit. Members are
+              required to pay service fees manually as instructed by the Pool management.
+            </li>
           </ul>
         </div>
 
@@ -133,6 +132,7 @@
       </div>
     </div>
   </div>
+
 </template>
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'

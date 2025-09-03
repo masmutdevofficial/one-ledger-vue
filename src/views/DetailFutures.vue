@@ -9,46 +9,27 @@
     <!-- CONTENT -->
     <template v-else>
       <!-- Back -->
-      <button
-        aria-label="Back"
-        class="mb-4 inline-flex items-center text-black"
-        type="button"
-        @click="goBack"
-      >
+      <button aria-label="Back" class="mb-4 inline-flex items-center text-black" type="button" @click="goBack">
         <Icon icon="tabler:arrow-left" class="w-6 h-6" />
       </button>
 
       <!-- Profile & title -->
       <div class="flex items-center justify-between mb-1">
         <div class="flex items-center gap-4">
-          <img
-            :alt="`${trader.name} avatar`"
-            class="w-12 h-12 rounded-full object-cover"
-            :src="avatarUrl"
-            @error="onAvatarError"
-          />
+          <img :alt="`${trader.name} avatar`" class="w-12 h-12 rounded-full object-cover" :src="avatarUrl"
+            @error="onAvatarError" />
           <h1 class="font-extrabold text-lg flex items-center gap-2">
-            <RouterLink
-              to="/profile-copy-trade"
-              class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded"
-            >
+            <RouterLink to="/profile-copy-trade"
+              class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded">
               {{ trader.name }}
             </RouterLink>
-            <Icon
-              v-if="trader.is_featured"
-              icon="tabler:shield-check"
-              class="w-5 h-5 text-amber-500"
-            />
+            <Icon v-if="trader.is_featured" icon="tabler:shield-check" class="w-5 h-5 text-amber-500" />
           </h1>
         </div>
 
-        <router-link
-          v-if="trader && trader.id"
-          :to="`/chats/${trader.id}`"
+        <router-link v-if="trader && trader.id" :to="`/chats/${trader.id}`"
           class="ml-4 inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200"
-          aria-label="Open chat"
-          title="Message"
-        >
+          aria-label="Open chat" title="Message">
           <img src="/img/chat-copy-trader.png" alt="Menu" class="w-5 h-5 object-contain" />
         </router-link>
       </div>
@@ -56,8 +37,7 @@
       <p class="text-sm mb-2">{{ trader?.description || '' }}</p>
 
       <div
-        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none"
-      >
+        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
         <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
         <span>Profit Sharing 10%</span>
       </div>
@@ -67,31 +47,17 @@
       <label for="copyAmount" class="text-gray-400 text-xs mb-1 block">Copy Amount</label>
 
       <div class="flex items-center bg-gray-100 rounded-md h-10 mb-1 px-3">
-        <input
-          id="copyAmount"
-          aria-label="Copy Amount input"
-          v-model="amount"
-          type="text"
-          inputmode="decimal"
-          class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none"
-          placeholder="Enter amount"
-          :disabled="atCapacity"
-          :class="atCapacity ? 'opacity-60 cursor-not-allowed' : ''"
-        />
+        <input id="copyAmount" aria-label="Copy Amount input" v-model="amount" type="text" inputmode="decimal"
+          class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none" placeholder="Enter amount"
+          :disabled="atCapacity" :class="atCapacity ? 'opacity-60 cursor-not-allowed' : ''" />
         <span class="text-xs font-semibold text-black ml-2">USDT</span>
-        <button
-          class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50"
-          type="button"
-          @click="setMax"
-          :disabled="atCapacity"
-        >
+        <button class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50" type="button" @click="setMax"
+          :disabled="atCapacity">
           Max
         </button>
       </div>
 
-      <small v-show="!!amountError" class="block text-red-500 text-xs mb-2">{{
-        amountError
-      }}</small>
+      <small v-show="!!amountError" class="block text-red-500 text-xs mb-2">{{ amountError }}</small>
 
       <!-- Available (left)  |  Min Buy (right) -->
       <div class="flex justify-between items-center text-[10px] text-gray-400 mb-5">
@@ -99,13 +65,8 @@
           <span>Available</span>
           <span v-if="!loadingSaldo" class="font-normal"> {{ fmtUSDT(saldo) }} USDT </span>
           <span v-else class="font-normal">...</span>
-          <button
-            aria-label="Add"
-            class="text-[#D6B94D] text-xs font-semibold"
-            type="button"
-            @click.prevent
-            title="Add"
-          ></button>
+          <button aria-label="Add" class="text-[#D6B94D] text-xs font-semibold" type="button" @click.prevent
+            title="Add"></button>
         </div>
         <div class="flex items-center gap-1">
           <span>Min Open Position</span>
@@ -118,13 +79,8 @@
       <!-- Position Risk -->
       <div class="flex flex-row justify-between items-start">
         <h2 class="font-semibold text-base mb-2">Position Risk</h2>
-        <button
-          v-if="trader?.slug"
-          type="button"
-          class="inline-flex items-center text-gray-600 hover:text-black"
-          @click="goHistory"
-          aria-label="Open futures history"
-        >
+        <button v-if="trader?.slug" type="button" class="inline-flex items-center text-gray-600 hover:text-black"
+          @click="goHistory" aria-label="Open futures history">
           <Icon icon="tabler:file-description" class="w-4 h-4" />
         </button>
       </div>
@@ -132,18 +88,13 @@
         <div>
           <label for="sl" class="text-gray-400 text-xs mb-1 block">Stop Loss</label>
           <div class="relative">
-            <select
-              id="sl"
-              v-model.number="sl"
-              :disabled="false"
-              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none"
-            >
+            <select id="sl" v-model.number="sl" :disabled="false"
+              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none">
               <option disabled value="">Select</option>
               <option v-for="n in 10" :key="n" :value="n * 10">{{ n * 10 }}%</option>
             </select>
             <span
-              class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none"
-            >
+              class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none">
               % ROI
             </span>
           </div>
@@ -160,17 +111,8 @@
         <div class="pb-5">
           <button
             class="mt-3 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 float-right disabled:opacity-50"
-            type="button"
-            :disabled="loadingSubmit || atCapacity"
-            @click="submitWinLose"
-          >
-            {{
-              loadingSubmit
-                ? 'Processing…'
-                : atCapacity
-                  ? 'Capacity Reached (5/5)'
-                  : 'Open Position'
-            }}
+            type="button" :disabled="loadingSubmit || atCapacity" @click="submitWinLose">
+            {{ loadingSubmit ? 'Processing…' : atCapacity ? 'Capacity Reached (5/5)' : 'Open Position' }}
           </button>
         </div>
 
@@ -183,11 +125,7 @@
         <div v-if="!pendingList.length" class="text-xs text-gray-400">No Data Available.</div>
 
         <ul v-else class="space-y-3">
-          <li
-            v-for="(tx, idx) in sortedPending"
-            :key="tx.id"
-            class="rounded-md border border-gray-200 p-3"
-          >
+          <li v-for="(tx, idx) in sortedPending" :key="tx.id" class="rounded-md border border-gray-200 p-3">
             <!-- Header -->
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
@@ -201,26 +139,18 @@
 
             <!-- Progress -->
             <div class="w-full h-2 bg-gray-100 rounded overflow-hidden mb-2">
-              <div
-                class="h-2 bg-teal-400"
-                :style="{ width: (progressFor(tx) * 100).toFixed(2) + '%' }"
-              />
+              <div class="h-2 bg-teal-400" :style="{ width: (progressFor(tx) * 100).toFixed(2) + '%' }" />
             </div>
 
             <!-- Numbers -->
             <div class="grid grid-cols-3 gap-2 text-[11px]">
               <div class="flex flex-col">
                 <span class="text-gray-400">SL</span>
-                <span class="font-semibold">{{
-                  Number.isFinite(tx.sl) ? Math.round(tx.sl) + '%' : '—'
-                }}</span>
+                <span class="font-semibold">{{ Number.isFinite(tx.sl) ? Math.round(tx.sl) + '%' : '—' }}</span>
               </div>
               <div class="flex flex-col">
                 <span class="text-gray-400">PNL</span>
-                <span
-                  class="font-semibold"
-                  :class="pnlFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'"
-                >
+                <span class="font-semibold" :class="pnlFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'">
                   {{ signedMoney(pnlFor(tx), 4) }}
                 </span>
               </div>
@@ -252,6 +182,18 @@ const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error',
 
 /* ===== Helpers API ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+
+// abortable fetch dengan timeout
+function withTimeout<T>(p: Promise<T>, ms = 10000): Promise<T> {
+  const ctrl = new AbortController()
+  const t = setTimeout(() => ctrl.abort(), ms)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ; (p as any).signal = ctrl.signal
+  return new Promise((resolve, reject) => {
+    p.then((v) => resolve(v)).catch(reject).finally(() => clearTimeout(t))
+  })
+}
+
 async function authFetch(path: string, init: RequestInit = {}) {
   const token = localStorage.getItem('token')
   if (!token) throw new Error('Token not found')
@@ -261,18 +203,30 @@ async function authFetch(path: string, init: RequestInit = {}) {
     Authorization: `Bearer ${token}`,
     ...(init.headers || {}),
   }
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers })
+
+  const req = fetch(`${API_BASE}${path}`, { ...init, headers, cache: 'no-store' })
+  const res = await withTimeout(req)
   const text = await res.text()
   if (!res.ok) throw new Error(text.trim() || `HTTP ${res.status}`)
   return { text, json: () => JSON.parse(text) }
 }
 
+// deteksi error jaringan / SW no-response
+function isIgnorableNetworkError(e: unknown): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return true
+  const msg = String((e as any)?.message || e || '').toLowerCase()
+  return (
+    msg.includes('no-response') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('abort') ||
+    msg.includes('timeout')
+  )
+}
+
 /* ===== Formatters ===== */
 function fmtUSDT(n: number): string {
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 8,
-  }).format(n)
+  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 8 }).format(n)
 }
 function fmtMoney(n: number, dp = 4): string {
   if (!Number.isFinite(n)) return '0'
@@ -469,12 +423,11 @@ async function fetchTakeProfit(): Promise<void> {
 
     const res = await fetch(`${API_BASE}/users/me/take-profit`, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      cache: 'no-store',
     })
     if (!res.ok) {
       let msg = `HTTP ${res.status}`
-      try {
-        msg = await res.text()
-      } catch {}
+      try { msg = await res.text() } catch { }
       throw new Error(msg)
     }
     const data = await res.json()
@@ -495,6 +448,7 @@ const pnlMap = reactive(new Map<number, number>())
 const nowTick = ref(Date.now())
 let tickHandle: number | undefined
 let pollHandle: number | undefined
+let pendingPollBusy = false
 
 const atCapacity = computed(() => pendingList.value.length >= MAX_CONCURRENT)
 const sortedPending = computed(() => pendingList.value.slice())
@@ -552,7 +506,8 @@ function currentTotalFor(p: PendingTx) {
 }
 
 /* ===== API pending ===== */
-async function fetchPending() {
+async function fetchPending(opts: { silent?: boolean } = {}) {
+  const { silent = false } = opts
   try {
     const { json } = await authFetch('/win-lose/pending')
     const payload = json() as { data: Array<any> }
@@ -571,6 +526,10 @@ async function fetchPending() {
     for (const t of list) if (!pnlMap.has(t.id)) pnlMap.set(t.id, 0)
     pendingList.value = list
   } catch (e: any) {
+    if (silent || isIgnorableNetworkError(e)) {
+      // diamkan error polling jaringan / SW
+      return
+    }
     alertError(e?.message ?? 'Failed to load pending list')
   }
 }
@@ -584,7 +543,7 @@ async function finalizeWinLose(txId: number) {
       body: JSON.stringify({ transaction_id: txId }),
     })
     const data = json() as { status: string; hasil?: number }
-    await Promise.all([fetchSaldo(), fetchPending()])
+    await Promise.all([fetchSaldo(), fetchPending({ silent: true })])
     if (data?.hasil === 1) alertSuccess('Position closed: Win (TP).')
     else if (data?.hasil === 2) alertSuccess('Position closed: Lose (SL).')
     else alertSuccess('Position closed.')
@@ -604,7 +563,7 @@ async function finalizeIfExpired() {
         const msg = String(e?.message || '')
         if (msg.includes('already processed')) continue
         if (msg.includes('Transaction not found')) continue
-        console.error('Finalize error:', e)
+        // swallow
       }
     }
   }
@@ -646,7 +605,7 @@ async function submitWinLose() {
     json() as { status: 'success'; transaction_id: number }
     alertSuccess('Order created.')
     amount.value = ''
-    await Promise.all([fetchSaldo(), fetchPending()])
+    await Promise.all([fetchSaldo(), fetchPending({ silent: true })])
   } catch (e: any) {
     alertError(e?.message ?? 'Submit failed')
   } finally {
@@ -679,12 +638,18 @@ onMounted(() => {
 
   // load awal
   fetchSaldo()
-  fetchPending()
+  fetchPending({ silent: false })
 
   // polling pending + auto finalize client-side (jika belum ada scheduler server)
   pollHandle = window.setInterval(async () => {
-    await fetchPending()
-    await finalizeIfExpired()
+    if (pendingPollBusy) return
+    pendingPollBusy = true
+    try {
+      await fetchPending({ silent: true })
+      await finalizeIfExpired()
+    } finally {
+      pendingPollBusy = false
+    }
   }, 3000)
 })
 

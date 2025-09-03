@@ -7,7 +7,6 @@
         <div class="flex items-center space-x-1 select-none">
           <img src="/img/crypto/tether-usdt.svg" alt="USDT" class="w-5 h-5 rounded-full" />
           <span>USDT</span>
-          <Icon icon="tabler:chevron-down" class="w-3 h-3 opacity-30" />
         </div>
 
         <!-- Amount filter (jumlah USDT) -->
@@ -21,9 +20,6 @@
           <span>Payment</span>
           <Icon icon="tabler:chevron-down" class="w-3 h-3" />
         </button>
-      </div>
-      <div>
-        <Icon icon="tabler:filter" class="text-yellow-400 text-lg w-5 h-5" />
       </div>
     </div>
 

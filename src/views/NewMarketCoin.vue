@@ -40,9 +40,10 @@
             :aria-pressed="showChart" @click="showChart = !showChart" />
         </button>
         <RouterLink to="/history" aria-label="More options" class="relative">
-          <Icon icon="tabler:dots" class="w-5 h-5" />
+          <img src="/img/futures.png" alt="" aria-hidden="true" class="w-[18px] h-[18px] object-contain" />
           <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
         </RouterLink>
+
       </div>
     </section>
 
@@ -251,15 +252,13 @@
       <!-- RIGHT: ORDER FORM -->
       <div class="space-y-3">
         <!-- Order type -->
-        <div class="flex items-center justify-between bg-gray-100 rounded-lg px-3 py-2 text-[12px]">
-          <div class="flex items-center justify-between space-x-2 w-full">
-            <Icon icon="tabler:info-circle-filled" class="w-4 h-4 text-gray-400" />
-            <button type="button" class="flex items-center font-semibold text-gray-900">
-              Market
-            </button>
-            <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
-          </div>
+        <div class="flex items-center bg-gray-100 rounded-lg px-3 py-2 text-[12px] relative">
+          <Icon icon="tabler:info-circle-filled" class="w-4 h-4 text-gray-400" />
+          <button type="button" class="absolute left-1/2 -translate-x-1/2 font-semibold text-gray-900">
+            Market
+          </button>
         </div>
+
 
         <!-- Price -->
         <div class="flex items-center justify-between text-[12px] w-full space-x-2">
@@ -402,7 +401,6 @@
         @click="goAsset(a)">
         <div class="flex justify-between items-center">
           <p class="text-gray-500 text-[10px] font-normal">Asset</p>
-          <Icon icon="tabler:adjustments-horizontal" class="text-gray-400 text-[10px]" />
         </div>
 
         <div class="flex justify-between items-center text-[10px]">
