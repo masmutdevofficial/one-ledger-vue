@@ -3,7 +3,8 @@ import { RouterView } from 'vue-router'
 import ApiAlerts from '@/components/ApiAlerts.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useHead } from '@vueuse/head'
-
+import { bootstrapA2HS } from '@/composables/useA2HS'
+bootstrapA2HS()
 const meta = ref<{
   logo: string
   nama_website: string

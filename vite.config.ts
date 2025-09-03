@@ -16,10 +16,11 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
+        id: '/one-ledger',
         name: 'One Ledger',
         short_name: 'One Ledger',
         description:
-          '- OneLedger Exchange – Buy, sell, and trade Bitcoin, Ethereum, and top cryptocurrencies. Secure crypto wallet, low fees, fast transactions. Login or register today.',
+          'OneLedger Exchange – Buy, sell, and trade Bitcoin, Ethereum, and top cryptocurrencies. Secure crypto wallet, low fees, fast transactions. Login or register today.',
         lang: 'id',
         start_url: '/',
         scope: '/',
