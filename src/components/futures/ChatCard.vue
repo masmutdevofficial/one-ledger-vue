@@ -34,7 +34,7 @@
 
       <!-- Input + emoji -->
       <div class="sticky bottom-0 bg-white/90 backdrop-blur px-3 py-2 shadow-md">
-        <form @submit.prevent="handleSend" class="relative flex items-end gap-2">
+        <form class="relative flex items-end gap-2">
           <div class="relative">
             <button type="button" @click="onToggleEmoji"
               class="inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100 active:bg-gray-200"
@@ -56,11 +56,11 @@
             </div>
           </div>
 
-          <textarea ref="taRef" v-model="draft" @keydown.enter.exact.prevent="handleSend" @keydown.enter.shift.stop
+          <textarea ref="taRef" v-model="draft" @keydown.enter.exact.prevent="onEnterSend" @keydown.enter.shift.stop
             @keyup="onCaptureSelection" @mouseup="onCaptureSelection" @select="onCaptureSelection" rows="1"
             placeholder="Tulis pesan..."
             class="w-full resize-none outline-none rounded-xl px-3 py-3 pr-12 text-sm max-h-32 overflow-auto bg-gray-50 border border-gray-200 focus:border-teal-300 focus:ring-1 focus:ring-teal-300" />
-          <button type="submit" :disabled="!canSend || sending || !copyTraderId"
+          <button type="button" @click="handleSend" :disabled="!canSend || sending || !copyTraderId"
             class="inline-flex items-center justify-center rounded-md p-2 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Kirim">
             <Icon icon="tabler:send-2" class="w-5 h-5 text-blue-600" />
@@ -204,6 +204,12 @@ function onMarqueeEnd(): void {
   bannerText.value = ''
 }
 
+function onEnterSend(e: KeyboardEvent): void {
+  if ((e as any).isComposing) return   // IME masih composing
+  if (e.repeat) return                 // tahan Enter -> abaikan repeat
+  handleSend()
+}
+
 /** UI helpers */
 const draft = ref<string>('')
 const sending = ref<boolean>(false)
@@ -291,6 +297,7 @@ const emoji = {
 const emojiBtnRef = ref<HTMLButtonElement | null>(null)
 const emojiPanelRef = ref<HTMLDivElement | null>(null)
 const taRef = ref<HTMLTextAreaElement | null>(null)
+const seenMsgIds = new Set<number>()
 
 function onToggleEmoji(): void {
   emoji.open.value = !emoji.open.value
@@ -334,21 +341,27 @@ function mapApiMsg(m: ApiMessage): ChatMessage {
 async function loadInitial(): Promise<void> {
   if (!copyTraderId.value) return
   const res = await apiRequest<ListResp>(`/copy-traders/${copyTraderId.value}/community?limit=50`)
-  const mapped = (res.data ?? []).map(mapApiMsg)
-  messages.value = mapped
-  lastId = res.last_id ?? (mapped.length ? mapped[mapped.length - 1].id : null)
+  messages.value = []
+  seenMsgIds.clear()
+  for (const m of (res.data ?? []).map(mapApiMsg)) pushUnique(m)
+  lastId = lastId ?? res.last_id ?? null
 }
 async function pollNew(): Promise<void> {
   if (!copyTraderId.value || lastId == null) return
   const res = await apiRequest<NewResp>(
     `/copy-traders/${copyTraderId.value}/community?after_id=${lastId}`,
   )
-  const incoming = (res.data ?? []).map(mapApiMsg)
-  if (incoming.length) {
-    for (const m of incoming) messages.value.push(m)
-    lastId = incoming[incoming.length - 1].id
-  }
+  if (sending.value) return // tahan polling saat kirim untuk hindari race
+  for (const m of (res.data ?? []).map(mapApiMsg)) pushUnique(m)
 }
+
+function pushUnique(m: ChatMessage): void {
+  if (seenMsgIds.has(m.id)) return
+  messages.value.push(m)
+  seenMsgIds.add(m.id)
+  if (lastId == null || m.id > lastId) lastId = m.id
+}
+
 async function pollNotif(): Promise<void> {
   if (!copyTraderId.value) return
   const res = await apiRequest<NotifResp>(`/copy-traders/${copyTraderId.value}/notif-latest`)
