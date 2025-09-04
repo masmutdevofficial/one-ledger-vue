@@ -19,10 +19,7 @@ const showLanguageSelector = ref(false)
 const selectedLang = ref(localStorage.getItem('language') || 'en')
 const showLogoutModal = ref(false)
 
-const menuItems: MenuItem[] = [
-  { title: 'Language', icon: '/img/newmenu/language.png' },
-  { title: 'Logout', icon: '/img/newmenu/logout.png', isLogout: true },
-]
+const menuItems: MenuItem[] = [{ title: 'Logout', icon: '/img/newmenu/logout.png', isLogout: true }]
 
 function handleMenuClick(item: MenuItem) {
   if (item.isLogout) {
