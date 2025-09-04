@@ -16,7 +16,7 @@
         </h5>
 
         <!-- Email Verification Code -->
-        <div class="relative mb-3">
+        <div class="relative mb-3 no-ios-zoom">
           <input
             v-model="emailCode"
             :disabled="loading"

@@ -16,7 +16,7 @@
         </h5>
 
         <!-- Email Input -->
-        <div class="relative mb-3">
+        <div class="relative mb-3 no-ios-zoom">
           <input
             v-model="email"
             :disabled="loading"
