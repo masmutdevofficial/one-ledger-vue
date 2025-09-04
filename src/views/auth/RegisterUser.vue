@@ -5,7 +5,7 @@
       <div class="absolute top-4 right-6">
         <RouterLink to="/login" class="text-sm font-bold text-gray-700">Login</RouterLink>
       </div>
-      <div class="mx-6 mt-12">
+      <div class="mx-6 mt-12 no-ios-zoom">
         <h2 class="text-lg font-semibold mb-4">Sign Up</h2>
 
         <!-- Email -->

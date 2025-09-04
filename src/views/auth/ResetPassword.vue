@@ -6,7 +6,7 @@
 
         <div v-if="tokenValid">
           <!-- Password -->
-          <div class="relative mb-3">
+          <div class="relative mb-3 no-ios-zoom">
             <input
               v-model="password"
               :type="showPassword ? 'text' : 'password'"

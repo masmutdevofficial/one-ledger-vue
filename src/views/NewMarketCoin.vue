@@ -5,23 +5,37 @@
       <!-- HEADER: pair dropdown + toggle chart -->
       <div class="flex items-center justify-between">
         <div class="flex flex-row items-center">
-          <button v-if="showChart" class="rounded-lg pr-2 py-1 text-black" @click="showChart = false"
-            :aria-pressed="false">
+          <button
+            v-if="showChart"
+            class="rounded-lg pr-2 py-1 text-black"
+            @click="showChart = false"
+            :aria-pressed="false"
+          >
             <Icon icon="tabler:arrow-left" class="w-5 h-5" />
           </button>
 
           <div class="relative inline-block">
             <!-- Trigger Dropdown -->
-            <div class="flex items-center space-x-1 cursor-pointer" @click="dropdownOpen = !dropdownOpen">
+            <div
+              class="flex items-center space-x-1 cursor-pointer"
+              @click="dropdownOpen = !dropdownOpen"
+            >
               <span class="font-semibold text-black text-base">{{ selectedPair }}</span>
               <Icon icon="tabler:chevron-down" class="text-black text-base" />
             </div>
 
             <!-- Dropdown -->
-            <div v-if="dropdownOpen" class="absolute z-50 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md">
+            <div
+              v-if="dropdownOpen"
+              class="absolute z-50 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md"
+            >
               <ul class="max-h-64 overflow-auto">
-                <li v-for="pair in tradingPairs" :key="pair" @click="selectPair(pair)"
-                  class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black">
+                <li
+                  v-for="pair in tradingPairs"
+                  :key="pair"
+                  @click="selectPair(pair)"
+                  class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
+                >
                   {{ pair }}
                 </li>
               </ul>
@@ -36,17 +50,24 @@
           <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
         </RouterLink>
         <button aria-label="Chart" class="relative">
-          <Icon :icon="showChart ? 'tabler:brand-databricks' : 'tabler:chart-bar'" class="w-5 h-5 cursor-pointer"
-            :aria-pressed="showChart" @click="showChart = !showChart" />
+          <Icon
+            :icon="showChart ? 'tabler:brand-databricks' : 'tabler:chart-bar'"
+            class="w-5 h-5 cursor-pointer"
+            :aria-pressed="showChart"
+            @click="showChart = !showChart"
+          />
         </button>
         <RouterLink to="/history" aria-label="More options" class="relative">
-          <img src="/img/futures.png" alt="" aria-hidden="true" class="w-[18px] h-[18px] object-contain" />
+          <img
+            src="/img/futures.png"
+            alt=""
+            aria-hidden="true"
+            class="w-[18px] h-[18px] object-contain"
+          />
           <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
         </RouterLink>
-
       </div>
     </section>
-
 
     <!-- PRICE + CHANGE -->
     <div class="max-w-md mx-4 mt-1">
@@ -64,8 +85,10 @@
               })
             }}
           </p>
-          <span class="ml-1 text-[10px] font-semibold"
-            :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'">
+          <span
+            class="ml-1 text-[10px] font-semibold"
+            :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+          >
             {{
               percentChange !== null
                 ? (percentChange > 0 ? '+' : '') + percentChange.toFixed(2) + '%'
@@ -75,8 +98,11 @@
         </div>
       </div>
 
-      <span v-else class="text-sm font-semibold"
-        :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'">
+      <span
+        v-else
+        class="text-sm font-semibold"
+        :class="percentChange !== null && percentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+      >
         {{
           percentChange !== null
             ? (percentChange > 0 ? '+' : '') + percentChange.toFixed(2) + '%'
@@ -89,45 +115,75 @@
     <div v-if="showChart" class="grid grid-cols-[50px_1fr] gap-2 items-stretch w-full relative">
       <aside class="rounded-xl border border-white/10 p-2">
         <div class="flex flex-col gap-2 text-xs">
-          <button class="pl-1 px-2 py-1 rounded-lg border transition-colors" :class="{
-            'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
-            'hover:bg-white/5': kind !== 'candlestick',
-          }" :aria-pressed="kind === 'candlestick'" @click="kind = 'candlestick'">
+          <button
+            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+            :class="{
+              'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
+              'hover:bg-white/5': kind !== 'candlestick',
+            }"
+            :aria-pressed="kind === 'candlestick'"
+            @click="kind = 'candlestick'"
+          >
             <Icon icon="tabler:chart-candle" class="w-5 h-5" />
           </button>
 
-          <button class="pl-1 px-2 py-1 rounded-lg border transition-colors" :class="{
-            'bg-teal-500 text-white border-teal-500': kind === 'line',
-            'hover:bg-white/5': kind !== 'line',
-          }" :aria-pressed="kind === 'line'" @click="kind = 'line'">
+          <button
+            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+            :class="{
+              'bg-teal-500 text-white border-teal-500': kind === 'line',
+              'hover:bg-white/5': kind !== 'line',
+            }"
+            :aria-pressed="kind === 'line'"
+            @click="kind = 'line'"
+          >
             <Icon icon="tabler:chart-line" class="w-5 h-5" />
           </button>
 
-          <button class="pl-1 px-2 py-1 rounded-lg border transition-colors" :class="{
-            'bg-teal-500 text-white border-teal-500': kind === 'area',
-            'hover:bg-white/5': kind !== 'area',
-          }" :aria-pressed="kind === 'area'" @click="kind = 'area'">
+          <button
+            class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+            :class="{
+              'bg-teal-500 text-white border-teal-500': kind === 'area',
+              'hover:bg-white/5': kind !== 'area',
+            }"
+            :aria-pressed="kind === 'area'"
+            @click="kind = 'area'"
+          >
             <Icon icon="tabler:chart-area" class="w-5 h-5" />
           </button>
         </div>
       </aside>
 
       <section class="rounded-2xl min-w-0 overflow-hidden">
-        <LightChart :series-type="kind" :candle-data="dataForChart.candleData" :data="dataForChart.data" :options="{
-          timeScale: {
-            // typical defaults:
-            rightOffset: 12,
-            barSpacing: 5,
-          },
-        }" :fit="false" :initial-bars="180" :right-offset="12" :auto-follow="true" />
+        <LightChart
+          :series-type="kind"
+          :candle-data="dataForChart.candleData"
+          :data="dataForChart.data"
+          :options="{
+            timeScale: {
+              // typical defaults:
+              rightOffset: 12,
+              barSpacing: 5,
+            },
+          }"
+          :fit="false"
+          :initial-bars="180"
+          :right-offset="12"
+          :auto-follow="true"
+        />
       </section>
 
       <div class="flex flex-row items-center absolute -top-8.5 right-4 space-x-2">
-        <button v-for="t in tfs" :key="t"
-          class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors" :class="{
+        <button
+          v-for="t in tfs"
+          :key="t"
+          class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors"
+          :class="{
             'bg-teal-500 text-white border-teal-500': tf === t,
             'hover:bg-white/5': tf !== t,
-          }" :aria-pressed="tf === t" @click="tf = t">
+          }"
+          :aria-pressed="tf === t"
+          @click="tf = t"
+        >
           {{ t }}
         </button>
       </div>
@@ -146,10 +202,16 @@
     <div v-if="showChart" class="flex w-full justify-between items-center">
       <!-- BIDS -->
       <div class="space-y-1 w-full" v-if="depthData">
-        <div v-for="bid in top12Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
-          style="height: 17.5px">
-          <div class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
-            :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }" />
+        <div
+          v-for="bid in top12Bids"
+          :key="bid[0]"
+          class="relative flex justify-between overflow-hidden rounded"
+          style="height: 17.5px"
+        >
+          <div
+            class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+            :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+          />
           <p class="text-black text-[10px] z-10 px-2 w-1/2">
             {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
           </p>
@@ -161,10 +223,16 @@
 
       <!-- ASKS -->
       <div class="space-y-1 w-full" v-if="depthData">
-        <div v-for="ask in top12Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
-          style="height: 17.5px">
-          <div class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
-            :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }" />
+        <div
+          v-for="ask in top12Asks"
+          :key="ask[0]"
+          class="relative flex justify-between overflow-hidden rounded"
+          style="height: 17.5px"
+        >
+          <div
+            class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+            :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+          />
           <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
             {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
           </p>
@@ -180,12 +248,14 @@
       <div class="w-full flex items-center gap-2">
         <button
           class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-          @click="showChart = false">
+          @click="showChart = false"
+        >
           Buy
         </button>
         <button
           class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-red-500 text-white hover:bg-red-600 transition-colors"
-          @click="showChart = false">
+          @click="showChart = false"
+        >
           Sell
         </button>
       </div>
@@ -202,10 +272,16 @@
 
         <!-- ASKS -->
         <div class="space-y-1" v-if="depthData">
-          <div v-for="ask in top12Asks" :key="ask[0]" class="relative flex justify-between overflow-hidden rounded"
-            style="height: 17.5px">
-            <div class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
-              :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }" />
+          <div
+            v-for="ask in top12Asks"
+            :key="ask[0]"
+            class="relative flex justify-between overflow-hidden rounded"
+            style="height: 17.5px"
+          >
+            <div
+              class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+              :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+            />
             <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
               {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
@@ -235,10 +311,16 @@
 
         <!-- BIDS -->
         <div class="space-y-1" v-if="depthData">
-          <div v-for="bid in top12Bids" :key="bid[0]" class="relative flex justify-between overflow-hidden rounded"
-            style="height: 17.5px">
-            <div class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
-              :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }" />
+          <div
+            v-for="bid in top12Bids"
+            :key="bid[0]"
+            class="relative flex justify-between overflow-hidden rounded"
+            style="height: 17.5px"
+          >
+            <div
+              class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+              :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+            />
             <p class="text-[#2DBE87] text-[10px] z-10 px-2 w-1/2">
               {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
             </p>
@@ -254,15 +336,19 @@
         <!-- Order type -->
         <div class="flex items-center bg-gray-100 rounded-lg px-3 py-2 text-[12px] relative">
           <Icon icon="tabler:info-circle-filled" class="w-4 h-4 text-gray-400" />
-          <button type="button" class="absolute left-1/2 -translate-x-1/2 font-semibold text-gray-900">
+          <button
+            type="button"
+            class="absolute left-1/2 -translate-x-1/2 font-semibold text-gray-900"
+          >
             Market
           </button>
         </div>
 
-
         <!-- Price -->
         <div class="flex items-center justify-between text-[12px] w-full space-x-2">
-          <div class="bg-gray-100 flex-row flex items-center justify-between px-2 rounded-lg w-[97%] py-[4px]">
+          <div
+            class="bg-gray-100 flex-row flex items-center justify-between px-2 rounded-lg w-[97%] py-[4px]"
+          >
             <Icon icon="tabler:minus" class="w-4 h-4" />
             <div class="flex-1 text-center">
               <div class="text-[10px] text-gray-400 leading-none mb-1">Price (USDT)</div>
@@ -283,13 +369,21 @@
         </div>
 
         <!-- TOGGLE -->
-        <div class="flex rounded-lg border border-gray-300 overflow-hidden text-sm font-semibold select-none">
-          <button class="flex-1 py-1.5 px-4 transition-colors"
-            :class="[activeTab === 'buy' ? 'bg-teal-500 text-white' : 'text-gray-400']" @click="activeTab = 'buy'">
+        <div
+          class="flex rounded-lg border border-gray-300 overflow-hidden text-sm font-semibold select-none"
+        >
+          <button
+            class="flex-1 py-1.5 px-4 transition-colors"
+            :class="[activeTab === 'buy' ? 'bg-teal-500 text-white' : 'text-gray-400']"
+            @click="activeTab = 'buy'"
+          >
             Buy
           </button>
-          <button class="flex-1 py-1.5 px-4 transition-colors"
-            :class="[activeTab === 'sell' ? 'bg-red-500 text-white' : 'text-gray-400']" @click="activeTab = 'sell'">
+          <button
+            class="flex-1 py-1.5 px-4 transition-colors"
+            :class="[activeTab === 'sell' ? 'bg-red-500 text-white' : 'text-gray-400']"
+            @click="activeTab = 'sell'"
+          >
             Sell
           </button>
         </div>
@@ -303,12 +397,22 @@
               Amount ({{ availableUnit || 'USDT' }})
             </label>
 
-            <div class="relative z-50 text-gray-900 font-bold inline-block">
-              <input id="totalAmount" ref="amountInputEl" type="text" inputmode="decimal" autocomplete="off"
+            <div class="relative z-50 text-gray-900 font-bold inline-block no-ios-zoom">
+              <input
+                id="totalAmount"
+                ref="amountInputEl"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
                 class="bg-transparent text-center outline-none w-28 sm:w-32 md:w-36"
-                :disabled="availableLoading || availableError" v-model="totalAmountInput"
-                :placeholder="activeTab === 'buy' ? '0,00' : '0,00000000'" @focus="onAmountFocus" @blur="onAmountBlur"
-                @input="onAmountTyping" @keydown.enter.prevent="onAmountCommit" />
+                :disabled="availableLoading || availableError"
+                v-model="totalAmountInput"
+                :placeholder="activeTab === 'buy' ? '0,00' : '0,00000000'"
+                @focus="onAmountFocus"
+                @blur="onAmountBlur"
+                @input="onAmountTyping"
+                @keydown.enter.prevent="onAmountCommit"
+              />
             </div>
           </div>
 
@@ -316,18 +420,34 @@
         </div>
 
         <!-- SLIDER -->
-        <div class="w-full">
-          <input type="range" v-model.number="rawPercent" min="0" max="100" step="1" :disabled="!canSlide"
-            :style="sliderStyle" @input="onInput(($event.target as HTMLInputElement).valueAsNumber)"
-            @change="commitSnap" @pointerdown="isDragging = true" @pointerup="handlePointerUp"
-            class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:mt-[-4px] disabled:cursor-not-allowed disabled:[&::-webkit-slider-thumb]:bg-gray-300" />
+        <div class="w-full no-ios-zoom">
+          <input
+            type="range"
+            v-model.number="rawPercent"
+            min="0"
+            max="100"
+            step="1"
+            :disabled="!canSlide"
+            :style="sliderStyle"
+            @input="onInput(($event.target as HTMLInputElement).valueAsNumber)"
+            @change="commitSnap"
+            @pointerdown="isDragging = true"
+            @pointerup="handlePointerUp"
+            class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:mt-[-4px] disabled:cursor-not-allowed disabled:[&::-webkit-slider-thumb]:bg-gray-300"
+          />
 
           <div class="flex justify-between text-xs text-gray-400 mt-1">
-            <button v-for="m in marks" :key="m" type="button" @click="setPercent(m)" class="select-none transition"
+            <button
+              v-for="m in marks"
+              :key="m"
+              type="button"
+              @click="setPercent(m)"
+              class="select-none transition"
               :class="[
                 canSlide ? 'hover:text-gray-600' : 'cursor-not-allowed',
                 amountPercent === m ? 'text-gray-900 font-semibold' : '',
-              ]">
+              ]"
+            >
               {{ m }}%
             </button>
           </div>
@@ -344,13 +464,21 @@
 
           <div class="flex items-center gap-2">
             <label for="opt-reduce" class="flex items-center gap-2 flex-1 cursor-pointer">
-              <input id="opt-reduce" type="radio" name="orderType" class="h-4 w-4 accent-teal-500" />
+              <input
+                id="opt-reduce"
+                type="radio"
+                name="orderType"
+                class="h-4 w-4 accent-teal-500"
+              />
               <span>Reduce Only</span>
             </label>
 
             <label for="tif" class="sr-only">Time in Force</label>
-            <select id="tif" name="timeInForce"
-              class="ml-auto text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-600">
+            <select
+              id="tif"
+              name="timeInForce"
+              class="ml-auto text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-600"
+            >
               <option>GTC</option>
             </select>
           </div>
@@ -378,10 +506,14 @@
         </div>
 
         <!-- SUBMIT -->
-        <button :class="[
-          'w-full text-white text-sm font-medium py-2 rounded mt-3',
-          activeTab === 'buy' ? 'bg-teal-600' : 'bg-red-600',
-        ]" :disabled="submitting || !marketPrice || totalAmount <= 0" @click="submitTrade">
+        <button
+          :class="[
+            'w-full text-white text-sm font-medium py-2 rounded mt-3',
+            activeTab === 'buy' ? 'bg-teal-600' : 'bg-red-600',
+          ]"
+          :disabled="submitting || !marketPrice || totalAmount <= 0"
+          @click="submitTrade"
+        >
           {{ (activeTab === 'buy' ? 'Buy ' : 'Sell ') + baseAsset }}
         </button>
         <p v-if="submitError" class="text-red-600 text-xs mt-2">{{ submitError }}</p>
@@ -396,16 +528,26 @@
         No Data Available
       </div>
 
-      <section v-else v-for="a in assets" :key="a.symbol"
+      <section
+        v-else
+        v-for="a in assets"
+        :key="a.symbol"
         class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md bg-white cursor-pointer hover:ring-2 hover:ring-teal-200 transition"
-        @click="goAsset(a)">
+        @click="goAsset(a)"
+      >
         <div class="flex justify-between items-center">
           <p class="text-gray-500 text-[10px] font-normal">Asset</p>
         </div>
 
         <div class="flex justify-between items-center text-[10px]">
           <div class="flex items-center space-x-2">
-            <img :alt="`${a.base} logo`" class="rounded-full" :src="a.logoUrl" width="20" height="20" />
+            <img
+              :alt="`${a.base} logo`"
+              class="rounded-full"
+              :src="a.logoUrl"
+              width="20"
+              height="20"
+            />
             <p class="font-bold text-black text-xs leading-4">
               {{ a.base }}
               <span class="font-normal text-gray-400 text-[10px]">/{{ a.quote }}</span>
@@ -418,8 +560,11 @@
         </div>
 
         <!-- Unrealized PnL -->
-        <div v-if="a.lastPrice > 0" class="flex justify-between items-center space-x-4 font-semibold text-xs leading-4"
-          :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'">
+        <div
+          v-if="a.lastPrice > 0"
+          class="flex justify-between items-center space-x-4 font-semibold text-xs leading-4"
+          :class="a.uPnlAbs >= 0 ? 'text-green-600' : 'text-red-600'"
+        >
           <p>{{ signedMoneyId(a.uPnlAbs, 2) }}</p>
           <p>{{ signedPercent(a.uPnlPct) }}</p>
         </div>
@@ -451,7 +596,6 @@
         </div>
       </section>
     </div>
-
   </div>
 </template>
 
@@ -598,7 +742,6 @@ const ASSET_KLINE_PERIODS: KlinePeriod[] = ['1day']
 let assetsSubscribedLower = new Set<string>() // symbols lower yang sudah disubscribe
 let assetsResubTimer: ReturnType<typeof setTimeout> | null = null
 
-
 interface DepthTick {
   asks: [number, number][]
   bids: [number, number][]
@@ -641,7 +784,7 @@ function saveObCacheDebounced() {
   obSaveTimer = window.setTimeout(() => {
     try {
       localStorage.setItem(OB_LS_KEY, JSON.stringify(obCache))
-    } catch { }
+    } catch {}
     obSaveTimer = null
   }, 250)
 }
@@ -653,7 +796,7 @@ function flushObCacheNow() {
   if (!isBrowser()) return
   try {
     localStorage.setItem(OB_LS_KEY, JSON.stringify(obCache))
-  } catch { }
+  } catch {}
 }
 function hydrateFromCache(pair: string) {
   const key = pairToQuery(pair)
@@ -881,7 +1024,7 @@ function wsSend(obj: unknown) {
   if (aggWS.value && aggWS.value.readyState === WebSocket.OPEN) {
     try {
       aggWS.value.send(JSON.stringify(obj))
-    } catch { }
+    } catch {}
   }
 }
 function subscribeFor(
@@ -1041,7 +1184,7 @@ function scheduleChartFlush() {
 function connectAggregatorWS() {
   try {
     aggWS.value?.close()
-  } catch { }
+  } catch {}
   aggWS.value = new WebSocket('wss://ledgersocketone.online')
 
   aggWS.value.onopen = () => {
@@ -1056,7 +1199,7 @@ function connectAggregatorWS() {
   aggWS.value.onerror = () => {
     try {
       aggWS.value?.close()
-    } catch { }
+    } catch {}
   }
 
   aggWS.value.onmessage = (e: MessageEvent) => {
@@ -1284,7 +1427,9 @@ function assetSymbolsLower(): string[] {
 
 function assetsWsSend(obj: unknown) {
   if (assetsWs && assetsWs.readyState === WebSocket.OPEN) {
-    try { assetsWs.send(JSON.stringify(obj)) } catch { }
+    try {
+      assetsWs.send(JSON.stringify(obj))
+    } catch {}
   }
 }
 
@@ -1348,7 +1493,10 @@ function assetsScheduleFlush() {
   assetsFlushTimer = window.setTimeout(() => {
     for (const [symLower, payload] of Object.entries(assetsPending)) {
       const a = assetMap.get(symLower.toUpperCase())
-      if (!a) { delete assetsPending[symLower]; continue }
+      if (!a) {
+        delete assetsPending[symLower]
+        continue
+      }
 
       let changed = false
       if (payload.last !== undefined && a.lastPrice !== payload.last) {
@@ -1372,7 +1520,9 @@ function assetsScheduleFlush() {
 
 function connectAssetsWs() {
   if (assetsWs) {
-    try { assetsWs.close() } catch { }
+    try {
+      assetsWs.close()
+    } catch {}
     assetsWs = null
   }
 
@@ -1390,7 +1540,9 @@ function connectAssetsWs() {
   }
 
   assetsWs.onerror = () => {
-    try { assetsWs?.close() } catch { }
+    try {
+      assetsWs?.close()
+    } catch {}
   }
 
   assetsWs.onmessage = (e) => {
@@ -1403,7 +1555,7 @@ function connectAssetsWs() {
           const symLower = String(it.symbol || '').toLowerCase()
           if (!symLower) continue
           if (it.type === 'ticker' && Number.isFinite(Number(it.last))) {
-            (assetsPending[symLower] ||= {}).last = Number(it.last)
+            ;(assetsPending[symLower] ||= {}).last = Number(it.last)
           } else if (it.type === 'kline' && it.period === '1day') {
             const c = Number(it.close)
             if (Number.isFinite(c)) (assetsPending[symLower] ||= {}).klineClose = c
@@ -1418,14 +1570,14 @@ function connectAssetsWs() {
       if (!symLower) return
 
       if (msg.type === 'ticker' && Number.isFinite(Number(msg.last))) {
-        (assetsPending[symLower] ||= {}).last = Number(msg.last)
+        ;(assetsPending[symLower] ||= {}).last = Number(msg.last)
         assetsScheduleFlush()
         return
       }
       if (msg.type === 'kline' && msg.period === '1day') {
         const close = Number(msg.close)
         if (Number.isFinite(close)) {
-          (assetsPending[symLower] ||= {}).klineClose = close
+          ;(assetsPending[symLower] ||= {}).klineClose = close
           assetsScheduleFlush()
         }
         return
@@ -1452,7 +1604,9 @@ watch(
 )
 onUnmounted(() => {
   if (assetsWs) {
-    try { assetsWs.close() } catch { }
+    try {
+      assetsWs.close()
+    } catch {}
     assetsWs = null
   }
   if (assetsReconnectTimer) {
@@ -1515,7 +1669,7 @@ watch(tf, () => {
 onUnmounted(() => {
   try {
     aggWS.value?.close()
-  } catch { }
+  } catch {}
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
     reconnectTimer = null

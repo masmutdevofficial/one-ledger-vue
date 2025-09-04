@@ -1,7 +1,7 @@
 <template>
   <div class="relative pt-4 px-4 flex flex-col">
     <!-- Back arrow and title -->
-    <div class="flex items-center mb-8">
+    <div class="flex items-center mb-8 no-ios-zoom">
       <button
         aria-label="Go back"
         class="text-black text-xl font-semibold leading-none"
@@ -16,7 +16,7 @@
       <div class="w-6"></div>
     </div>
     <!-- Currency selector and amount -->
-    <div class="flex flex-col items-center space-y-2 mb-6">
+    <div class="flex flex-col items-center space-y-2 mb-6 no-ios-zoom">
       <button
         aria-label="Select currency"
         class="flex items-center space-x-1 text-black font-semibold text-base leading-none"

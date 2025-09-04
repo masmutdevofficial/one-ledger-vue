@@ -385,7 +385,7 @@ onBeforeUnmount(() => {
       <!-- Search Bar hanya di /dashboard -->
       <div v-if="$route.path === '/dashboard'">
         <div class="w-full px-4 pb-4 mt-3">
-          <div class="relative w-full">
+          <div class="relative w-full no-ios-zoom">
             <input
               v-model="searchQuery"
               type="search"

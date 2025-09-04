@@ -11,7 +11,7 @@
       <div class="mx-6 mt-12">
         <h2 class="text-lg font-semibold mb-4">Log In</h2>
 
-        <form @submit.prevent="login">
+        <form @submit.prevent="login" class="no-ios-zoom">
           <input
             v-model="identity"
             type="text"

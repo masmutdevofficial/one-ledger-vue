@@ -10,7 +10,7 @@
     </div>
 
     <!-- Address -->
-    <div class="mb-4">
+    <div class="mb-4 no-ios-zoom">
       <label for="address" class="block text-xs font-normal text-gray-600 mb-1">Address</label>
       <div class="relative">
         <input
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Network -->
-    <div class="mb-4">
+    <div class="mb-4 no-ios-zoom">
       <label for="network" class="block text-xs font-normal text-gray-600 mb-1 flex items-center">
         Network
         <button aria-label="Info" class="ml-1 text-gray-400 text-xs">
@@ -56,7 +56,7 @@
     </div>
 
     <!-- Amount -->
-    <div class="mb-4">
+    <div class="mb-4 no-ios-zoom">
       <label for="amount" class="block text-xs font-normal text-gray-600 mb-1">Amount</label>
       <div class="flex items-center rounded-lg bg-gray-100 py-2.5 px-3">
         <input

@@ -31,7 +31,7 @@
     <div class="absolute inset-0 bg-black/30" @click="closePwModal"></div>
 
     <form
-      class="relative z-10 w-[92%] max-w-sm rounded-2xl bg-white p-5 shadow-lg"
+      class="relative z-10 w-[92%] max-w-sm rounded-2xl no-ios-zoom bg-white p-5 shadow-lg"
       @submit.prevent="submitPassword"
     >
       <div class="mb-3">
