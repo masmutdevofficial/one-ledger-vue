@@ -4,9 +4,9 @@
       <div class="mx-6 mt-20">
         <h2 class="text-lg font-semibold mb-4">Reset Password</h2>
 
-        <div v-if="tokenValid">
+        <div class="no-ios-zoom" v-if="tokenValid">
           <!-- Password -->
-          <div class="relative mb-3 no-ios-zoom">
+          <div class="no-ios-zoom relative mb-3">
             <input
               v-model="password"
               :type="showPassword ? 'text' : 'password'"
@@ -24,7 +24,7 @@
           </div>
 
           <!-- Confirm Password -->
-          <div class="relative mb-6">
+          <div class="no-ios-zoom relative mb-6">
             <input
               v-model="confirmPassword"
               :type="showConfirmPassword ? 'text' : 'password'"

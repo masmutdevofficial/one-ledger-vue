@@ -13,13 +13,13 @@
       <span class="font-semibold">P2P</span>
       selling and payment services might be disabled for 24 hours after you change your password.
     </div>
-    <form class="space-y-5" @submit.prevent="handleSubmit">
+    <form class="no-ios-zoom space-y-5" @submit.prevent="handleSubmit">
       <!-- New Password -->
       <div>
         <label class="block mb-1 text-[13px] font-normal text-gray-700" for="new-password">
           New Password
         </label>
-        <div class="relative">
+        <div class="no-ios-zoom relative">
           <input
             :type="showNewPassword ? 'text' : 'password'"
             autocomplete="new-password"

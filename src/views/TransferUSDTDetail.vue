@@ -16,7 +16,7 @@
       <div class="w-6"></div>
     </div>
     <!-- Currency selector and amount -->
-    <div class="flex flex-col items-center space-y-2 mb-6 no-ios-zoom">
+    <div class="no-ios-zoom flex flex-col items-center space-y-2 mb-6">
       <button
         aria-label="Select currency"
         class="flex items-center space-x-1 text-black font-semibold text-base leading-none"
