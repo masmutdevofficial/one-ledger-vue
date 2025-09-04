@@ -329,7 +329,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Kanan: aksi -->
-      <div class="flex flex-col items-center gap-3 min-w-0">
+      <div class="flex flex-col items-end mr-1 gap-3 min-w-0">
         <button
           v-if="!pageError"
           class="text-gray-500 text-sm underline shrink-0"
