@@ -10,42 +10,33 @@
     </header>
 
     <!-- Asset Dropdown -->
-    <div class="mb-4 w-30 mx-auto">
+    <div class="mb-4 w-25 mx-auto">
       <label class="sr-only">Select Asset</label>
       <div class="relative">
-        <select
-          v-model="selected"
-          class="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700"
-        >
+        <select v-model="selected" class="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2
+             text-sm font-medium text-gray-700 text-center [text-align-last:center]
+             pr-10 [&>option]:text-center">
           <option v-for="c in coins" :key="c.slug" :value="c.slug">
             {{ c.sym }}
           </option>
         </select>
-        <Icon
-          icon="tabler:chevron-down"
-          class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
-        />
+
+        <Icon icon="tabler:chevron-down"
+          class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
       </div>
     </div>
+
 
     <!-- Main Content -->
     <main class="flex-grow">
       <!-- QR Code -->
       <div class="flex justify-center mb-6">
-        <img
-          :src="current.qr"
-          :alt="`QR ${selectedCoin.sym}`"
-          class="w-36 h-36 rounded-lg object-cover"
-          width="150"
-          height="150"
-        />
+        <img :src="current.qr" :alt="`QR ${selectedCoin.sym}`" class="w-36 h-36 rounded-lg object-cover" width="150"
+          height="150" />
       </div>
 
       <!-- Deposit Info -->
-      <section
-        aria-label="Deposit address details"
-        class="border border-gray-200 rounded-xl p-4 mb-6 max-w-md mx-auto"
-      >
+      <section aria-label="Deposit address details" class="border border-gray-200 rounded-xl p-4 mb-6 max-w-md mx-auto">
         <div class="mb-4">
           <p class="text-gray-400 text-xs mb-1">Network</p>
           <p class="text-black text-sm font-semibold">{{ meta[selected].network }}</p>
@@ -60,12 +51,8 @@
               {{ current.wallet }}
             </p>
           </div>
-          <button
-            aria-label="Copy deposit address"
-            @click="copyToClipboard"
-            class="text-gray-400 hover:text-gray-600 ml-2"
-            type="button"
-          >
+          <button aria-label="Copy deposit address" @click="copyToClipboard"
+            class="text-gray-400 hover:text-gray-600 ml-2" type="button">
             <Icon icon="tabler:copy" class="w-5 h-5" />
           </button>
         </div>
@@ -92,11 +79,8 @@
 
     <!-- Footer -->
     <footer class="w-full mb-20">
-      <button
-        type="button"
-        @click="copyToClipboard"
-        class="w-full bg-teal-400 active:bg-teal-500 text-white text-lg py-3 rounded-lg font-light transition-colors"
-      >
+      <button type="button" @click="copyToClipboard"
+        class="w-full bg-teal-400 active:bg-teal-500 text-white text-lg py-3 rounded-lg font-light transition-colors">
         Save and Share Address
       </button>
     </footer>
