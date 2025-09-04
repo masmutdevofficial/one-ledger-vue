@@ -34,7 +34,7 @@
                   : 'text-gray-500',
             ]"
           >
-            PNL/ROI {{ signedFixed(calcPnl(r), 4) }} ({{ Number(r.take_profit) }}%)
+            PNL/ROI {{ signedFixed(calcPnl(r), 4) }}
           </span>
         </div>
       </div>
