@@ -14,11 +14,9 @@ onMounted(() => {
   }
 })
 
-const openLiveChat = () => {
+function openLiveChat() {
   const api = (window as any).LC_API
-  if (api && typeof api.open_chat_window === 'function') {
-    api.open_chat_window()
-  }
+  if (api?.maximize) api.maximize() // buka jendela chat
 }
 // Halaman publik
 const publicPages = [
@@ -369,9 +367,10 @@ onBeforeUnmount(() => {
 
         <!-- Support -->
         <!-- tetap mount widget tapi hidden -->
-        <LiveChatWidget :license="licenseId" style="display: none" />
+        <!-- Mount widget tapi sembunyikan launchernya -->
+        <LiveChatWidget :license="licenseId" visibility="hidden" />
 
-        <!-- tombol support -->
+        <!-- Tetap pakai RouterLink Anda -->
         <RouterLink
           to="#"
           aria-label="Support"
