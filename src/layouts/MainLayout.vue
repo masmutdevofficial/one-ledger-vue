@@ -2,21 +2,21 @@
 import { ref, onMounted, computed, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
-import { LiveChatWidget } from '@livechat/widget-vue'
+import { LiveChatWidget, useWidgetIsReady } from '@livechat/widget-vue'
 
-// LiveChat butuh license id Anda
 const licenseId = '19204571'
-
-onMounted(() => {
-  // pastikan API tersedia
-  if (typeof window !== 'undefined') {
-    ;(window as any).LC_API = (window as any).LC_API || {}
-  }
-})
+const isReady = useWidgetIsReady()
 
 function openLiveChat() {
-  const api = (window as any).LC_API
-  if (api?.maximize) api.maximize() // buka jendela chat
+  const lc = (window as any).LiveChatWidget
+  if (lc?.call) {
+    lc.call('maximize') // API baru
+  } else {
+    // fallback: tunggu sampai siap baru buka
+    ;(window as any).LiveChatWidget?.on?.('ready', () => {
+      ;(window as any).LiveChatWidget.call('maximize')
+    })
+  }
 }
 // Halaman publik
 const publicPages = [
@@ -368,9 +368,10 @@ onBeforeUnmount(() => {
         <!-- Support -->
         <!-- tetap mount widget tapi hidden -->
         <!-- Mount widget tapi sembunyikan launchernya -->
+        <!-- Widget di-mount tapi disembunyikan -->
         <LiveChatWidget :license="licenseId" visibility="hidden" />
 
-        <!-- Tetap pakai RouterLink Anda -->
+        <!-- Tombol/ikon Support kamu tetap sama -->
         <RouterLink
           to="#"
           aria-label="Support"
