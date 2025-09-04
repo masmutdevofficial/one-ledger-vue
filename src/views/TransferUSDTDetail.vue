@@ -1,5 +1,5 @@
 <template>
-  <div class="relative pt-4 px-4 flex flex-col">
+  <div class="relative pt-4 px-4 flex flex-col no-ios-zoom">
     <!-- Back arrow and title -->
     <div class="flex items-center mb-8 no-ios-zoom">
       <button

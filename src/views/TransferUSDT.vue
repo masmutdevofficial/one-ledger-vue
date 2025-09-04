@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-md mt-5 mx-4">
+  <div class="max-w-md mt-5 mx-4 no-ios-zoom">
     <h1 class="text-black text-lg font-normal mb-3">Send to OneLedger User</h1>
 
     <input
