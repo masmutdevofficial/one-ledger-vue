@@ -1,15 +1,15 @@
 <template>
   <div class="px-4 mb-20 relative">
-    <div class="flex flex-row justify-start items-center mb-4">
+    <div class="flex flex-row justify-between items-center mb-4">
+      <h2 class="font-semibold text-base select-none">Collective Copy Trade</h2>
       <button
         aria-label="Back"
         class="mr-2 inline-flex items-center text-black"
         type="button"
         @click="goBack"
       >
-        <Icon icon="tabler:arrow-left" class="w-6 h-6" />
+        <Icon icon="tabler:x" class="w-6 h-6" />
       </button>
-      <h2 class="font-semibold text-base select-none">Collective Copy Trade</h2>
     </div>
 
     <SliderCopyTrade />
@@ -65,7 +65,7 @@
       <li
         v-for="item in sortedTraders"
         :key="item.id"
-        class="flex flex-col space-y-2 border-b border-gray-100 pb-4"
+        class="flex flex-col space-y-2 border border-gray-200 rounded-lg p-4"
       >
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-2">
@@ -77,7 +77,7 @@
               width="32"
             />
             <div class="flex flex-col justify-start">
-              <div class="font-semibold text-sm flex items-center space-x-1 select-none">
+              <div class="font-semibold text-[12px] flex items-center space-x-1 select-none">
                 <span>{{ item.username }}</span>
                 <Icon
                   v-if="item.badge === 'crown'"
@@ -90,12 +90,12 @@
                   class="text-yellow-600 w-4 h-4"
                 />
               </div>
-              <div class="text-xs text-gray-400 flex items-center space-x-0.5 select-none">
+              <div class="text-[12px] text-gray-400 flex items-center space-x-0.5 select-none">
                 <Icon icon="tabler:users" class="w-3 h-3" />
-                <span
-                  ><b>{{ item.followerLabel1 }}</b
-                  >{{ item.followerLabel2 }}</span
-                >
+                <span>
+                  <b>{{ item.followerLabel1 }}</b
+                  >{{ item.followerLabel2 }}
+                </span>
                 <Icon v-if="item.showClock" icon="tabler:clock" class="w-3 h-3" />
               </div>
             </div>
@@ -103,7 +103,7 @@
 
           <button
             v-if="item.button === 'Join'"
-            class="bg-teal-300 text-white text-sm rounded-lg px-4 py-1 shadow-[0_0_8px_rgba(0,0,0,0.1)] select-none"
+            class="bg-teal-300 text-white text-[12px] rounded-lg px-4 py-1 shadow-[0_0_8px_rgba(0,0,0,0.1)] select-none"
             type="button"
             @click="join(item)"
           >
@@ -111,7 +111,7 @@
           </button>
           <button
             v-else
-            class="bg-red-100 text-red-600 text-sm rounded-lg px-4 py-1 select-none"
+            class="bg-red-100 text-red-600 text-[12px] rounded-lg px-4 py-1 select-none"
             type="button"
             disabled
           >
@@ -120,21 +120,21 @@
         </div>
 
         <!-- Label bar -->
-        <div class="flex justify-between text-xs text-gray-400 select-none">
+        <div class="flex justify-between text-[12px] text-gray-400 select-none">
           <span>{{ item.labelPnl }}</span>
           <span>{{ item.labelAum }}</span>
         </div>
 
         <div class="flex justify-between items-center">
-          <div :class="item.pnlClass + ' font-semibold text-lg select-none'">
+          <div :class="item.pnlClass + ' font-semibold text-[12px] select-none'">
             {{ item.pnl }}
           </div>
-          <div class="font-bold text-sm select-none">{{ item.aum }}</div>
+          <div class="font-bold text-[12px] select-none">{{ item.aum }}</div>
         </div>
 
         <div class="flex items-start space-x-3">
           <div class="flex-1">
-            <div class="flex items-start justify-between text-xs text-gray-400 select-none">
+            <div class="flex items-start justify-between text-[12px] text-gray-400 select-none">
               <div class="flex flex-col justify-start">
                 <span>{{ item.labelMdd }}</span>
                 <span
@@ -145,7 +145,7 @@
               </div>
               <div class="flex flex-col justify-center items-center">
                 <span>{{ item.labelRoi }}</span>
-                <div class="text-gray-900 font-semibold text-xs select-none">
+                <div class="text-gray-900 font-semibold text-[12px] select-none">
                   {{ item.roi }}
                 </div>
               </div>

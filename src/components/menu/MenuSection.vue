@@ -129,7 +129,7 @@ function onInstall() {
     </template>
 
     <!-- Language Selector (Slide Up) -->
-    <transition
+    <!-- <transition
       enter-active-class="transform transition duration-300 ease-out"
       enter-from-class="translate-y-full"
       enter-to-class="translate-y-0"
@@ -145,7 +145,7 @@ function onInstall() {
         @update="updateLanguage"
         class="fixed bottom-0 left-0 right-0 z-[100]"
       />
-    </transition>
+    </transition> -->
 
     <!-- Modal Confirm Logout -->
     <div

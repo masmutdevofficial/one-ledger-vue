@@ -351,7 +351,7 @@ async function confirm(): Promise<void> {
       router.push('/smart-arbitrage')
     })
   } catch {
-    modal.open('Error', 'Gagal membuat transaksi. Periksa saldo dan coba lagi.')
+    modal.open('Error', 'Insufficient balance. Please top up your account to continue.')
   }
 }
 
