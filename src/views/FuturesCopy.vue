@@ -8,60 +8,217 @@
         type="button"
         @click="goBack"
       >
-        <Icon icon="tabler:x" class="w-6 h-6" />
+        <Icon icon="tabler:x" class="w-4 h-4" />
       </button>
     </div>
 
-    <SliderCopyTrade />
+    <div class="flex flex-row justify-between items-center mb-4">
+      <div class="flex flex-col justify-start items-start">
+        <div class="text-sm font-semibold mb-4 select-none">Private</div>
 
-    <div class="text-sm font-semibold mb-4 select-none">Private</div>
+        <!-- Filter bar -->
+        <div class="flex items-center space-x-4 text-xs text-gray-400 select-none">
+          <div class="flex items-center">
+            <span>30D</span>
+          </div>
 
-    <!-- Filter bar -->
-    <div class="flex items-center space-x-4 text-xs text-gray-400 mb-4 select-none">
-      <div class="flex items-center">
-        <span>30D</span>
+          <!-- PnL filter -->
+          <div class="relative">
+            <button
+              type="button"
+              class="flex items-center space-x-1 cursor-pointer"
+              @click="togglePnlMenu"
+            >
+              <span>PnL</span>
+              <Icon icon="tabler:chevron-down" class="w-3 h-3" />
+            </button>
+
+            <div
+              v-if="showPnl"
+              class="absolute z-20 mt-2 bg-white border border-gray-200 rounded-lg p-3 shadow w-56"
+            >
+              <div class="text-[11px] text-gray-500 mb-2">Urutkan PnL</div>
+              <div class="space-y-2 text-sm">
+                <label class="flex items-center space-x-2">
+                  <input type="radio" value="DESC" v-model="pnlOrder" />
+                  <span>Terbanyak (highest first)</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                  <input type="radio" value="ASC" v-model="pnlOrder" />
+                  <span>Terkecil (lowest first)</span>
+                </label>
+              </div>
+              <div class="mt-3 flex items-center space-x-2">
+                <button type="button" class="text-xs px-2 py-1 border rounded" @click="applyPnl">
+                  Apply
+                </button>
+                <button type="button" class="text-xs px-2 py-1 border rounded" @click="closePnl">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+      <button
+        type="button"
+        class="border border-gray-400 bg-white text-gray-600 text-[12px] rounded-lg px-4 py-1 select-none active:bg-gray-200 transition-colors"
+        @click="openModalTerm"
+        aria-haspopup="dialog"
+        :aria-expanded="showModalTerm ? 'true' : 'false'"
+        aria-controls="modal-terms"
+      >
+        T & C
+      </button>
+    </div>
 
-      <!-- PnL filter -->
-      <div class="relative">
-        <button
-          type="button"
-          class="flex items-center space-x-1 cursor-pointer"
-          @click="togglePnlMenu"
-        >
-          <span>PnL</span>
-          <Icon icon="tabler:chevron-down" class="w-3 h-3" />
-        </button>
+    <!-- Modal -->
+    <div
+      v-if="showModalTerm"
+      id="modal-terms"
+      class="fixed inset-0 z-[51] flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+    >
+      <div class="absolute inset-0 bg-black/30" @click="closeModalTerm"></div>
+
+      <div class="relative z-10 w-full max-w-lg mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <h3 class="text-[12px] font-semibold">Terms &amp; Conditions</h3>
+          <button
+            type="button"
+            class="p-1 rounded hover:bg-gray-100"
+            @click="closeModalTerm"
+            aria-label="Close"
+          >
+            <Icon icon="tabler:x" class="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
 
         <div
-          v-if="showPnl"
-          class="absolute z-20 mt-2 bg-white border border-gray-200 rounded-lg p-3 shadow w-56"
+          ref="scrollArea"
+          class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700 space-y-4"
+          @scroll="onScroll"
         >
-          <div class="text-[11px] text-gray-500 mb-2">Urutkan PnL</div>
-          <div class="space-y-2 text-sm">
-            <label class="flex items-center space-x-2">
-              <input type="radio" value="DESC" v-model="pnlOrder" />
-              <span>Terbanyak (highest first)</span>
-            </label>
-            <label class="flex items-center space-x-2">
-              <input type="radio" value="ASC" v-model="pnlOrder" />
-              <span>Terkecil (lowest first)</span>
-            </label>
+          <!-- 1. Join the Pool -->
+          <div>
+            <h4 class="mt-1 font-semibold">1. Join the Pool</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                Each member who wishes to participate in the collective trading pool must deposit
+                funds according to the agreed amount.
+              </li>
+              <li>
+                Funds will be automatically secured in the smart contract for the duration of the
+                trading session.
+              </li>
+              <li>
+                All trading activities within the Pool are executed under the direction of the
+                Master Trader, with positions opened and closed on behalf of all members.
+              </li>
+              <li>By joining, you agree to follow the Pool rules.</li>
+            </ul>
           </div>
-          <div class="mt-3 flex items-center space-x-2">
-            <button type="button" class="text-xs px-2 py-1 border rounded" @click="applyPnl">
-              Apply
-            </button>
-            <button type="button" class="text-xs px-2 py-1 border rounded" @click="closePnl">
-              Close
-            </button>
+
+          <!-- 2. How Trading Works -->
+          <div>
+            <h4 class="mt-1 font-semibold">2. How Trading Works</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                Trading positions are opened and closed collectively according to the applied
+                strategy.
+              </li>
+              <li>During the session, members cannot close positions individually.</li>
+              <li>
+                All profit and loss calculations are performed automatically by the smart contract.
+              </li>
+              <li>
+                Followers can only participate in a maximum of 5 open positions at the same time.
+              </li>
+            </ul>
           </div>
+
+          <!-- 3. Profit Distribution -->
+          <div>
+            <h4 class="mt-1 font-semibold">3. Profit Distribution</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                Profits and losses are shared proportionally based on each member’s contribution.
+              </li>
+              <li>
+                Final results will be displayed on the dashboard and can be withdrawn once the
+                session is completed.
+              </li>
+              <li>
+                If service fees apply, they are not automatically deducted from profit. Members are
+                required to pay service fees manually as instructed by the Pool management.
+              </li>
+            </ul>
+          </div>
+
+          <!-- 4. Discipline Rules -->
+          <div>
+            <h4 class="mt-1 font-semibold">4. Discipline Rules</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                If a member fails to meet obligations (e.g., cancels participation, insufficient
+                balance, or attempts to withdraw funds early), their funds will remain locked until
+                the entire trading session ends.
+              </li>
+              <li>In such cases, the member cannot withdraw early.</li>
+              <li>
+                This rule ensures fairness, consistency, and avoids disruptions to the collective
+                session.
+              </li>
+            </ul>
+          </div>
+
+          <!-- 5. Things to Understand -->
+          <div>
+            <h4 class="mt-1 font-semibold">5. Things to Understand</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>Trading cryptocurrencies offers potential profit, but also involves risk.</li>
+              <li>
+                Profit is not guaranteed in every session as results depend on market conditions.
+              </li>
+              <li>By participating, members acknowledge and accept the risks involved.</li>
+            </ul>
+          </div>
+
+          <!-- 6. Smart Contract Transparency -->
+          <div>
+            <h4 class="mt-1 font-semibold">6. Smart Contract Transparency</h4>
+            <ul class="list-disc pl-5 space-y-1 mt-1">
+              <li>
+                All rules are coded into the smart contract, ensuring transparency and automation.
+              </li>
+              <li>No party can alter the final outcome once the session is in progress.</li>
+            </ul>
+          </div>
+
+          <div class="h-2"></div>
+        </div>
+
+        <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg font-medium text-[12px]"
+            :class="
+              readDone
+                ? 'bg-teal-600 text-white hover:bg-teal-700'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            "
+            :disabled="!readDone"
+            @click="acknowledge"
+          >
+            I understand
+          </button>
         </div>
       </div>
     </div>
 
     <!-- List items -->
-    <ul class="space-y-6">
+    <ul class="space-y-6 h-[540px] overflow-y-auto mb-10">
       <li
         v-for="item in sortedTraders"
         :key="item.id"
@@ -245,13 +402,38 @@
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
 import { ref, onMounted, computed, onUnmounted, nextTick } from 'vue'
-import SliderCopyTrade from '@/components/futures/SliderCopyTrade.vue'
 
 const router = useRouter()
 
 function goBack() {
   if (window.history.length > 1) router.back()
   else router.push('/copy')
+}
+
+const showModalTerm = ref(false)
+const readDone = ref(false)
+const scrollArea = ref<HTMLElement | null>(null)
+
+function openModalTerm() {
+  showModalTerm.value = true
+  readDone.value = false
+  nextTick(() => {
+    if (scrollArea.value) scrollArea.value.scrollTop = 0
+  })
+}
+
+function closeModalTerm() {
+  showModalTerm.value = false
+}
+
+function onScroll(e: Event) {
+  const el = e.target as HTMLElement
+  // tandai selesai baca jika sudah di bawah (toleransi 8px)
+  readDone.value = el.scrollTop + el.clientHeight >= el.scrollHeight - 8
+}
+
+function acknowledge() {
+  closeModalTerm()
 }
 
 /** ==== API Row ==== */

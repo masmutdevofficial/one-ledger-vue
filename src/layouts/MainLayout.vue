@@ -2,22 +2,7 @@
 import { ref, onMounted, computed, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
-import { LiveChatWidget, useWidgetIsReady } from '@livechat/widget-vue'
 
-const licenseId = '19204571'
-const isReady = useWidgetIsReady()
-
-function openLiveChat() {
-  const lc = (window as any).LiveChatWidget
-  if (lc?.call) {
-    lc.call('maximize') // API baru
-  } else {
-    // fallback: tunggu sampai siap baru buka
-    ;(window as any).LiveChatWidget?.on?.('ready', () => {
-      ;(window as any).LiveChatWidget.call('maximize')
-    })
-  }
-}
 // Halaman publik
 const publicPages = [
   '/',
@@ -369,17 +354,15 @@ onBeforeUnmount(() => {
         <!-- tetap mount widget tapi hidden -->
         <!-- Mount widget tapi sembunyikan launchernya -->
         <!-- Widget di-mount tapi disembunyikan -->
-        <LiveChatWidget :license="licenseId" visibility="hidden" />
-
-        <!-- Tombol/ikon Support kamu tetap sama -->
-        <RouterLink
-          to="#"
+        <a
+          href="https://tawk.to/chat/68b943c5971b36192093ca7a/1j49r1fhp"
+          target="_blank"
+          rel="noopener noreferrer"
           aria-label="Support"
           class="focus:outline-none"
-          @click.prevent="openLiveChat"
         >
           <img src="/img/newmenu/support.png" alt="Menu" class="w-7 h-7 object-contain" />
-        </RouterLink>
+        </a>
       </nav>
 
       <!-- Search Bar hanya di /dashboard -->
