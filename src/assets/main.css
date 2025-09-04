@@ -1,3 +1,15 @@
 @import 'tailwindcss';
 @import 'swiper/css';
 @import 'swiper/css/pagination';
+
+/* Matikan auto-zoom iOS: paksa input >=16px hanya di iOS Safari */
+@layer utilities {
+  @supports (-webkit-touch-callout: none) {
+    .no-ios-zoom input,
+    .no-ios-zoom select,
+    .no-ios-zoom textarea {
+      font-size: 16px; /* kunci agar tidak auto-zoom */
+      line-height: 1.25; /* rapatkan kalau perlu */
+    }
+  }
+}

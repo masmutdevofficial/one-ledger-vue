@@ -101,7 +101,7 @@
 
         <h2 class="font-semibold text-black text-base mb-4">Edit Profile</h2>
 
-        <form @submit.prevent="submitEdit" class="text-left">
+        <form @submit.prevent="submitEdit" class="text-left no-ios-zoom">
           <!-- Inisial -->
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">Inisial</label>
