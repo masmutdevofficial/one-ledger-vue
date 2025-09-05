@@ -4,6 +4,17 @@ import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useNotificationCounter } from '@/composables/useNotificationCounter'
 
+// state modal
+const showRestrict = ref(false)
+
+// handler klik futures: cegah navigasi + tampilkan notice
+function onClickFutures() {
+  showRestrict.value = true
+}
+function closeRestrict() {
+  showRestrict.value = false
+}
+
 const { notificationCount, notificationLabel, badgeClass, handleClickNotification } =
   useNotificationCounter()
 
@@ -408,10 +419,12 @@ onBeforeUnmount(() => {
                 <span class="text-xs mt-1">Trade</span>
               </RouterLink>
 
-              <RouterLink
-                to="/future"
+              <!-- FUTURES (blokir + notice) -->
+              <button
+                type="button"
                 class="flex flex-col items-center"
                 :class="isActive('/future') ? 'text-teal-600' : 'text-gray-400'"
+                @click="onClickFutures"
               >
                 <img
                   alt="Trade"
@@ -420,7 +433,50 @@ onBeforeUnmount(() => {
                   :style="isActive('/future') ? teal600Filter : null"
                 />
                 <span class="text-xs mt-1 text-center">Futures</span>
-              </RouterLink>
+              </button>
+
+              <!-- Notice di-teleport ke body -->
+              <teleport to="body">
+                <div
+                  v-if="showRestrict"
+                  class="fixed inset-0 z-[1000] flex items-center justify-center"
+                  role="dialog"
+                  aria-modal="true"
+                >
+                  <button
+                    type="button"
+                    class="absolute inset-0 bg-black/40"
+                    aria-label="Close"
+                    @click="closeRestrict"
+                  />
+                  <div class="relative mx-4 w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
+                    <div class="flex items-start gap-2">
+                      <div>
+                        <h3 class="font-semibold text-black mb-1">⚠️ Notice</h3>
+                        <p class="text-sm text-gray-700">
+                          Your account is still new.<br />
+                          The Futures Trading feature will be available once your account has been
+                          active for a longer period.
+                        </p>
+                        <p class="text-sm text-gray-500 mt-2">
+                          This is to ensure security and provide you with the best trading
+                          experience.<br />
+                          Thank you for your understanding.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                      <button
+                        type="button"
+                        class="px-3 py-1.5 rounded-md border border-gray-300 text-sm"
+                        @click="closeRestrict"
+                      >
+                        OK
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </teleport>
 
               <RouterLink
                 to="/assets"
