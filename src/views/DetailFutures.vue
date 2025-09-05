@@ -400,18 +400,42 @@ async function ensureAccess(slug: string): Promise<boolean> {
   return false
 }
 
+/* ===== helper: room closed ===== */
+const roomClosedWarned = ref(false)
+function maybeHandleRoomClosed(t?: Trader | null) {
+  const trg = t ?? trader.value
+  if (!trg) return
+  if (roomClosedWarned.value) return
+  const isFull =
+    typeof trg.copies_limit === 'number' &&
+    trg.copies_limit > 0 &&
+    typeof trg.copies_used === 'number' &&
+    trg.copies_used >= trg.copies_limit
+
+  if (isFull) {
+    roomClosedWarned.value = true
+    apiAlert.open('Room Closed', 'This room has reached maximum followers.', () => {
+      router.replace('/futures')
+    })
+  }
+}
+
 /* ===== Load Trader (initial) ===== */
 async function loadTrader(slug: string) {
   loading.value = true
   pageError.value = null
   trader.value = null
   avatarBroken.value = false
+  roomClosedWarned.value = false
   try {
     const ok = await ensureAccess(slug)
     if (!ok) return
 
     const { json } = await authFetch(`/data-lable-copy-trading/${encodeURIComponent(slug)}`)
-    trader.value = json() as Trader
+    const t = (json() as Trader) ?? null
+    trader.value = t
+    // cek room closed setelah load awal
+    maybeHandleRoomClosed(t)
   } catch (e: any) {
     if (String(e?.message || '').startsWith('HTTP 404')) {
       trader.value = null
@@ -710,6 +734,9 @@ async function pollTraderMinBuy() {
     const { json } = await authFetch(`/data-lable-copy-trading/${encodeURIComponent(slug)}`)
     const fresh = json() as Trader
 
+    // cek room closed pada data terbaru
+    maybeHandleRoomClosed(fresh)
+
     // hanya update field yang relevan agar tidak memicu re-render besar
     if (trader.value) {
       const changed =
@@ -736,8 +763,7 @@ async function pollTraderMinBuy() {
   } catch (e) {
     // diamkan error jaringan/timeouts
     if (!isIgnorableNetworkError(e)) {
-      // opsional: log ke alert jika mau
-      // alertError('Failed to refresh trader data')
+      // optional: alertError('Failed to refresh trader data')
     }
   } finally {
     traderPollBusy = false
