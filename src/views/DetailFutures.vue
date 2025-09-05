@@ -253,17 +253,17 @@ const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error',
 /* ===== Helpers API ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 
-// abortable fetch dengan timeout
+// abortable fetch dengan timeout sederhana
 function withTimeout<T>(p: Promise<T>, ms = 10000): Promise<T> {
-  const ctrl = new AbortController()
-  const t = setTimeout(() => ctrl.abort(), ms)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ;(p as any).signal = ctrl.signal
-  return new Promise((resolve, reject) => {
-    p.then((v) => resolve(v))
-      .catch(reject)
-      .finally(() => clearTimeout(t))
-  })
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) => {
+      const t = setTimeout(() => {
+        clearTimeout(t)
+        rej(new Error('timeout'))
+      }, ms)
+    }),
+  ])
 }
 
 async function authFetch(path: string, init: RequestInit = {}) {
@@ -276,8 +276,9 @@ async function authFetch(path: string, init: RequestInit = {}) {
     ...(init.headers || {}),
   }
 
-  const req = fetch(`${API_BASE}${path}`, { ...init, headers, cache: 'no-store' })
-  const res = await withTimeout(req)
+  const res = await withTimeout(
+    fetch(`${API_BASE}${path}`, { ...init, headers, cache: 'no-store' }),
+  )
   const text = await res.text()
   if (!res.ok) throw new Error(text.trim() || `HTTP ${res.status}`)
   return { text, json: () => JSON.parse(text) }
@@ -399,7 +400,7 @@ async function ensureAccess(slug: string): Promise<boolean> {
   return false
 }
 
-/* ===== Load Trader ===== */
+/* ===== Load Trader (initial) ===== */
 async function loadTrader(slug: string) {
   loading.value = true
   pageError.value = null
@@ -587,26 +588,30 @@ async function fetchPending(opts: { silent?: boolean } = {}) {
   const { silent = false } = opts
   try {
     const { json } = await authFetch('/win-lose/pending')
-    const payload = json() as { data: Array<any> }
-    const list: PendingTx[] = (payload.data || []).map((x) => ({
-      id: Number(x.id),
-      amount: Number(x.amount ?? 0),
-      tp: Number(x.take_profit ?? 0),
-      sl: Number(x.stop_loss ?? 0),
-      createdAtUtc: String(x.created_at_utc),
-      orderTimeMin: Number(x.order_time_min ?? 5),
-    }))
+    const payload = json() as { data: any[] }
+
+    const list: PendingTx[] = (payload.data || []).map((x): PendingTx => {
+      const id = Number(x.id)
+      const amount = Number(x.amount ?? 0)
+      const tp = Number(x.take_profit ?? 0)
+      const sl = Number(x.stop_loss ?? 0)
+      const createdAtUtc = String(x.created_at_utc ?? '')
+      const otRaw = Number(x.order_time_min)
+      const orderTimeMin = Number.isFinite(otRaw) && otRaw > 0 ? otRaw : 5
+
+      return { id, amount, tp, sl, createdAtUtc, orderTimeMin }
+    })
+
+    // sinkronkan PNL map
     const newIds = new Set(list.map((t) => t.id))
     for (const id of Array.from(pnlMap.keys())) {
       if (!newIds.has(id)) pnlMap.delete(id)
     }
     for (const t of list) if (!pnlMap.has(t.id)) pnlMap.set(t.id, 0)
+
     pendingList.value = list
   } catch (e: any) {
-    if (silent || isIgnorableNetworkError(e)) {
-      // diamkan error polling jaringan / SW
-      return
-    }
+    if (silent || isIgnorableNetworkError(e)) return
     alertError(e?.message ?? 'Failed to load pending list')
   }
 }
@@ -640,7 +645,6 @@ async function finalizeIfExpired() {
         const msg = String(e?.message || '')
         if (msg.includes('already processed')) continue
         if (msg.includes('Transaction not found')) continue
-        // swallow
       }
     }
   }
@@ -674,7 +678,7 @@ async function submitWinLose() {
       body: JSON.stringify({
         id_copy_traders: trader.value?.id,
         amount: amt,
-        take_profit: tp.value, // backend tetap pakai dari users profile
+        take_profit: tp.value,
         stop_loss: sl.value,
         order_time: orderTime,
       }),
@@ -687,6 +691,56 @@ async function submitWinLose() {
     alertError(e?.message ?? 'Submit failed')
   } finally {
     loadingSubmit.value = false
+  }
+}
+
+/* ===== Polling MIN BUY (dan beberapa field penting) per 5 detik ===== */
+const MINBUY_POLL_MS = 5000
+let traderPollHandle: number | undefined
+let traderPollBusy = false
+
+async function pollTraderMinBuy() {
+  if (traderPollBusy) return
+  const slug = trader.value?.slug
+  if (!slug) return
+  if (document.hidden) return
+
+  traderPollBusy = true
+  try {
+    const { json } = await authFetch(`/data-lable-copy-trading/${encodeURIComponent(slug)}`)
+    const fresh = json() as Trader
+
+    // hanya update field yang relevan agar tidak memicu re-render besar
+    if (trader.value) {
+      const changed =
+        trader.value.min_buy !== fresh.min_buy ||
+        trader.value.copies_used !== fresh.copies_used ||
+        trader.value.copies_limit !== fresh.copies_limit ||
+        trader.value.is_featured !== fresh.is_featured ||
+        trader.value.time_op !== fresh.time_op
+
+      if (changed) {
+        trader.value = {
+          ...trader.value,
+          min_buy: fresh.min_buy,
+          copies_used: fresh.copies_used,
+          copies_limit: fresh.copies_limit,
+          is_featured: fresh.is_featured,
+          time_op: fresh.time_op,
+          updated_at: fresh.updated_at ?? trader.value.updated_at,
+        }
+      }
+    } else {
+      trader.value = fresh
+    }
+  } catch (e) {
+    // diamkan error jaringan/timeouts
+    if (!isIgnorableNetworkError(e)) {
+      // opsional: log ke alert jika mau
+      // alertError('Failed to refresh trader data')
+    }
+  } finally {
+    traderPollBusy = false
   }
 }
 
@@ -717,7 +771,7 @@ onMounted(() => {
   fetchSaldo()
   fetchPending({ silent: false })
 
-  // polling pending + auto finalize client-side (jika belum ada scheduler server)
+  // polling pending + auto finalize client-side
   pollHandle = window.setInterval(async () => {
     if (pendingPollBusy) return
     pendingPollBusy = true
@@ -728,10 +782,16 @@ onMounted(() => {
       pendingPollBusy = false
     }
   }, 3000)
+
+  // polling trader.min_buy (dan field penting) tiap 5 detik
+  traderPollHandle = window.setInterval(() => {
+    void pollTraderMinBuy()
+  }, MINBUY_POLL_MS)
 })
 
 onUnmounted(() => {
   if (tickHandle) clearInterval(tickHandle)
   if (pollHandle) clearInterval(pollHandle)
+  if (traderPollHandle) clearInterval(traderPollHandle)
 })
 </script>

@@ -72,7 +72,7 @@
       </button>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal Terms -->
     <div
       v-if="showModalTerm"
       id="modal-terms"
@@ -405,11 +405,13 @@ import { ref, onMounted, computed, onUnmounted, nextTick } from 'vue'
 
 const router = useRouter()
 
+/** ==== NAV ==== */
 function goBack() {
   if (window.history.length > 1) router.back()
   else router.push('/copy')
 }
 
+/** ==== Terms Modal ==== */
 const showModalTerm = ref(false)
 const readDone = ref(false)
 const scrollArea = ref<HTMLElement | null>(null)
@@ -421,17 +423,13 @@ function openModalTerm() {
     if (scrollArea.value) scrollArea.value.scrollTop = 0
   })
 }
-
 function closeModalTerm() {
   showModalTerm.value = false
 }
-
 function onScroll(e: Event) {
   const el = e.target as HTMLElement
-  // tandai selesai baca jika sudah di bawah (toleransi 8px)
   readDone.value = el.scrollTop + el.clientHeight >= el.scrollHeight - 8
 }
-
 function acknowledge() {
   closeModalTerm()
 }
@@ -557,8 +555,16 @@ const sortedTraders = computed(() => {
   return arr
 })
 
-/** ==== Fetch data ==== */
-onMounted(async () => {
+/** ==== Polling Config ==== */
+const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const POLL_MS = 5000
+const hasPasswordBySlug = ref<Record<string, boolean>>({})
+let pollId: number | null = null
+let inFlightList: AbortController | null = null
+let inFlightPwd: AbortController | null = null
+
+/** ==== Fetch list (Join/Full, angka) ==== */
+async function fetchTradersList(): Promise<void> {
   try {
     const token = localStorage.getItem('token')
     if (!token || !token.trim()) {
@@ -566,15 +572,102 @@ onMounted(async () => {
       return
     }
 
-    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/data-lable-copy-trading', {
+    inFlightList?.abort()
+    inFlightList = new AbortController()
+
+    const res = await fetch(`${API_BASE}/api/data-lable-copy-trading`, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      signal: inFlightList.signal,
     })
     if (!res.ok) throw new Error(String(res.status))
     const data: ApiRow[] = await res.json()
-    copyTraders.value = Array.isArray(data) ? data.map(mapRow) : []
+    const mapped = Array.isArray(data) ? data.map(mapRow) : []
+    copyTraders.value = mapped
   } catch {
-    copyTraders.value = []
+    // diam
   }
+}
+
+/** ==== Fetch password-status per trader ==== */
+async function fetchPasswordStatuses(): Promise<void> {
+  const token = localStorage.getItem('token')?.trim() ?? ''
+  if (!token) return
+  if (copyTraders.value.length === 0) return
+
+  inFlightPwd?.abort()
+  inFlightPwd = new AbortController()
+
+  const nextMap: Record<string, boolean> = { ...hasPasswordBySlug.value }
+  for (const t of copyTraders.value) {
+    const slug = t.slug || slugify(t.username)
+    try {
+      const url = `${API_BASE}/api/copy-traders/${encodeURIComponent(slug)}/password-status`
+      const res = await fetch(url, {
+        headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+        signal: inFlightPwd.signal,
+      })
+      if (!res.ok) {
+        // 404 atau error lain -> anggap false (tidak perlu password)
+        nextMap[slug] = false
+      } else {
+        const { has_password } = (await res.json()) as { has_password: boolean }
+        nextMap[slug] = !!has_password
+      }
+
+      // Jika modal sedang terbuka untuk trader ini dan sekarang tidak perlu password -> auto masuk
+      if (modal.value.open && modal.value.trader) {
+        const curSlug = modal.value.trader.slug || slugify(modal.value.trader.username)
+        if (curSlug === slug && nextMap[slug] === false) {
+          closeModal()
+          sessionStorage.setItem(`copy_access:${slug}`, '')
+          openAlert('success', 'Access Granted. Sign In...')
+          router.push(`/futures/${slug}`)
+        }
+      }
+    } catch {
+      // diam; biarkan status sebelumnya
+    }
+  }
+  hasPasswordBySlug.value = nextMap
+}
+
+/** ==== Polling start/stop ==== */
+function startPolling(): void {
+  if (pollId !== null) return
+  // panggilan awal
+  void fetchTradersList().then(() => fetchPasswordStatuses())
+
+  pollId = window.setInterval(async () => {
+    if (document.hidden) return
+    await fetchTradersList()
+    await fetchPasswordStatuses()
+  }, POLL_MS) as unknown as number
+}
+
+function stopPolling(): void {
+  if (pollId !== null) {
+    clearInterval(pollId)
+    pollId = null
+  }
+  inFlightList?.abort()
+  inFlightPwd?.abort()
+}
+
+function onVisibility(): void {
+  if (document.hidden) stopPolling()
+  else startPolling()
+}
+
+/** ==== Lifecycle ==== */
+onMounted(() => {
+  startPolling()
+  document.addEventListener('visibilitychange', onVisibility, { passive: true })
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVisibility)
+  stopPolling()
+  closeAlert()
 })
 
 /** ==== ALERT lokal ==== */
@@ -599,10 +692,8 @@ function closeAlert() {
   }
   alert.value.open = false
 }
-onUnmounted(() => closeAlert())
 
 /** ==== Modal & Join Flow ==== */
-
 interface ModalState {
   open: boolean
   trader: CopyTrader | null
@@ -628,31 +719,39 @@ async function join(item: CopyTrader) {
 
     const slug = item.slug || slugify(item.username)
 
-    // Cek status password
-    const resStatus = await fetch(
-      `https://one-ledger.masmutpanel.my.id/api/copy-traders/${encodeURIComponent(slug)}/password-status`,
-      { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } },
-    )
-
-    if (resStatus.status === 404) {
-      openAlert('error', 'Copy trader not found.')
-      return
+    // pakai hasil polling bila tersedia; jika belum, fetch sekali
+    let needPwd = hasPasswordBySlug.value[slug]
+    if (typeof needPwd === 'undefined') {
+      try {
+        const resStatus = await fetch(
+          `${API_BASE}/api/copy-traders/${encodeURIComponent(slug)}/password-status`,
+          { headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } },
+        )
+        if (resStatus.status === 404) {
+          openAlert('error', 'Copy trader not found.')
+          return
+        }
+        if (!resStatus.ok) {
+          openAlert('error', `Error checking password status (${resStatus.status}).`)
+          return
+        }
+        const { has_password } = (await resStatus.json()) as { has_password: boolean }
+        needPwd = !!has_password
+        hasPasswordBySlug.value = { ...hasPasswordBySlug.value, [slug]: needPwd }
+      } catch {
+        openAlert('error', 'Error checking access.')
+        return
+      }
     }
-    if (!resStatus.ok) {
-      openAlert('error', `Error checking password status (${resStatus.status}).`)
-      return
-    }
 
-    const { has_password } = (await resStatus.json()) as { has_password: boolean }
-
-    if (!has_password) {
+    if (!needPwd) {
       sessionStorage.setItem(`copy_access:${slug}`, '')
       openAlert('success', 'Access Granted. Sign In...')
       router.push(`/futures/${slug}`)
       return
     }
 
-    // Ada password -> buka modal
+    // Perlu password -> buka modal
     modal.value.open = true
     modal.value.trader = item
     modal.value.password = ''
@@ -665,7 +764,6 @@ async function join(item: CopyTrader) {
 
 async function submitPassword() {
   if (!modal.value.trader) return
-  // simpan dulu target sebelum modal direset
   const t = modal.value.trader
   const slug = t.slug || slugify(t.username)
 
@@ -681,7 +779,7 @@ async function submitPassword() {
     }
 
     const res = await fetch(
-      `https://one-ledger.masmutpanel.my.id/api/copy-traders/${encodeURIComponent(slug)}/password-check`,
+      `${API_BASE}/api/copy-traders/${encodeURIComponent(slug)}/password-check`,
       {
         method: 'POST',
         headers: {
@@ -710,20 +808,17 @@ async function submitPassword() {
       | { status: 'error'; code: 'INVALID_PASSWORD'; bcrypt?: string }
 
     if (data.status === 'success') {
-      // simpan credential akses untuk halaman detail (opsional)
       sessionStorage.setItem(`copy_access:${slug}`, modal.value.password)
       if (data.bcrypt) sessionStorage.setItem(`copy_access_bcrypt:${slug}`, data.bcrypt)
 
-      closeModal() // aman dipanggil sekarang
+      closeModal()
       openAlert('success', 'Valid password. Sign In...')
-      // langsung ke detail pakai slug (tanpa mencari username)
       router.push(`/futures/${slug}`)
     } else {
       modal.value.error = 'Wrong Password.'
       openAlert('error', 'Wrong Password.')
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (e) {
+  } catch {
     openAlert('error', 'Error while checking password.')
   } finally {
     modal.value.loading = false
@@ -737,7 +832,7 @@ function closeModal() {
   modal.value.error = null
 }
 
-/** Escape untuk tutup modal */
+/** ==== Escape untuk tutup modal ==== */
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && modal.value.open) closeModal()
 }

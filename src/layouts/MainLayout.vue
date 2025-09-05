@@ -2,6 +2,10 @@
 import { ref, onMounted, computed, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { useNotificationCounter } from '@/composables/useNotificationCounter'
+
+const { notificationCount, notificationLabel, badgeClass, handleClickNotification } =
+  useNotificationCounter()
 
 // Halaman publik
 const publicPages = [
@@ -61,80 +65,6 @@ const hideBottomNav = computed(
 const teal600Filter = {
   filter:
     'brightness(0) saturate(100%) invert(33%) sepia(86%) saturate(373%) hue-rotate(130deg) brightness(92%) contrast(90%)',
-}
-// ---- Notification Badge
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
-function getToken(): string | null {
-  return localStorage.getItem('token')
-}
-
-const loading = ref(false)
-const notificationCount = ref<number>(0)
-
-const notificationLabel = computed(() =>
-  notificationCount.value > 99 ? '99+' : String(notificationCount.value),
-)
-
-const badgeClass = computed(() =>
-  notificationCount.value > 99 ? 'w-5 h-5 text-[10px]' : 'w-4 h-4 text-[8px]',
-)
-
-async function fetchNotificationCount(): Promise<void> {
-  const token = getToken()
-  if (!token) {
-    notificationCount.value = 0
-    return
-  }
-  try {
-    loading.value = true
-    const res = await fetch(`${API_BASE}/notifications/count`, {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      // credentials: 'include', // aktifkan hanya jika pakai cookie Sanctum
-    })
-    if (res.status === 401) {
-      localStorage.removeItem('token')
-      await router.replace({ path: '/login', query: { reason: 'unauthorized' } })
-      return
-    }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const data = (await res.json()) as { count?: number }
-    notificationCount.value = Number.isFinite(data.count as number) ? (data.count as number) : 0
-  } catch {
-    notificationCount.value = 0
-  } finally {
-    loading.value = false
-  }
-}
-
-async function markAllRead(): Promise<void> {
-  const token = getToken()
-  if (!token) return
-  try {
-    const res = await fetch(`${API_BASE}/notifications/read-all`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      // credentials: 'include',
-    })
-    if (res.status === 401) {
-      localStorage.removeItem('token')
-      await router.replace({ path: '/login', query: { reason: 'unauthorized' } })
-      return
-    }
-    notificationCount.value = 0
-  } catch {
-    // silent
-  }
-}
-
-async function handleClickNotification(): Promise<void> {
-  await markAllRead()
-  router.push('/notification')
 }
 
 type Quote = 'USDT'
@@ -288,9 +218,9 @@ function chooseCoin(coin: { symbol: string }) {
 }
 
 onMounted(() => {
-  fetchNotificationCount()
   window.addEventListener('focus', onFocus)
 })
+
 onBeforeUnmount(() => {
   window.removeEventListener('focus', onFocus)
 })
@@ -317,7 +247,6 @@ onBeforeUnmount(() => {
             @click.prevent="handleClickNotification"
           >
             <img src="/img/newmenu/notification.png" alt="Menu" class="w-7 h-7 object-contain" />
-
             <span
               v-if="notificationCount > 0"
               :class="[

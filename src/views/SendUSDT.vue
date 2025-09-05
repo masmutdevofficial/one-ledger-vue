@@ -133,15 +133,13 @@ const loading = ref(true)
 const modal = useApiAlertStore()
 
 const amount = ref<string>('')
-const address = ref<string>('') // <-- Tambah ini untuk v-model
+const address = ref<string>('') // v-model address
 const submitting = ref(false)
 
 const networks = [
   { label: 'Tron (TRC20)', value: 'trc20' },
   { label: 'Ethereum (ERC20)', value: 'erc20' },
   { label: 'BNB Smart Chain (BEP20)', value: 'bep20' },
-
-  // extra networks
   { label: 'Polygon (PoS)', value: 'polygon_pos' },
   { label: 'Solana (SOL)', value: 'sol' },
   { label: 'Avalanche (AVAX C-Chain)', value: 'avax' },
@@ -149,6 +147,9 @@ const networks = [
   { label: 'Aptos', value: 'aptos' },
 ]
 const selectedNetwork = ref(networks[0].value)
+
+const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const TOKEN = () => localStorage.getItem('token') || ''
 
 // Komputasi receive amount
 const receiveAmount = computed(() => {
@@ -159,20 +160,65 @@ const receiveAmount = computed(() => {
     : '0.00'
 })
 
+/** ====== Cek data akun ringkas (bank & norek) ====== */
+const accountCheckedOnce = ref(false)
+
+async function ensureAccountBankFilled(): Promise<boolean> {
+  const token = TOKEN()
+  if (!token) return true // biarkan alur login/guard lain yang menangani
+
+  try {
+    const res = await fetch(`${API_BASE}/api/data-account`, {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    })
+    if (!res.ok) return true // jangan blokir bila API error; bisa coba lagi saat submit
+
+    const data = (await res.json()) as {
+      bank?: string | null
+      norek?: string | null
+      [k: string]: unknown
+    }
+
+    const hasBank = !!(data.bank && String(data.bank).trim())
+    const hasNorek = !!(data.norek && String(data.norek).trim())
+
+    if (!hasBank || !hasNorek) {
+      // Tampilkan alert EN + redirect ke /account saat user menutup (OK)
+      modal.open(
+        'Alert !',
+        'Please complete your Bank Account and Account Number on the Account Info page.',
+        () => router.push('/account'),
+      )
+      return false
+    }
+    return true
+  } catch {
+    // diam: jangan blokir, biar user tetap bisa lanjut; guard kedua ada di submit
+    return true
+  } finally {
+    accountCheckedOnce.value = true
+  }
+}
+
 onMounted(async () => {
   loading.value = true
   try {
-    const token = localStorage.getItem('token')
+    const token = TOKEN()
     if (!token) {
       saldo.value = 0
       loading.value = false
       return
     }
-    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/get-saldo', {
+    const res = await fetch(`${API_BASE}/api/get-saldo`, {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
       },
+      cache: 'no-store',
     })
     const data = await res.json()
     if (res.ok && data.status === 'success') {
@@ -182,8 +228,12 @@ onMounted(async () => {
     }
   } catch {
     saldo.value = 0
+  } finally {
+    loading.value = false
   }
-  loading.value = false
+
+  // Cek akun (sekali saat halaman dibuka)
+  await ensureAccountBankFilled()
 })
 
 // Fungsi Max
@@ -198,9 +248,14 @@ function setMax() {
 // Fungsi submit withdraw
 async function submitWithdraw() {
   if (submitting.value) return
+
+  // Guard: pastikan bank & norek terisi (cek lagi saat submit)
+  const okAccount = await ensureAccountBankFilled()
+  if (!okAccount) return
+
   // Validasi address
   if (!address.value.trim()) {
-    modal.open('Error', `Recipient address required`)
+    modal.open('Error', 'Recipient address required')
     return
   }
 
@@ -223,14 +278,14 @@ async function submitWithdraw() {
 
   submitting.value = true
   try {
-    const token = localStorage.getItem('token')
+    const token = TOKEN()
     if (!token) {
       modal.open('Error', 'Token not found')
       submitting.value = false
       return
     }
 
-    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/save-withdraw', {
+    const res = await fetch(`${API_BASE}/api/save-withdraw`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -241,13 +296,11 @@ async function submitWithdraw() {
         network: selectedNetwork.value,
         network_address: address.value.trim(),
         jumlah: sendAmount,
-        // Tambah payment_method/dsb kalau memang perlu, kalau tidak ya sudah
       }),
     })
     const data = await res.json()
     if (res.ok && data.status === 'success') {
       modal.open('Success', 'Withdraw request submitted')
-      // reset form / redirect
       amount.value = ''
       address.value = ''
       router.back()

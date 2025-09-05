@@ -27,14 +27,24 @@
 
         <div class="flex items-baseline justify-between">
           <div class="flex items-center space-x-2">
-            <input v-model.number="amountUsdt" type="number" step="0.01" min="0" inputmode="decimal" placeholder="100"
+            <input
+              v-model.number="amountUsdt"
+              type="number"
+              step="0.01"
+              min="0"
+              inputmode="decimal"
+              placeholder="100"
               class="bg-transparent outline-none border-b border-gray-300 focus:border-teal-500 text-3xl font-extrabold leading-none w-36"
-              aria-label="Amount in USDT" />
+              aria-label="Amount in USDT"
+            />
             <span class="text-base font-semibold pt-1">USDT</span>
           </div>
 
-          <button type="button" class="text-yellow-500 font-semibold text-sm select-none hover:underline"
-            @click="onClickMax">
+          <button
+            type="button"
+            class="text-yellow-500 font-semibold text-sm select-none hover:underline"
+            @click="onClickMax"
+          >
             Max
           </button>
         </div>
@@ -77,9 +87,12 @@
         </ul>
       </section>
 
-      <button type="button"
+      <button
+        type="button"
         class="w-full mt-8 bg-teal-500 text-white text-base font-normal py-3 rounded-lg hover:bg-green-700 disabled:opacity-60"
-        :disabled="submitLoading || !amountUsdt || amountUsdt <= 0 || !idParam" @click="placeOrder">
+        :disabled="submitLoading || !amountUsdt || amountUsdt <= 0 || !idParam"
+        @click="placeOrder"
+      >
         <span v-if="submitLoading">Processing…</span>
         <span v-else>Place Sell Order</span>
       </button>
@@ -96,6 +109,9 @@ import { useApiAlertStore } from '@/stores/apiAlert'
 const router = useRouter()
 const route = useRoute()
 const modal = useApiAlertStore()
+
+const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const TOKEN = () => localStorage.getItem('token') || ''
 
 function goBack() {
   if (window.history.length > 1) router.back()
@@ -160,10 +176,10 @@ type SaldoRespError = { status: 'error'; message: string }
 type SaldoResponse = SaldoRespSuccess | SaldoRespError
 
 async function fetchSaldo(): Promise<number> {
-  const token = localStorage.getItem('token')
+  const token = TOKEN()
   if (!token) throw new Error('Unauthorized.')
 
-  const res = await fetch('https://one-ledger.masmutpanel.my.id/api/saldo', {
+  const res = await fetch(`${API_BASE}/api/saldo`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   })
 
@@ -186,9 +202,9 @@ async function fetchSaldo(): Promise<number> {
 }
 
 async function fetchOffer() {
-  const token = localStorage.getItem('token')
+  const token = TOKEN()
   if (!token) throw new Error('Unauthorized.')
-  const res = await fetch(`https://one-ledger.masmutpanel.my.id/api/p2p-offers/${idParam.value}`, {
+  const res = await fetch(`${API_BASE}/api/p2p-offers/${idParam.value}`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   })
   if (!res.ok) {
@@ -196,7 +212,7 @@ async function fetchOffer() {
     try {
       const j = await res.json()
       if (j?.message) msg = j.message
-    } catch { }
+    } catch {}
     throw new Error(msg)
   }
   offer.value = (await res.json()) as ApiRow
@@ -204,13 +220,11 @@ async function fetchOffer() {
 
 async function onClickMax() {
   try {
-    const saldo = await fetchSaldo() // Max = saldo user (diasumsikan dalam USDT)
+    const saldo = await fetchSaldo()
     let maxUsdt = saldo
 
-    // hormati ketersediaan advertiser
     maxUsdt = clampToAvailable(maxUsdt)
 
-    // jika ada rate valid, jangan melewati limit_max_fiat
     if (offer.value && offer.value.price_fiat > 0) {
       const byLimit = offer.value.limit_max_fiat / offer.value.price_fiat
       maxUsdt = Math.min(maxUsdt, byLimit)
@@ -220,6 +234,39 @@ async function onClickMax() {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error.'
     modal.open('Gagal mengambil saldo', msg)
+  }
+}
+
+/** ===== Cek data-account (bank & norek) ===== */
+async function ensureAccountBankFilled(): Promise<boolean> {
+  const token = TOKEN()
+  if (!token) return true
+
+  try {
+    const res = await fetch(`${API_BASE}/api/data-account`, {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    })
+    if (!res.ok) return true // jangan blokir kalau API error
+
+    const data = (await res.json()) as { bank?: string | null; norek?: string | null }
+    const hasBank = !!(data.bank && String(data.bank).trim())
+    const hasNorek = !!(data.norek && String(data.norek).trim())
+
+    if (!hasBank || !hasNorek) {
+      modal.open(
+        'Alert !',
+        'Please complete your Bank Account and Account Number on the Account Info page.',
+        () => router.push('/account'),
+      )
+      return false
+    }
+    return true
+  } catch {
+    return true
   }
 }
 
@@ -246,7 +293,11 @@ async function placeOrder() {
       throw new Error('Amount is required.')
     }
 
-    const token = localStorage.getItem('token')
+    // Guard: pastikan bank & norek terisi
+    const okAccount = await ensureAccountBankFilled()
+    if (!okAccount) return
+
+    const token = TOKEN()
     if (!token) throw new Error('Unauthorized.')
 
     if (!offer.value) {
@@ -262,7 +313,7 @@ async function placeOrder() {
 
     submitLoading.value = true
 
-    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/withdraws', {
+    const res = await fetch(`${API_BASE}/api/withdraws`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -276,7 +327,7 @@ async function placeOrder() {
       let payloadErr: unknown = null
       try {
         payloadErr = await res.json()
-      } catch { }
+      } catch {}
 
       const errObj = payloadErr as { message?: string; invoice?: string }
       const msg = (errObj?.message ?? '').trim()
@@ -313,6 +364,8 @@ onMounted(async () => {
   try {
     if (!idParam.value) throw new Error('Invalid or missing id.')
     await fetchOffer()
+    // Cek kelengkapan bank & norek saat buka halaman
+    await ensureAccountBankFilled()
   } catch (e) {
     errorMsg.value = e instanceof Error ? e.message : 'Unknown error.'
   } finally {

@@ -105,8 +105,6 @@ async function confirmUpload() {
 
     showUploadModal.value = false
     alert.open('Success', 'Proof uploaded successfully.')
-    // Jika mau, update state lokal:
-    // invoiceData.value = { ...(invoiceData.value as InvoiceData), bukti_url: data?.data?.bukti_url }
   } catch (err: any) {
     alert.open('Upload error', err?.message || 'Failed to upload file.')
   } finally {
@@ -241,7 +239,7 @@ function notifySellerClicked() {
   alert.open('Notified', 'Seller has been notified.')
 }
 
-// ====== Cek invoice ======
+// ====== Cek invoice (load awal) ======
 async function checkInvoice() {
   if (!invoiceId.value) {
     pageError.value = 'Invalid Invoice ID'
@@ -255,6 +253,7 @@ async function checkInvoice() {
       `${API_BASE}/api/cek-invoice?invoice=${encodeURIComponent(invoiceId.value)}`,
       {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+        cache: 'no-store',
       },
     )
     if (!res.ok) throw new Error('Invalid Invoice ID')
@@ -289,17 +288,144 @@ async function checkInvoice() {
   }
 }
 
+/* ====== Polling invoice fields (5s) ======
+   - refresh: status, account_number, account_name, account_bank, totalDibayar
+   - stop saat approved / tab hidden / unmount
+*/
+const INVOICE_POLL_MS = 5000
+let pollTimer: number | null = null
+let pollBusy = false
+let inFlightCtrl: AbortController | null = null
+
+async function pollInvoiceLight() {
+  if (!invoiceId.value) return
+  if (pollBusy) return
+  if (document.hidden) return
+
+  pollBusy = true
+  inFlightCtrl?.abort()
+  inFlightCtrl = new AbortController()
+
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('Unauthorized.')
+
+    const res = await fetch(
+      `${API_BASE}/api/cek-invoice?invoice=${encodeURIComponent(invoiceId.value)}`,
+      {
+        headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+        signal: inFlightCtrl.signal,
+      },
+    )
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+
+    const data = (await res.json()) as Partial<InvoiceData> & { status?: number }
+
+    // update status
+    const newStatus = typeof data?.status === 'number' ? data.status! : null
+    const wasApproved = invoiceApproved.value
+    invoiceStatus.value = newStatus
+
+    // update fields yang ditampilkan (hanya jika berubah)
+    if (invoiceData.value) {
+      const next: InvoiceData = {
+        ...invoiceData.value,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        account_name: (data as any)?.account_name ?? invoiceData.value.account_name,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        account_number: (data as any)?.account_number ?? invoiceData.value.account_number,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        account_bank: (data as any)?.account_bank ?? invoiceData.value.account_bank,
+        totalDibayar:
+          typeof data.totalDibayar === 'number'
+            ? Number(data.totalDibayar)
+            : invoiceData.value.totalDibayar,
+        status: typeof data.status === 'number' ? Number(data.status) : invoiceData.value.status,
+      }
+
+      // assign hanya jika ada perubahan supaya re-render hemat
+      const changed =
+        next.account_name !== invoiceData.value.account_name ||
+        next.account_number !== invoiceData.value.account_number ||
+        next.account_bank !== invoiceData.value.account_bank ||
+        next.totalDibayar !== invoiceData.value.totalDibayar ||
+        next.status !== invoiceData.value.status
+
+      if (changed) invoiceData.value = next
+    } else {
+      // jika sebelumnya null (kasus edge), isi minimal
+      invoiceData.value = {
+        id: Number(data.id ?? 0),
+        order_id: String(data.order_id ?? ''),
+        invoice: String(data.invoice ?? ''),
+        keterangan: String(data.keterangan ?? ''),
+        jumlah: Number(data.jumlah ?? 0),
+        status: Number(data.status ?? 0),
+        created_at: String(data.created_at ?? ''),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        advertiser_name: (data as any)?.advertiser_name ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        account_name: (data as any)?.account_name ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        account_number: (data as any)?.account_number ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        account_bank: (data as any)?.account_bank ?? null,
+        totalDibayar: Number(data.totalDibayar ?? 0),
+      }
+    }
+
+    // jika baru jadi approved, hentikan timer & polling
+    if (!wasApproved && invoiceApproved.value) {
+      clearTimer()
+      stopInvoicePolling()
+    }
+  } catch {
+    // diamkan error polling
+  } finally {
+    pollBusy = false
+  }
+}
+
+function startInvoicePolling() {
+  if (pollTimer !== null) return
+  // trigger sekali di awal
+  void pollInvoiceLight()
+  pollTimer = window.setInterval(() => {
+    void pollInvoiceLight()
+  }, INVOICE_POLL_MS) as unknown as number
+}
+function stopInvoicePolling() {
+  if (pollTimer !== null) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+  inFlightCtrl?.abort()
+}
+
 // ====== Lifecycle ======
 onMounted(async () => {
   await checkInvoice()
+
   if (invoiceValid.value && invoiceId.value && !invoiceApproved.value) {
     startTime = getStartTime(invoiceId.value)
     updateRemaining()
     timer = window.setInterval(updateRemaining, 1000)
+
+    // mulai polling ringan tiap 5 detik
+    startInvoicePolling()
   }
+
+  // hentikan polling saat tab tidak aktif; lanjut saat aktif lagi
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopInvoicePolling()
+    else if (invoiceValid.value && !invoiceApproved.value) startInvoicePolling()
+  })
 })
+
 onBeforeUnmount(() => {
   clearTimer()
+  stopInvoicePolling()
 })
 </script>
 
