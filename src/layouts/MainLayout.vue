@@ -7,12 +7,30 @@ import { useNotificationCounter } from '@/composables/useNotificationCounter'
 // state modal
 const showRestrict = ref(false)
 
-// handler klik futures: cegah navigasi + tampilkan notice
-function onClickFutures() {
-  showRestrict.value = true
+// TODO: ganti logika eligibility sesuai kebutuhan Anda
+function isEligibleForFutures(): boolean {
+  // misal cek umur akun / status KYC / flag backend dsb.
+  return false
 }
+
 function closeRestrict() {
   showRestrict.value = false
+}
+
+// handler klik futures: cegah navigasi + tampilkan notice
+async function onClickFutures(e: MouseEvent) {
+  e.preventDefault() // kita handle navigasinya manual
+
+  // 1) Navigasi ke halaman /future DULU
+  if (!isActive('/future')) {
+    await router.push('/future')
+  }
+
+  // 2) Setelah berada di halaman /future, cek eligibility.
+  //    Jika belum eligible => tampilkan notice.
+  if (!isEligibleForFutures()) {
+    showRestrict.value = true
+  }
 }
 
 const { notificationCount, notificationLabel, badgeClass, handleClickNotification } =
@@ -420,11 +438,11 @@ onBeforeUnmount(() => {
               </RouterLink>
 
               <!-- FUTURES (blokir + notice) -->
-              <button
-                type="button"
+              <RouterLink
+                to="/future"
                 class="flex flex-col items-center"
                 :class="isActive('/future') ? 'text-teal-600' : 'text-gray-400'"
-                @click="onClickFutures"
+                @click.prevent="onClickFutures"
               >
                 <img
                   alt="Trade"
@@ -433,7 +451,7 @@ onBeforeUnmount(() => {
                   :style="isActive('/future') ? teal600Filter : null"
                 />
                 <span class="text-xs mt-1 text-center">Futures</span>
-              </button>
+              </RouterLink>
 
               <!-- Notice di-teleport ke body -->
               <teleport to="body">
