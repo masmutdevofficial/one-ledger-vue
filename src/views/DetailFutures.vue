@@ -338,6 +338,7 @@ type Trader = {
   time_op?: number | null
   created_at?: string
   updated_at?: string
+  status?: 'draft' | 'published'
 }
 
 type PendingTx = {
@@ -433,16 +434,26 @@ async function loadTrader(slug: string) {
 
     const { json } = await authFetch(`/data-lable-copy-trading/${encodeURIComponent(slug)}`)
     const t = (json() as Trader) ?? null
+
+    // jika draft (jaga-jaga kalau backend suatu saat tak filter)
+    if (!t || t.status === 'draft') {
+      alertError('This copy trader is not available.')
+      router.replace('/futures')
+      return
+    }
+
     trader.value = t
-    // cek room closed setelah load awal
     maybeHandleRoomClosed(t)
   } catch (e: any) {
-    if (String(e?.message || '').startsWith('HTTP 404')) {
-      trader.value = null
-    } else {
-      pageError.value = e?.message ?? 'Failed to load data.'
-      trader.value = null
+    const msg = String(e?.message || '')
+    if (msg.startsWith('HTTP 404')) {
+      // slug ketemu tapi status bukan published (backend sudah filter) => redirect
+      alertError('This copy trader is not available.')
+      router.replace('/futures')
+      return
     }
+    pageError.value = msg || 'Failed to load data.'
+    trader.value = null
   } finally {
     loading.value = false
   }
@@ -734,10 +745,15 @@ async function pollTraderMinBuy() {
     const { json } = await authFetch(`/data-lable-copy-trading/${encodeURIComponent(slug)}`)
     const fresh = json() as Trader
 
-    // cek room closed pada data terbaru
+    // kalau server suatu saat kirim status selain published
+    if (fresh?.status && fresh.status !== 'published') {
+      alertError('This copy trader is not available.')
+      router.replace('/futures')
+      return
+    }
+
     maybeHandleRoomClosed(fresh)
 
-    // hanya update field yang relevan agar tidak memicu re-render besar
     if (trader.value) {
       const changed =
         trader.value.min_buy !== fresh.min_buy ||
@@ -760,8 +776,15 @@ async function pollTraderMinBuy() {
     } else {
       trader.value = fresh
     }
-  } catch (e) {
-    // diamkan error jaringan/timeouts
+  } catch (e: any) {
+    const msg = String(e?.message || '')
+    if (msg.startsWith('HTTP 404')) {
+      // status berubah jadi draft (endpoint Anda memang filter published)
+      alertError('This copy trader is not available.')
+      router.replace('/futures')
+      return
+    }
+    // error jaringan: diamkan
     if (!isIgnorableNetworkError(e)) {
       // optional: alertError('Failed to refresh trader data')
     }

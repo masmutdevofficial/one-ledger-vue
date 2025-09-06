@@ -457,6 +457,7 @@ type ApiRow = {
   mdd_30d_pct: number
   aum: number
   sharpe_ratio: number
+  status: 'draft' | 'published'
 }
 
 /** ==== UI type ==== */
@@ -585,7 +586,11 @@ async function fetchTradersList(): Promise<void> {
     })
     if (!res.ok) throw new Error(String(res.status))
     const data: ApiRow[] = await res.json()
-    const mapped = Array.isArray(data) ? data.map(mapRow) : []
+
+    // hanya tampilkan published
+    const mapped = Array.isArray(data)
+      ? data.filter((r) => (r.status ?? 'published') === 'published').map(mapRow)
+      : []
     copyTraders.value = mapped
   } catch {
     // diam
