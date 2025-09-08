@@ -72,11 +72,11 @@
             <div class="flex-1">
               <div class="text-sm font-semibold text-black">Add to Home Screen (iOS)</div>
               <div class="text-xs text-gray-500 mt-1">
-                1) Tap
+                1) Tap the
                 <span class="inline-flex items-center align-middle">
-                  <Icon icon="tabler:share" class="w-4 h-4" />
+                  <Icon icon="tabler:share-2" class="w-4 h-4" />
                 </span>
-                (Share) → 2) Pilih <b>Add to Home Screen</b>.
+                then select <b>Add to Home Screen</b>.
               </div>
               <div class="mt-3 flex gap-2">
                 <button
