@@ -70,9 +70,9 @@
           <div class="flex items-start gap-3 p-4">
             <Icon icon="tabler:device-mobile" class="w-5 h-5" />
             <div class="flex-1">
-              <div class="text-sm font-semibold text-black">Add to Home Screen (iOS)</div>
+              <div class="text-sm font-semibold text-black">Add to Home Screen</div>
               <div class="text-xs text-gray-500 mt-1">
-                1) Tap the
+                Tap the
                 <span class="inline-flex items-center align-middle">
                   <Icon icon="tabler:share-2" class="w-4 h-4" />
                 </span>
