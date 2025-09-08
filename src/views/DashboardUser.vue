@@ -70,7 +70,7 @@
           <div class="flex items-start gap-3 p-4">
             <Icon icon="tabler:device-mobile" class="w-5 h-5" />
             <div class="flex-1">
-              <div class="text-sm font-semibold text-black">Add to Home Screen</div>
+              <div class="text-sm font-semibold text-black">Install This App</div>
               <div class="text-xs text-gray-500 mt-1">
                 Tap the
                 <span class="inline-flex items-center align-middle">
@@ -78,6 +78,7 @@
                 </span>
                 then select <b>Add to Home Screen</b>.
               </div>
+              <div class="text-xs text-gray-500 mt-1">Faster access & offline support</div>
               <div class="mt-3 flex gap-2">
                 <button
                   type="button"
