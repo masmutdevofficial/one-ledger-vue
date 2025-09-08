@@ -243,8 +243,12 @@
       aria-modal="true"
       role="dialog"
     >
+      <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/30" @click="closeModalTerm"></div>
+
+      <!-- Panel -->
       <div class="relative z-10 w-full max-w-lg mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
+        <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 class="text-[12px] font-semibold">Terms &amp; Conditions</h3>
           <button
@@ -257,22 +261,129 @@
           </button>
         </div>
 
+        <!-- Body -->
         <div
           ref="termsScrollArea"
           class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700"
           @scroll="onTermsScroll"
         >
-          <!-- ... Teks terms tetap sama ... -->
           <p class="font-semibold">Terms &amp; Conditions – Ledger Wallet Exchange</p>
           <p class="mt-2">
             Welcome to Ledger Wallet Exchange. By accessing, registering, or using our platform, you
             agree to comply with and be bound by these Terms &amp; Conditions (“Terms”). Please read
             them carefully before using our services.
           </p>
-          <!-- (potongan lain tidak diubah) -->
+
+          <h4 class="mt-3 font-semibold">1. Eligibility</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>You must be at least 18 years old (or the legal age in your jurisdiction).</li>
+            <li>
+              You must comply with all applicable laws and regulations in your country of residence.
+            </li>
+            <li>
+              By creating an account, you confirm that all information provided is accurate and
+              truthful.
+            </li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">2. Account Registration &amp; Security</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>
+              You are responsible for maintaining the confidentiality of your login credentials.
+            </li>
+            <li>You agree not to share your account with third parties.</li>
+            <li>Ledger Wallet Exchange will never ask for your password or private keys.</li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">3. KYC &amp; AML Compliance</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Users must complete identity verification (KYC) as required by our AML policy.</li>
+            <li>
+              We reserve the right to suspend or terminate accounts that fail verification or raise
+              compliance concerns.
+            </li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">4. Services Provided</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Buying, selling, and exchanging supported digital assets.</li>
+            <li>Secure wallet integration powered by Ledger technology.</li>
+            <li>Access to trading tools, market data, and APIs.</li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">5. Fees</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>
+              All applicable trading, deposit, and withdrawal fees are outlined in our Fee Structure
+              page.
+            </li>
+            <li>
+              Fees may change without prior notice but will always be visible before confirming a
+              transaction.
+            </li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">6. Risks Disclaimer</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Trading cryptocurrencies involves high risk and may result in loss of funds.</li>
+            <li>Prices are volatile and not guaranteed by Ledger Wallet Exchange.</li>
+            <li>You should not invest more than you can afford to lose.</li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">7. User Obligations</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>
+              You agree not to use our platform for illegal activities (fraud, money laundering,
+              terrorist financing, etc.).
+            </li>
+            <li>You are solely responsible for tax obligations in your jurisdiction.</li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">8. Security &amp; Wallet Responsibility</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Assets are secured using Ledger wallet technology and cold storage solutions.</li>
+            <li>
+              You remain responsible for safeguarding your wallet recovery phrase and private keys.
+            </li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">9. Suspension &amp; Termination</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>
+              We may suspend or terminate accounts for violating these Terms, legal requirements, or
+              security concerns.
+            </li>
+            <li>Users will be notified in case of termination, except where prohibited by law.</li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">10. Limitation of Liability</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>
+              Ledger Wallet Exchange is not liable for losses due to market volatility, system
+              downtime, or unauthorized access caused by user negligence.
+            </li>
+            <li>Services are provided “as is” without guarantees of uninterrupted availability.</li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">11. Amendments</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>We may update these Terms at any time.</li>
+            <li>
+              Continued use of the platform after updates constitutes acceptance of the revised
+              Terms.
+            </li>
+          </ul>
+
+          <h4 class="mt-3 font-semibold">12. Governing Law</h4>
+          <p>
+            These Terms are governed by the laws of the State of New York, United States. Any
+            disputes shall be resolved through arbitration or courts in that jurisdiction.
+          </p>
+
           <div class="h-2"></div>
         </div>
 
+        <!-- Footer -->
         <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
           <button
             type="button"
