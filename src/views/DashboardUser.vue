@@ -9,7 +9,7 @@
       leave-from-class="translate-y-0 opacity-100"
       leave-to-class="-translate-y-full opacity-0"
     >
-      <div v-if="showA2HSBanner" class="transform fixed top-0 left-0 right-0 z-[60]">
+      <div v-if="showA2HSBanner" class="transform fixed top-0 left-0 right-0 z-[200]">
         <div
           class="mx-auto mt-2 w-[92%] max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5"
         >
@@ -458,13 +458,34 @@ onMounted(() => {
   if (isBrowser()) a2hsDismissed.value = localStorage.getItem(A2HS_DISMISS_KEY) === '1'
 })
 
-const showA2HSBanner = computed(
+/** Eligibility murni */
+const eligibleA2HS = computed(
   () => canInstall.value && !isInstalled.value && !isIos && !isStandalone && !a2hsDismissed.value,
 )
+/** Visibility yang dikunci sampai user aksi */
+const showA2HSBanner = ref(false)
+function armA2HS() {
+  if (!eligibleA2HS.value) return
+  if (showA2HSBanner.value || a2hsDismissed.value) return
+  window.setTimeout(() => (showA2HSBanner.value = true), 250)
+}
+/** Nyala saat menjadi eligible (termasuk setelah login/redirect) */
+watch(
+  eligibleA2HS,
+  (ok) => {
+    if (ok) armA2HS()
+  },
+  { immediate: true },
+)
+/** Sembunyikan permanen jika sudah terpasang */
+watch(isInstalled, (v) => {
+  if (v) showA2HSBanner.value = false
+})
 
 function dismissA2HS() {
   a2hsDismissed.value = true
   if (isBrowser()) localStorage.setItem(A2HS_DISMISS_KEY, '1')
+  showA2HSBanner.value = false
 }
 function doInstall() {
   const ok = showInstallPrompt()
@@ -541,7 +562,7 @@ const isP2PItem = (item: MenuItem) => item.label?.toLowerCase() === 'p2p'
 
 const router = useRouter()
 
-/** ===== Cache Dashboard (dipertahankan dari kode Anda) ===== */
+/** ===== Cache Dashboard ===== */
 type PriceEntry = { p: number; ts: number }
 type OpenEntry = { o: number; ts: number }
 type PosMini = { symbol: string; qty: number; avgCost: number }
@@ -675,7 +696,7 @@ const marketData = ref<MarketItem[]>(
   displayedCoins.map((c) => ({ name: c, price: null, change: null, icon: iconPath(c) })),
 )
 
-/** ===== Helpers (tetap) ===== */
+/** ===== Helpers ===== */
 const nfIdCache = new Map<string, Intl.NumberFormat>()
 const nfId = (min: number, max: number) => {
   const key = `${min}-${max}`
