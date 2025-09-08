@@ -1,6 +1,6 @@
 <template>
   <div>
-    <!-- A2HS Slide-down Banner -->
+    <!-- A2HS (Non-iOS) Slide-down Banner -->
     <transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="-translate-y-full opacity-0"
@@ -9,7 +9,10 @@
       leave-from-class="translate-y-0 opacity-100"
       leave-to-class="-translate-y-full opacity-0"
     >
-      <div v-if="showA2HSBanner" class="transform fixed top-0 left-0 right-0 z-[200]">
+      <div
+        v-if="showA2HSBanner"
+        class="transform fixed top-0 left-0 right-0 z-[200] pt-[env(safe-area-inset-top)]"
+      >
         <div
           class="mx-auto mt-2 w-[92%] max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5"
         >
@@ -48,7 +51,57 @@
       </div>
     </transition>
 
-    <!-- Section: Total Value Summary -->
+    <!-- A2HS (iOS) Slide-down Banner: instruksi manual -->
+    <transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="-translate-y-full opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="-translate-y-full opacity-0"
+    >
+      <div
+        v-if="showIOSBanner"
+        class="transform fixed top-0 left-0 right-0 z-[200] pt-[env(safe-area-inset-top)]"
+      >
+        <div
+          class="mx-auto mt-2 w-[92%] max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5"
+        >
+          <div class="flex items-start gap-3 p-4">
+            <Icon icon="tabler:device-mobile" class="w-5 h-5" />
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-black">Add to Home Screen (iOS)</div>
+              <div class="text-xs text-gray-500 mt-1">
+                1) Tap
+                <span class="inline-flex items-center align-middle">
+                  <Icon icon="tabler:share" class="w-4 h-4" />
+                </span>
+                (Share) → 2) Pilih <b>Add to Home Screen</b>.
+              </div>
+              <div class="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  class="px-3 py-1.5 rounded-md bg-gray-200 text-gray-700 text-xs font-semibold"
+                  @click="dismissIOSA2HS"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="p-1 text-gray-400 hover:text-gray-600"
+              aria-label="Close"
+              @click="dismissIOSA2HS"
+            >
+              <Icon icon="tabler:x" class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- === DASHBOARD CONTENT (tetap) === -->
     <section class="bg-white mb-6 px-4 mt-2">
       <div class="flex flex-row justify-between items-center">
         <div class="flex flex-col">
@@ -121,19 +174,16 @@
     <!-- Section: Traders League and Market Table -->
     <section class="w-full bg-[#f0f7fc] rounded-2xl p-5 drop-shadow-md">
       <SliderDashboard />
-
       <div class="bg-white rounded-2xl p-5 space-y-6">
         <div class="flex space-x-6 text-[13px] font-semibold text-[#6b7280]">
           <button class="text-black font-bold">Crypto</button>
           <router-link to="/future"><button>Futures</button></router-link>
         </div>
-
         <div class="grid grid-cols-[1fr_1fr_1fr] text-[12px] text-[#9ca3af] font-normal">
           <div>Name</div>
           <div class="text-right">Last Price</div>
           <div class="text-right">24h chg%</div>
         </div>
-
         <div class="space-y-4">
           <RouterLink
             :to="`/trade?symbol=${item.name.toLowerCase()}usdt`"
@@ -184,7 +234,6 @@
             </div>
           </RouterLink>
         </div>
-
         <RouterLink
           to="/market"
           class="block text-center text-[12px] text-[#9ca3af] font-normal cursor-pointer select-none hover:underline"
@@ -200,7 +249,6 @@
       <div v-else-if="newsList.length === 0" class="text-center text-sm text-gray-500 py-10">
         No Data Available
       </div>
-
       <div
         v-else
         v-for="(news, index) in newsList"
@@ -420,53 +468,43 @@ const iconPath = (s: string) => `/img/crypto/${s.toLowerCase()}.svg`
 const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 const getToken = () => (isBrowser() ? localStorage.getItem('token') || '' : '')
 
-import { useA2HS } from '@/composables/useA2HS'
-
 /** ===== A2HS (Install PWA) ===== */
+import { useA2HS } from '@/composables/useA2HS'
 const { canInstall, isInstalled, showInstallPrompt } = useA2HS()
+
 const isIos = isBrowser() && /iphone|ipad|ipod/i.test(navigator.userAgent)
 const isStandalone =
   isBrowser() &&
   (window.matchMedia('(display-mode: standalone)').matches ||
     (navigator as any).standalone === true)
 
+/* ---- Non-iOS state ---- */
 const A2HS_DISMISS_KEY = 'a2hsDismissed:v1'
 const A2HS_LATCH_KEY = 'a2hsLatchSession:v1'
-
-/** baca dismissed & latch seawal mungkin (hindari kedip) */
 const a2hsDismissed = ref(false)
 const a2hsLatched = ref(false)
 if (isBrowser()) {
   a2hsDismissed.value = localStorage.getItem(A2HS_DISMISS_KEY) === '1'
   a2hsLatched.value = sessionStorage.getItem(A2HS_LATCH_KEY) === '1'
 }
-
-/** Eligibility murni (tidak memicu UI langsung) */
 const eligibleA2HS = computed(
-  () => canInstall.value && !isInstalled.value && !isIos && !isStandalone && !a2hsDismissed.value,
+  () => !isIos && canInstall.value && !isInstalled.value && !isStandalone && !a2hsDismissed.value,
 )
-/** Visibility yg dikunci */
 const showA2HSBanner = ref(false)
-
 function latchBanner() {
   a2hsLatched.value = true
   if (isBrowser()) sessionStorage.setItem(A2HS_LATCH_KEY, '1')
 }
-
-/** Arm saat eligible, hanya sekali per sesi. Tidak auto-close kalau eligibility berubah */
 watch(
   eligibleA2HS,
   (ok) => {
     if (ok && !a2hsLatched.value) {
       latchBanner()
-      // tampilkan setelah DOM stabil (hindari flash saat route baru mount)
       nextTick(() => (showA2HSBanner.value = true))
     }
   },
   { immediate: true },
 )
-
-/** Tutup hanya jika benar2 terpasang atau user dismiss */
 watch(isInstalled, (v) => {
   if (v) {
     showA2HSBanner.value = false
@@ -474,7 +512,6 @@ watch(isInstalled, (v) => {
     if (isBrowser()) localStorage.setItem(A2HS_DISMISS_KEY, '1')
   }
 })
-
 function dismissA2HS() {
   a2hsDismissed.value = true
   if (isBrowser()) localStorage.setItem(A2HS_DISMISS_KEY, '1')
@@ -485,12 +522,45 @@ function doInstall() {
   if (!ok) alert('Use the browser “Install app” option in the address bar/menu.')
 }
 
+/* ---- iOS state (instruksi manual) ---- */
+const IOS_DISMISS_KEY = 'a2hsIOSDismissed:v1'
+const IOS_LATCH_KEY = 'a2hsIOSLatchSession:v1'
+const iosDismissed = ref(false)
+const iosLatched = ref(false)
+if (isBrowser()) {
+  iosDismissed.value = localStorage.getItem(IOS_DISMISS_KEY) === '1'
+  iosLatched.value = sessionStorage.getItem(IOS_LATCH_KEY) === '1'
+}
+/** Eligible di iOS: tidak standalone, belum dismissed */
+const eligibleIOSA2HS = computed(
+  () => isIos && !isStandalone && !isInstalled.value && !iosDismissed.value,
+)
+const showIOSBanner = ref(false)
+function latchIOS() {
+  iosLatched.value = true
+  if (isBrowser()) sessionStorage.setItem(IOS_LATCH_KEY, '1')
+}
+watch(
+  eligibleIOSA2HS,
+  (ok) => {
+    if (ok && !iosLatched.value) {
+      latchIOS()
+      nextTick(() => (showIOSBanner.value = true))
+    }
+  },
+  { immediate: true },
+)
+function dismissIOSA2HS() {
+  iosDismissed.value = true
+  if (isBrowser()) localStorage.setItem(IOS_DISMISS_KEY, '1')
+  showIOSBanner.value = false
+}
+
 /** ===== Terms modal (Dashboard) ===== */
 const TERMS_KEY = 'termsLogin'
 const showModalTerm = ref(false)
 const termsReadDone = ref(false)
 const termsScrollArea = ref<HTMLDivElement | null>(null)
-
 function openModalTerm() {
   showModalTerm.value = true
   termsReadDone.value = false
@@ -509,8 +579,6 @@ function acknowledgeTerms() {
   localStorage.setItem(TERMS_KEY, 'true')
   closeModalTerm()
 }
-
-// === Terms gating ===
 try {
   const accepted = localStorage.getItem(TERMS_KEY) === 'true'
   if (!accepted) openModalTerm()
@@ -566,7 +634,6 @@ const OPEN_TTL = 60 * 60_000
 
 let dcache: DashCache = { prices: {}, dayOpen: {} }
 let saveTimer: ReturnType<typeof setTimeout> | null = null
-
 function loadDashCache() {
   if (!isBrowser()) return
   try {
@@ -641,7 +708,6 @@ const saldo = ref<number | null>(null)
 const totalValue = ref<number | null>(null)
 const portfolioUpnlAbs = ref<number>(0)
 const portfolioUpnlPct = ref<number>(0)
-
 const totalValueUsdtStr = computed(() =>
   isTotalHidden.value
     ? '••••'
