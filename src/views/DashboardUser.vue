@@ -1,5 +1,53 @@
 <template>
   <div>
+    <!-- A2HS Slide-down Banner -->
+    <transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="-translate-y-full opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="-translate-y-full opacity-0"
+    >
+      <div v-if="showA2HSBanner" class="transform fixed top-0 left-0 right-0 z-[60]">
+        <div
+          class="mx-auto mt-2 w-[92%] max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5"
+        >
+          <div class="flex items-start gap-3 p-4">
+            <Icon icon="tabler:download" class="w-5 h-5" />
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-black">Install this app</div>
+              <div class="text-xs text-gray-500">Faster access & offline support.</div>
+              <div class="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  class="px-3 py-1.5 rounded-md bg-teal-600 text-white text-xs font-semibold active:bg-teal-700"
+                  @click="doInstall"
+                >
+                  Install
+                </button>
+                <button
+                  type="button"
+                  class="px-3 py-1.5 rounded-md bg-gray-200 text-gray-700 text-xs font-semibold"
+                  @click="dismissA2HS"
+                >
+                  Later
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="p-1 text-gray-400 hover:text-gray-600"
+              aria-label="Close"
+              @click="dismissA2HS"
+            >
+              <Icon icon="tabler:x" class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Section: Total Value Summary -->
     <section class="bg-white mb-6 px-4 mt-2">
       <div class="flex flex-row justify-between items-center">
@@ -7,8 +55,13 @@
           <div class="flex items-center space-x-1 text-gray-700 text-sm font-normal mb-1">
             <span>Est. Total Value</span>
             <!-- EYE: toggle hide/show -->
-            <button type="button" class="inline-flex items-center" :aria-pressed="isTotalHidden ? 'true' : 'false'"
-              :title="isTotalHidden ? 'Show balance' : 'Hide balance'" @click="toggleTotalHidden">
+            <button
+              type="button"
+              class="inline-flex items-center"
+              :aria-pressed="isTotalHidden ? 'true' : 'false'"
+              :title="isTotalHidden ? 'Show balance' : 'Hide balance'"
+              @click="toggleTotalHidden"
+            >
               <Icon :icon="isTotalHidden ? 'tabler:eye-off' : 'tabler:eye'" class="w-4 h-4" />
             </button>
           </div>
@@ -22,30 +75,47 @@
           <div class="text-gray-400 text-sm mb-2">≈ ${{ totalValueUsdStr }}</div>
         </div>
 
-        <RouterLink to="/add-funds"
-          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-white rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-[100px] text-center">
+        <RouterLink
+          to="/add-funds"
+          class="bg-teal-500 flex justify-center items-center active:bg-teal-600 text-white rounded-md px-6 py-2 text-[10px] font-normal transition-colors w-[100px] text-center"
+        >
           Add Funds
         </RouterLink>
       </div>
       <div class="text-xs flex items-center text-black mb-4">
         Unrealized PnL
-        <span class="font-semibold ml-1" :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'">
+        <span
+          class="font-semibold ml-1"
+          :class="portfolioUpnlAbs >= 0 ? 'text-[#3ABBA3]' : 'text-red-500'"
+        >
           {{ signedMoneyId(portfolioUpnlAbs, 2) }}
           ({{ signedPercent(portfolioUpnlPct) }})
         </span>
         <Icon icon="tabler:chevron-right" class="ml-1 text-gray-400 w-4 h-4" />
       </div>
       <div class="grid grid-cols-4 gap-x-6 gap-y-6 mt-5">
-        <RouterLink v-for="item in items" :key="item.to" :to="item.to" class="group flex flex-col items-center"
-          :aria-label="item.label" @click.prevent="onMenuClick(item)">
+        <RouterLink
+          v-for="item in items"
+          :key="item.to"
+          :to="item.to"
+          class="group flex flex-col items-center"
+          :aria-label="item.label"
+          @click.prevent="onMenuClick(item)"
+        >
           <div
-            class="relative w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shadow-sm ring-1 ring-gray-200/60 hover:ring-gray-300 transition group-active:scale-95">
+            class="relative w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shadow-sm ring-1 ring-gray-200/60 hover:ring-gray-300 transition group-active:scale-95"
+          >
             <!-- notif pusher merah untuk menu Event -->
-            <span v-if="isEventItem(item) && hasEventNotif"
+            <span
+              v-if="isEventItem(item) && hasEventNotif"
               class="absolute -top-1 -right-1 inline-flex w-3 h-3 rounded-full bg-red-500/70 ring-2 ring-white badge-pulse"
-              aria-hidden="true" />
-            <img :src="item.img" :alt="item.label"
-              :class="['object-contain', isP2PItem(item) ? 'w-5 h-5' : 'w-7 h-7']" />
+              aria-hidden="true"
+            />
+            <img
+              :src="item.img"
+              :alt="item.label"
+              :class="['object-contain', isP2PItem(item) ? 'w-5 h-5' : 'w-7 h-7']"
+            />
           </div>
           <span class="mt-2 text-xs text-gray-700 text-center font-semibold">{{ item.label }}</span>
         </RouterLink>
@@ -75,12 +145,21 @@
         </div>
 
         <div class="space-y-4">
-          <RouterLink :to="`/trade?symbol=${item.name.toLowerCase()}usdt`"
+          <RouterLink
+            :to="`/trade?symbol=${item.name.toLowerCase()}usdt`"
             class="grid grid-cols-[1fr_1fr_1fr] items-center hover:bg-gray-50 transition-colors duration-150 rounded-lg px-2 py-1"
-            v-for="item in filteredMarketData" :key="item.name">
+            v-for="item in filteredMarketData"
+            :key="item.name"
+          >
             <div class="flex items-center space-x-1 font-semibold text-[14px] text-black">
-              <img :src="item.icon" :alt="item.name + ' icon'" class="w-3.5 h-3.5" width="14" height="14"
-                @error="item.icon = ICON_FALLBACK" />
+              <img
+                :src="item.icon"
+                :alt="item.name + ' icon'"
+                class="w-3.5 h-3.5"
+                width="14"
+                height="14"
+                @error="item.icon = ICON_FALLBACK"
+              />
               <span>{{ item.name }}</span>
             </div>
             <div class="text-right">
@@ -92,28 +171,35 @@
               </div>
             </div>
             <div class="text-right">
-              <button :class="[
-                'text-white text-[12px] font-semibold rounded-md px-3 py-1 ml-auto inline-block',
-                item.change === null
-                  ? 'bg-slate-500'
-                  : item.change > 0
-                    ? 'bg-green-500'
-                    : item.change < 0
-                      ? 'bg-red-500'
-                      : 'bg-slate-500',
-              ]">
+              <button
+                :class="[
+                  'text-white text-[12px] font-semibold rounded-md px-3 py-1 ml-auto inline-block',
+                  item.change === null
+                    ? 'bg-slate-500'
+                    : item.change > 0
+                      ? 'bg-green-500'
+                      : item.change < 0
+                        ? 'bg-red-500'
+                        : 'bg-slate-500',
+                ]"
+              >
                 {{
                   item.change === null
                     ? '...'
-                    : (item.change > 0 ? '+' : item.change < 0 ? '-' : '') + Math.abs(item.change).toFixed(2) + '%' }}
-                  </button>
+                    : (item.change > 0 ? '+' : item.change < 0 ? '-' : '') +
+                      Math.abs(item.change).toFixed(2) +
+                      '%'
+                }}
+              </button>
             </div>
           </RouterLink>
         </div>
 
         <!-- View More -->
-        <RouterLink to="/market"
-          class="block text-center text-[12px] text-[#9ca3af] font-normal cursor-pointer select-none hover:underline">
+        <RouterLink
+          to="/market"
+          class="block text-center text-[12px] text-[#9ca3af] font-normal cursor-pointer select-none hover:underline"
+        >
           View more
         </RouterLink>
       </div>
@@ -127,8 +213,12 @@
         No Data Available
       </div>
 
-      <div v-else v-for="(news, index) in newsList" :key="index"
-        class="bg-white rounded-2xl p-5 flex flex-col space-y-3 hover:bg-gray-50 transition-colors duration-150">
+      <div
+        v-else
+        v-for="(news, index) in newsList"
+        :key="index"
+        class="bg-white rounded-2xl p-5 flex flex-col space-y-3 hover:bg-gray-50 transition-colors duration-150"
+      >
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-1 text-gray-900 font-semibold text-sm">
             <span class="text-[10px] leading-none">•</span>
@@ -142,8 +232,12 @@
         </div>
 
         <div class="flex items-start space-x-4">
-          <img v-if="news && news.image" :src="`https://one-ledger.masmutpanel.my.id${news.image}`" alt="News Image"
-            class="w-24 h-16 object-cover rounded-lg" />
+          <img
+            v-if="news && news.image"
+            :src="`https://one-ledger.masmutpanel.my.id${news.image}`"
+            alt="News Image"
+            class="w-24 h-16 object-cover rounded-lg"
+          />
           <div class="flex-1 space-y-1">
             <div class="font-extrabold text-black text-xs leading-[1.1]">
               {{ news.title }}
@@ -155,7 +249,10 @@
         </div>
 
         <div class="flex justify-end">
-          <RouterLink :to="`/news/${news.slug}`" class="text-[#3ABBA3] text-xs font-semibold hover:underline">
+          <RouterLink
+            :to="`/news/${news.slug}`"
+            class="text-[#3ABBA3] text-xs font-semibold hover:underline"
+          >
             Read more
           </RouterLink>
         </div>
@@ -163,8 +260,12 @@
     </section>
 
     <!-- Terms Modal -->
-    <div v-if="showModalTerm" class="fixed inset-0 z-51 flex items-center justify-center" aria-modal="true"
-      role="dialog">
+    <div
+      v-if="showModalTerm"
+      class="fixed inset-0 z-51 flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+    >
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-black/30" @click="closeModalTerm"></div>
 
@@ -173,15 +274,22 @@
         <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 class="text-[12px] font-semibold">Terms &amp; Conditions</h3>
-          <button type="button" class="p-1 rounded hover:bg-gray-100" @click="closeModalTerm" aria-label="Close">
+          <button
+            type="button"
+            class="p-1 rounded hover:bg-gray-100"
+            @click="closeModalTerm"
+            aria-label="Close"
+          >
             <Icon icon="tabler:x" class="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         <!-- Body -->
-        <div ref="termsScrollArea"
+        <div
+          ref="termsScrollArea"
           class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700"
-          @scroll="onTermsScroll">
+          @scroll="onTermsScroll"
+        >
           <p class="font-semibold">Terms &amp; Conditions – Ledger Wallet Exchange</p>
           <p class="mt-2">
             Welcome to Ledger Wallet Exchange. By accessing, registering, or using our platform, you
@@ -300,10 +408,17 @@
 
         <!-- Footer -->
         <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
-          <button type="button" class="px-4 py-2 rounded-lg font-medium text-[12px]" :class="termsReadDone
-              ? 'bg-teal-600 text-white hover:bg-teal-700'
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            " :disabled="!termsReadDone" @click="acknowledgeTerms">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg font-medium text-[12px]"
+            :class="
+              termsReadDone
+                ? 'bg-teal-600 text-white hover:bg-teal-700'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            "
+            :disabled="!termsReadDone"
+            @click="acknowledgeTerms"
+          >
             I understand
           </button>
         </div>
@@ -327,6 +442,36 @@ const ICON_FALLBACK = '/img/crypto/_default.svg'
 const iconPath = (s: string) => `/img/crypto/${s.toLowerCase()}.svg`
 const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 const getToken = () => (isBrowser() ? localStorage.getItem('token') || '' : '')
+
+import { useA2HS } from '@/composables/useA2HS'
+/** ===== A2HS (Install PWA) ===== */
+const { canInstall, isInstalled, showInstallPrompt } = useA2HS()
+const isIos = isBrowser() && /iphone|ipad|ipod/i.test(navigator.userAgent)
+const isStandalone =
+  isBrowser() &&
+  (window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as any).standalone === true)
+
+const A2HS_DISMISS_KEY = 'a2hsDismissed:v1'
+const a2hsDismissed = ref(false)
+onMounted(() => {
+  if (isBrowser()) a2hsDismissed.value = localStorage.getItem(A2HS_DISMISS_KEY) === '1'
+})
+
+const showA2HSBanner = computed(
+  () => canInstall.value && !isInstalled.value && !isIos && !isStandalone && !a2hsDismissed.value,
+)
+
+function dismissA2HS() {
+  a2hsDismissed.value = true
+  if (isBrowser()) localStorage.setItem(A2HS_DISMISS_KEY, '1')
+}
+function doInstall() {
+  const ok = showInstallPrompt()
+  if (!ok) {
+    alert('Use the browser “Install app” option in the address bar/menu.')
+  }
+}
 
 /** ===== Terms modal (Dashboard) ===== */
 const TERMS_KEY = 'termsLogin'
@@ -432,7 +577,7 @@ function saveDashCacheDebounced() {
   saveTimer = window.setTimeout(() => {
     try {
       localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache))
-    } catch { }
+    } catch {}
     saveTimer = null
   }, 250)
 }
@@ -445,11 +590,11 @@ function upsertPositionsCache(items: PosMini[]) {
   saveDashCacheDebounced()
 }
 function upsertPriceCache(symLower: string, price: number) {
-  ; (dcache.prices ||= {})[symLower] = { p: price, ts: Date.now() }
+  ;(dcache.prices ||= {})[symLower] = { p: price, ts: Date.now() }
   saveDashCacheDebounced()
 }
 function upsertOpenCache(symLower: string, open: number) {
-  ; (dcache.dayOpen ||= {})[symLower] = { o: open, ts: Date.now() }
+  ;(dcache.dayOpen ||= {})[symLower] = { o: open, ts: Date.now() }
   saveDashCacheDebounced()
 }
 
@@ -748,7 +893,7 @@ function wsSend(obj: any) {
   if (wsAgg && wsAgg.readyState === WebSocket.OPEN) {
     try {
       wsAgg.send(JSON.stringify(obj))
-    } catch { }
+    } catch {}
   }
 }
 function doSubscribe(symbolsLower: string[]) {
@@ -799,7 +944,7 @@ function connectAggregator() {
   if (wsAgg) {
     try {
       wsAgg.close()
-    } catch { }
+    } catch {}
   }
   wsAgg = new WebSocket(WS_BASE)
   wsAgg.onopen = () => {
@@ -814,7 +959,7 @@ function connectAggregator() {
   wsAgg.onerror = () => {
     try {
       wsAgg?.close()
-    } catch { }
+    } catch {}
   }
   wsAgg.onmessage = (e) => {
     try {
@@ -947,7 +1092,7 @@ onUnmounted(() => {
   if (wsAgg) {
     try {
       wsAgg.close()
-    } catch { }
+    } catch {}
     wsAgg = null
   }
   if (wsTimer) {
@@ -956,13 +1101,12 @@ onUnmounted(() => {
   }
   try {
     if (isBrowser()) localStorage.setItem(DASH_LS_KEY, JSON.stringify(dcache))
-  } catch { }
+  } catch {}
 })
 </script>
 
 <style scoped>
 @keyframes badge-pulse {
-
   0%,
   100% {
     transform: scale(1);

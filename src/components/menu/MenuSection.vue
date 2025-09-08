@@ -2,8 +2,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
-import LanguageSelector from '@/components/menu/LanguageSelector.vue'
-import { useA2HS } from '@/composables/useA2HS'
 
 interface MenuItem {
   title: string
@@ -16,7 +14,6 @@ const router = useRouter()
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 
 const showLanguageSelector = ref(false)
-const selectedLang = ref(localStorage.getItem('language') || 'en')
 const showLogoutModal = ref(false)
 
 const menuItems: MenuItem[] = [{ title: 'Logout', icon: '/img/newmenu/logout.png', isLogout: true }]
@@ -29,12 +26,6 @@ function handleMenuClick(item: MenuItem) {
   } else if (item.link) {
     router.push(item.link)
   }
-}
-
-function updateLanguage(lang: string) {
-  selectedLang.value = lang
-  localStorage.setItem('language', lang)
-  showLanguageSelector.value = false
 }
 
 const logout = async () => {
@@ -52,22 +43,6 @@ const logout = async () => {
     localStorage.removeItem('token')
     showLogoutModal.value = false
     router.replace('/login')
-  }
-}
-
-/* ===== PWA Install (A2HS) ===== */
-const { canInstall, isInstalled, showInstallPrompt } = useA2HS()
-const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
-const isStandalone =
-  window.matchMedia('(display-mode: standalone)').matches ||
-  // iOS legacy
-  (navigator as any).standalone === true
-
-function onInstall() {
-  const ok = showInstallPrompt()
-  if (!ok) {
-    // fallback sederhana (desktop): minta user pakai menu browser
-    alert('Use the browser “Install app” option in the address bar/menu.')
   }
 }
 </script>
@@ -108,20 +83,6 @@ function onInstall() {
           <span>{{ item.title }}</span>
         </div>
         <Icon v-if="item.title === 'Language'" icon="tabler:chevron-right" class="text-gray-400" />
-      </button>
-
-      <!-- PWA Install button (muncul hanya jika eligible, non-iOS, belum terpasang) -->
-      <button
-        v-if="item.title === 'Language' && canInstall && !isInstalled && !isIos"
-        :key="item.title + '-install'"
-        class="w-full flex items-center justify-between text-gray-600 text-sm"
-        @click="onInstall"
-      >
-        <div class="flex items-center space-x-3">
-          <Icon icon="tabler:download" class="w-6 h-6" />
-          <span>Install App</span>
-        </div>
-        <Icon icon="tabler:chevron-right" class="text-gray-400" />
       </button>
     </template>
 
