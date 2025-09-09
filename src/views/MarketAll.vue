@@ -1,6 +1,6 @@
 <template>
-  <main class="px-4 py-4 flex-grow mb-20">
-    <!-- Filter + Search -->
+  <main class="relative -top-6 px-4 py-4 flex-grow mb-20">
+    <!-- Filter -->
     <div class="mb-4">
       <div class="flex items-center gap-2 mb-3">
         <button
@@ -43,18 +43,8 @@
           All
         </button>
       </div>
-      <div class="relative">
-        <input
-          v-model.trim="searchQuery"
-          type="text"
-          placeholder="Cari koin... (mis. BTC, ETH)"
-          class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-        />
-        <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-          <Icon icon="tabler:search" class="w-4 h-4" />
-        </div>
-      </div>
     </div>
+
     <ul class="space-y-4">
       <RouterLink
         v-for="crypto in visibleList"
@@ -86,7 +76,6 @@
                 </span>
               </div>
               <div class="text-gray-400 text-xs mt-0.5 select-none">
-                <!-- volume -->
                 <span v-if="crypto.volume !== '-'">{{ crypto.volume }}</span>
                 <span v-else class="animate-pulse">...</span>
               </div>
@@ -118,9 +107,6 @@
         </li>
       </RouterLink>
     </ul>
-
-    <!-- loading indicator ketika load more -->
-    <div v-if="isLoadingMore" class="text-center py-3 text-gray-400 animate-pulse">loading...</div>
   </main>
 </template>
 
@@ -143,10 +129,9 @@ type CacheShape = Record<string, CachedItem>
 /** ==================== Const ==================== */
 const LS_KEY = 'cryptoSnapshot:v1'
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 menit; set 0 kalau tak mau TTL
-const PAGE_SIZE = 10
 const WS_BASE = 'wss://ledgersocketone.online'
 
-// Path icon dari /public (Vite serve di root). BASE_URL jaga-jaga kalau deploy di subpath.
+// Path icon dari /public (Vite serve di root).
 const BASE = import.meta.env.BASE_URL || '/'
 const ICON_FALLBACK = `${BASE}img/crypto/default.svg`
 
@@ -154,23 +139,16 @@ const ICON_FALLBACK = `${BASE}img/crypto/default.svg`
 function isBrowser() {
   return typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 }
-
 function toUpstreamId(symUI: string) {
-  const override: Record<string, string> = {
-    OP: 'opusdt',
-  }
+  const override: Record<string, string> = { OP: 'opusdt' }
   return override[symUI] ?? symUI.toLowerCase() + 'usdt'
 }
-
 function toUISymbol(fromUp: string) {
-  // btcusdt -> BTC
   return fromUp.replace(/usdt$/i, '').toUpperCase()
 }
-
 function iconPath(symbol: string) {
   return `${BASE}img/crypto/${symbol.toLowerCase()}.svg`
 }
-
 function onIconError(e: Event) {
   const el = e.target as HTMLImageElement | null
   if (el && el.src !== ICON_FALLBACK) el.src = ICON_FALLBACK
@@ -179,7 +157,6 @@ function onIconError(e: Event) {
 /** ==================== Cache (in-memory + localStorage) ==================== */
 let inMemCache: CacheShape = {}
 let saveTimer: ReturnType<typeof setTimeout> | undefined
-
 function saveCacheDebounced() {
   if (!isBrowser()) return
   if (saveTimer) clearTimeout(saveTimer)
@@ -189,7 +166,6 @@ function saveCacheDebounced() {
     } catch {}
   }, 400)
 }
-
 function loadCache(): CacheShape {
   if (!isBrowser()) return inMemCache
   try {
@@ -197,12 +173,10 @@ function loadCache(): CacheShape {
     if (!raw) return inMemCache
     const parsed = JSON.parse(raw) as CacheShape
     if (!parsed || typeof parsed !== 'object') return inMemCache
-
     if (!CACHE_TTL_MS) {
       inMemCache = parsed
       return inMemCache
     }
-
     const now = Date.now()
     const next: CacheShape = {}
     for (const [sym, c] of Object.entries(parsed)) {
@@ -215,7 +189,6 @@ function loadCache(): CacheShape {
   }
   return inMemCache
 }
-
 function setCache(symUI: string, patch: CachedItem) {
   const cur = inMemCache[symUI] || {}
   inMemCache[symUI] = { ...cur, ...patch, ts: Date.now() }
@@ -306,67 +279,27 @@ const cryptoList = ref<Crypto[]>([
   { symbol: 'NAKA', leverage: '5x', volume: '-', price: '-', change: 0 },
 ])
 
-// Filter & Search state
+// Filter (tanpa search)
 type FilterType = 'all' | 'gainers' | 'losers'
 const activeFilter = ref<FilterType>('all')
-const searchQuery = ref('')
 
-const visibleCount = ref(PAGE_SIZE)
+// Seluruh list terlihat (tanpa paging)
 const visibleList = ref<Crypto[]>([])
-const isLoadingMore = ref(false)
 
 const filteredCryptoList = computed(() => {
   let list = cryptoList.value
-  // Filter by gainers/losers
   if (activeFilter.value === 'gainers') {
     list = list.filter((r) => typeof r.change === 'number' && r.change > 0)
   } else if (activeFilter.value === 'losers') {
     list = list.filter((r) => typeof r.change === 'number' && r.change < 0)
   }
-  // Search by symbol
-  const q = searchQuery.value.trim().toUpperCase()
-  if (q) {
-    list = list.filter((r) => r.symbol.toUpperCase().includes(q))
-  }
   return list
 })
 
 function updateVisibleList() {
-  const base = filteredCryptoList.value
-  visibleList.value = base.slice(0, visibleCount.value)
-  scheduleResubscribe() // sinkronkan subscription saat halaman bertambah/terfilter
-}
-
-/** ==================== Prefill dari Cache ==================== */
-function applyCacheToList(cache: CacheShape) {
-  const now = Date.now()
-  if (!cryptoList.value.length) return
-  const next = cryptoList.value.slice()
-  for (const row of next) {
-    const c = cache[row.symbol]
-    if (!c) continue
-    if (CACHE_TTL_MS && c.ts && now - c.ts > CACHE_TTL_MS) continue
-    if (typeof c.price === 'number') row.price = c.price.toFixed(6)
-    if (typeof c.change === 'number') row.change = c.change
-    if (typeof c.volume === 'string') row.volume = c.volume
-  }
-  cryptoList.value = next
-  updateVisibleList()
-}
-
-/** ==================== Infinite Scroll ==================== */
-function onScroll() {
-  const bottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100
-  if (bottom && !isLoadingMore.value) {
-    if (visibleCount.value < filteredCryptoList.value.length) {
-      isLoadingMore.value = true
-      setTimeout(() => {
-        visibleCount.value += PAGE_SIZE
-        updateVisibleList()
-        isLoadingMore.value = false
-      }, 300)
-    }
-  }
+  // tampilkan semua tanpa slice
+  visibleList.value = filteredCryptoList.value
+  scheduleResubscribe()
 }
 
 function setFilter(val: FilterType) {
@@ -374,9 +307,8 @@ function setFilter(val: FilterType) {
   activeFilter.value = val
 }
 
-// Reset halaman saat filter/search berubah
-watch([activeFilter, searchQuery], () => {
-  visibleCount.value = PAGE_SIZE
+// reset tampilan saat filter berubah
+watch(activeFilter, () => {
   updateVisibleList()
 })
 
@@ -384,14 +316,12 @@ watch([activeFilter, searchQuery], () => {
 let ws: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
-// set simbol yang sedang disubscribe ke server (pakai upstream id: btcusdt, ethusdt, ...)
 let subscribed = new Set<string>()
 let resubTimer: ReturnType<typeof setTimeout> | null = null
 
 function currentVisibleUpstreamIds(): string[] {
   return Array.from(new Set(visibleList.value.map((r) => toUpstreamId(r.symbol))))
 }
-
 function wsSend(obj: unknown) {
   if (ws && ws.readyState === WebSocket.OPEN) {
     try {
@@ -399,7 +329,6 @@ function wsSend(obj: unknown) {
     } catch {}
   }
 }
-
 function doSubscribe(ids: string[]) {
   if (!ids.length) return
   wsSend({ type: 'subscribe', channels: ['ticker', 'kline'], symbols: ids, periods: ['1day'] })
@@ -412,22 +341,17 @@ function requestSnapshot(ids: string[]) {
   if (!ids.length) return
   wsSend({ type: 'snapshot', symbols: ids, periods: ['1day'] })
 }
-
 function scheduleResubscribe() {
   if (resubTimer) return
   resubTimer = setTimeout(() => {
     resubTimer = null
     if (!ws || ws.readyState !== WebSocket.OPEN) return
-
     const want = new Set(currentVisibleUpstreamIds())
     const curr = new Set(subscribed)
-
     const toSub: string[] = []
     const toUnsub: string[] = []
-
     for (const id of want) if (!curr.has(id)) toSub.push(id)
     for (const id of curr) if (!want.has(id)) toUnsub.push(id)
-
     if (toUnsub.length) {
       doUnsubscribe(toUnsub)
       for (const id of toUnsub) subscribed.delete(id)
@@ -451,26 +375,20 @@ type Tick = {
 }
 const tickQueue = new Map<string, Tick>()
 let flushTimer: ReturnType<typeof setTimeout> | null = null
-
 function enqueueTick(t: Tick) {
   tickQueue.set(t.symbol, { ...(tickQueue.get(t.symbol) || {}), ...t })
   if (flushTimer) return
   flushTimer = setTimeout(flushTicks, 100)
 }
-
 function flushTicks() {
   flushTimer = null
   if (!tickQueue.size) return
-
   const next = cryptoList.value.slice()
   const indexBySymbol = new Map(next.map((r, i) => [r.symbol, i]))
-
   for (const [, t] of tickQueue) {
     const idx = indexBySymbol.get(t.symbol)
     if (idx == null) continue
     const row = next[idx]
-
-    // price dari ticker.last atau kline.close
     const priceNum = Number.isFinite(t.last)
       ? t.last!
       : Number.isFinite(t.close)
@@ -481,21 +399,16 @@ function flushTicks() {
       if (row.price !== newText) row.price = newText
       setCache(t.symbol, { price: priceNum })
     }
-
-    // change harian dari kline 1day (open vs close)
     if (typeof t.changePct === 'number') {
       if (row.change !== t.changePct) row.change = t.changePct
       setCache(t.symbol, { change: row.change })
     }
-
-    // volume (ambil dari kline 1day.vol bila ada)
     if (typeof t.vol === 'number') {
       const volText = t.vol.toLocaleString('en-US', { maximumFractionDigits: 2 })
       if (row.volume !== volText) row.volume = volText
       setCache(t.symbol, { volume: row.volume })
     }
   }
-
   tickQueue.clear()
   cryptoList.value = next
   updateVisibleList()
@@ -508,12 +421,9 @@ function connectWS() {
     } catch {}
     ws = null
   }
-
   ws = new WebSocket(WS_BASE)
-
   ws.onopen = () => {
     subscribed = new Set()
-    // subscribe untuk simbol yang terlihat sekarang + snapshot awal
     const ids = currentVisibleUpstreamIds()
     if (ids.length) {
       doSubscribe(ids)
@@ -521,24 +431,19 @@ function connectWS() {
       for (const id of ids) subscribed.add(id)
     }
   }
-
   ws.onclose = () => {
     ws = null
     if (reconnectTimer) clearTimeout(reconnectTimer)
     reconnectTimer = setTimeout(connectWS, 2000)
   }
-
   ws.onerror = () => {
     try {
       ws?.close()
     } catch {}
   }
-
   ws.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data as string)
-
-      // snapshot batched: { type: 'snapshot', items: [...] }
       if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
         for (const it of msg.items) {
           const ui = toUISymbol(String(it.symbol || ''))
@@ -561,14 +466,11 @@ function connectWS() {
         }
         return
       }
-
-      // event individual
       if (msg.type === 'ticker') {
         const ui = toUISymbol(String(msg.symbol || ''))
         if (ui && typeof msg.last === 'number') enqueueTick({ symbol: ui, last: msg.last })
         return
       }
-
       if (msg.type === 'kline' && msg.period === '1day') {
         const ui = toUISymbol(String(msg.symbol || ''))
         if (!ui) return
@@ -584,7 +486,6 @@ function connectWS() {
         })
         return
       }
-      // depth diabaikan di komponen ini
     } catch (err) {
       console.error('WS parse error:', err)
     }
@@ -594,7 +495,6 @@ function connectWS() {
 function disconnectWS() {
   if (ws) {
     try {
-      // Unsubscribe semua sebelum tutup (opsional)
       const ids = Array.from(subscribed)
       if (ids.length) doUnsubscribe(ids)
       ws.close()
@@ -608,37 +508,22 @@ function disconnectWS() {
 function onVisibilityChange() {
   if (document.hidden) saveCacheDebounced()
 }
-
-// simpan handler supaya bisa dilepas
 let visHandler: (() => void) | null = null
 
 onMounted(() => {
-  // Hydrate dari cache sedini mungkin
   const cache = loadCache()
   if (Object.keys(cache).length) applyCacheToList(cache)
   else updateVisibleList()
 
-  // Prefill jika konten masih pendek
-  requestAnimationFrame(() => onScroll())
-
-  // Scroll listener (passive)
-  window.addEventListener('scroll', onScroll, { passive: true })
-
-  // Connect WS
   connectWS()
 
-  // Visibility
   if (isBrowser()) {
     visHandler = onVisibilityChange
     document.addEventListener('visibilitychange', visHandler, { passive: true })
   }
 })
 
-// resubscribe saat jumlah visible berubah
-watch(visibleCount, () => updateVisibleList())
-
 onUnmounted(() => {
-  window.removeEventListener('scroll', onScroll)
   if (visHandler) {
     document.removeEventListener('visibilitychange', visHandler)
     visHandler = null
@@ -648,4 +533,21 @@ onUnmounted(() => {
     if (isBrowser()) localStorage.setItem(LS_KEY, JSON.stringify(inMemCache))
   } catch {}
 })
+
+/** ==================== Prefill dari Cache ==================== */
+function applyCacheToList(cache: CacheShape) {
+  const now = Date.now()
+  if (!cryptoList.value.length) return
+  const next = cryptoList.value.slice()
+  for (const row of next) {
+    const c = cache[row.symbol]
+    if (!c) continue
+    if (CACHE_TTL_MS && c.ts && now - c.ts > CACHE_TTL_MS) continue
+    if (typeof c.price === 'number') row.price = c.price.toFixed(6)
+    if (typeof c.change === 'number') row.change = c.change
+    if (typeof c.volume === 'string') row.volume = c.volume
+  }
+  cryptoList.value = next
+  updateVisibleList()
+}
 </script>

@@ -324,7 +324,7 @@ onBeforeUnmount(() => {
       </nav>
 
       <!-- Search Bar hanya di /dashboard -->
-      <div v-if="$route.path === '/dashboard'">
+      <div v-if="$route.path === '/dashboard' || $route.path === '/market'">
         <div class="w-full px-4 pb-4 mt-3">
           <div class="relative w-full no-ios-zoom">
             <input
