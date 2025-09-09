@@ -1,5 +1,60 @@
 <template>
   <main class="px-4 py-4 flex-grow mb-20">
+    <!-- Filter + Search -->
+    <div class="mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <button
+          type="button"
+          class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border transition-colors"
+          :class="
+            activeFilter === 'gainers'
+              ? 'bg-green-50 border-green-400 text-green-700'
+              : 'bg-white border-gray-200 text-gray-700'
+          "
+          @click="setFilter('gainers')"
+        >
+          <Icon icon="tabler:trending-up" class="w-4 h-4" />
+          Gainers
+        </button>
+        <button
+          type="button"
+          class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border transition-colors"
+          :class="
+            activeFilter === 'losers'
+              ? 'bg-red-50 border-red-400 text-red-700'
+              : 'bg-white border-gray-200 text-gray-700'
+          "
+          @click="setFilter('losers')"
+        >
+          <Icon icon="tabler:trending-down" class="w-4 h-4" />
+          Losers
+        </button>
+        <button
+          type="button"
+          class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border transition-colors ml-auto"
+          :class="
+            activeFilter === 'all'
+              ? 'bg-gray-50 border-gray-300 text-gray-800'
+              : 'bg-white border-gray-200 text-gray-700'
+          "
+          @click="setFilter('all')"
+        >
+          <Icon icon="tabler:list" class="w-4 h-4" />
+          All
+        </button>
+      </div>
+      <div class="relative">
+        <input
+          v-model.trim="searchQuery"
+          type="text"
+          placeholder="Cari koin... (mis. BTC, ETH)"
+          class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+        />
+        <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+          <Icon icon="tabler:search" class="w-4 h-4" />
+        </div>
+      </div>
+    </div>
     <ul class="space-y-4">
       <RouterLink
         v-for="crypto in visibleList"
@@ -70,7 +125,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { Icon } from '@iconify/vue'
 
 /** ==================== Types ==================== */
 interface Crypto {
@@ -128,7 +184,9 @@ function saveCacheDebounced() {
   if (!isBrowser()) return
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(inMemCache)) } catch {}
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(inMemCache))
+    } catch {}
   }, 400)
 }
 
@@ -248,13 +306,35 @@ const cryptoList = ref<Crypto[]>([
   { symbol: 'NAKA', leverage: '5x', volume: '-', price: '-', change: 0 },
 ])
 
+// Filter & Search state
+type FilterType = 'all' | 'gainers' | 'losers'
+const activeFilter = ref<FilterType>('all')
+const searchQuery = ref('')
+
 const visibleCount = ref(PAGE_SIZE)
 const visibleList = ref<Crypto[]>([])
 const isLoadingMore = ref(false)
 
+const filteredCryptoList = computed(() => {
+  let list = cryptoList.value
+  // Filter by gainers/losers
+  if (activeFilter.value === 'gainers') {
+    list = list.filter((r) => typeof r.change === 'number' && r.change > 0)
+  } else if (activeFilter.value === 'losers') {
+    list = list.filter((r) => typeof r.change === 'number' && r.change < 0)
+  }
+  // Search by symbol
+  const q = searchQuery.value.trim().toUpperCase()
+  if (q) {
+    list = list.filter((r) => r.symbol.toUpperCase().includes(q))
+  }
+  return list
+})
+
 function updateVisibleList() {
-  visibleList.value = cryptoList.value.slice(0, visibleCount.value)
-  scheduleResubscribe() // sinkronkan subscription saat halaman bertambah
+  const base = filteredCryptoList.value
+  visibleList.value = base.slice(0, visibleCount.value)
+  scheduleResubscribe() // sinkronkan subscription saat halaman bertambah/terfilter
 }
 
 /** ==================== Prefill dari Cache ==================== */
@@ -278,7 +358,7 @@ function applyCacheToList(cache: CacheShape) {
 function onScroll() {
   const bottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100
   if (bottom && !isLoadingMore.value) {
-    if (visibleCount.value < cryptoList.value.length) {
+    if (visibleCount.value < filteredCryptoList.value.length) {
       isLoadingMore.value = true
       setTimeout(() => {
         visibleCount.value += PAGE_SIZE
@@ -289,6 +369,17 @@ function onScroll() {
   }
 }
 
+function setFilter(val: FilterType) {
+  if (activeFilter.value === val) return
+  activeFilter.value = val
+}
+
+// Reset halaman saat filter/search berubah
+watch([activeFilter, searchQuery], () => {
+  visibleCount.value = PAGE_SIZE
+  updateVisibleList()
+})
+
 /** ==================== WebSocket (subscribe + snapshot + batching) ==================== */
 let ws: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -298,12 +389,14 @@ let subscribed = new Set<string>()
 let resubTimer: ReturnType<typeof setTimeout> | null = null
 
 function currentVisibleUpstreamIds(): string[] {
-  return Array.from(new Set(visibleList.value.map(r => toUpstreamId(r.symbol))))
+  return Array.from(new Set(visibleList.value.map((r) => toUpstreamId(r.symbol))))
 }
 
 function wsSend(obj: unknown) {
   if (ws && ws.readyState === WebSocket.OPEN) {
-    try { ws.send(JSON.stringify(obj)) } catch {}
+    try {
+      ws.send(JSON.stringify(obj))
+    } catch {}
   }
 }
 
@@ -348,7 +441,14 @@ function scheduleResubscribe() {
 }
 
 // ---- batching render ----
-type Tick = { symbol: string; last?: number; open?: number; close?: number; vol?: number; changePct?: number }
+type Tick = {
+  symbol: string
+  last?: number
+  open?: number
+  close?: number
+  vol?: number
+  changePct?: number
+}
 const tickQueue = new Map<string, Tick>()
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -371,7 +471,11 @@ function flushTicks() {
     const row = next[idx]
 
     // price dari ticker.last atau kline.close
-    const priceNum = Number.isFinite(t.last) ? t.last! : (Number.isFinite(t.close) ? t.close! : undefined)
+    const priceNum = Number.isFinite(t.last)
+      ? t.last!
+      : Number.isFinite(t.close)
+        ? t.close!
+        : undefined
     if (typeof priceNum === 'number') {
       const newText = priceNum.toFixed(6)
       if (row.price !== newText) row.price = newText
@@ -399,7 +503,9 @@ function flushTicks() {
 
 function connectWS() {
   if (ws) {
-    try { ws.close() } catch {}
+    try {
+      ws.close()
+    } catch {}
     ws = null
   }
 
@@ -423,7 +529,9 @@ function connectWS() {
   }
 
   ws.onerror = () => {
-    try { ws?.close() } catch {}
+    try {
+      ws?.close()
+    } catch {}
   }
 
   ws.onmessage = (event) => {
@@ -441,7 +549,8 @@ function connectWS() {
             const open = Number(it.open)
             const close = Number(it.close)
             const vol = Number(it.vol)
-            const changePct = Number.isFinite(open) && open !== 0 ? ((close - open) / open) * 100 : 0
+            const changePct =
+              Number.isFinite(open) && open !== 0 ? ((close - open) / open) * 100 : 0
             enqueueTick({
               symbol: ui,
               close: Number.isFinite(close) ? close : undefined,
