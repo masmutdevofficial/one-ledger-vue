@@ -1,51 +1,59 @@
 <template>
   <main class="relative -top-6 px-4 py-4 flex-grow mb-20">
     <!-- Filter -->
-    <div class="mb-4">
-      <div class="flex items-center gap-2 mb-3">
-        <button
-          type="button"
-          class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border transition-colors"
-          :class="
-            activeFilter === 'gainers'
-              ? 'bg-green-50 border-green-400 text-green-700'
-              : 'bg-white border-gray-200 text-gray-700'
-          "
-          @click="setFilter('gainers')"
-        >
-          <Icon icon="tabler:trending-up" class="w-4 h-4" />
-          Gainers
-        </button>
-        <button
-          type="button"
-          class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border transition-colors"
-          :class="
-            activeFilter === 'losers'
-              ? 'bg-red-50 border-red-400 text-red-700'
-              : 'bg-white border-gray-200 text-gray-700'
-          "
-          @click="setFilter('losers')"
-        >
-          <Icon icon="tabler:trending-down" class="w-4 h-4" />
-          Losers
-        </button>
-        <button
-          type="button"
-          class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border transition-colors ml-auto"
-          :class="
-            activeFilter === 'all'
-              ? 'bg-gray-50 border-gray-300 text-gray-800'
-              : 'bg-white border-gray-200 text-gray-700'
-          "
-          @click="setFilter('all')"
-        >
-          <Icon icon="tabler:list" class="w-4 h-4" />
-          All
-        </button>
-      </div>
-    </div>
+    <teleport to="body">
+      <div class="fixed top-30 left-1/2 -translate-x-1/2 z-50 w-full max-w-md bg-white">
+        <div class="w-full px-4 py-2 pt-[env(safe-area-inset-top)]">
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border transition-colors"
+                :class="
+                  activeFilter === 'gainers'
+                    ? 'bg-green-50 border-green-400 text-green-700'
+                    : 'bg-white border-gray-200 text-gray-700'
+                "
+                @click="setFilter('gainers')"
+              >
+                <Icon icon="tabler:trending-up" class="w-4 h-4" />
+                Gainers
+              </button>
 
-    <ul class="space-y-4">
+              <button
+                type="button"
+                class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border transition-colors"
+                :class="
+                  activeFilter === 'losers'
+                    ? 'bg-red-50 border-red-400 text-red-700'
+                    : 'bg-white border-gray-200 text-gray-700'
+                "
+                @click="setFilter('losers')"
+              >
+                <Icon icon="tabler:trending-down" class="w-4 h-4" />
+                Losers
+              </button>
+
+              <button
+                type="button"
+                class="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border transition-colors ml-auto"
+                :class="
+                  activeFilter === 'all'
+                    ? 'bg-gray-50 border-gray-300 text-gray-800'
+                    : 'bg-white border-gray-200 text-gray-700'
+                "
+                @click="setFilter('all')"
+              >
+                <Icon icon="tabler:list" class="w-4 h-4" />
+                All
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
+    <ul class="space-y-4 mt-10">
       <RouterLink
         v-for="crypto in visibleList"
         :key="crypto.symbol"

@@ -324,8 +324,13 @@ onBeforeUnmount(() => {
       </nav>
 
       <!-- Search Bar hanya di /dashboard -->
-      <div v-if="$route.path === '/dashboard' || $route.path === '/market'">
-        <div class="w-full px-4 pb-4 mt-3">
+      <div
+        v-if="$route.path === '/dashboard' || $route.path === '/market'"
+        :class="
+          $route.path === '/market' ? 'sticky top-15 z-40 bg-white border-b border-gray-200' : ''
+        "
+      >
+        <div :class="['w-full px-4 pb-4', $route.path === '/market' ? 'pt-3' : 'mt-3']">
           <div class="relative w-full no-ios-zoom">
             <input
               v-model="searchQuery"

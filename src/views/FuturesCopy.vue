@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 mb-20 relative">
+  <div class="px-4 relative">
     <div class="flex flex-row justify-between items-center mb-4">
       <h2 class="font-semibold text-base select-none">Collective Copy Trade</h2>
       <button
@@ -222,7 +222,7 @@
     </div>
 
     <!-- List items -->
-    <ul class="space-y-6 h-[540px] overflow-y-auto mb-10">
+    <ul class="space-y-6 h-screen overflow-y-auto mb-20">
       <li
         v-for="item in sortedTraders"
         :key="item.id"
