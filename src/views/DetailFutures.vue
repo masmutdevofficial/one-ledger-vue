@@ -59,7 +59,7 @@
 
       <small v-show="!!amountError" class="block text-red-500 text-xs mb-2">{{
         amountError
-      }}</small>
+        }}</small>
 
       <!-- Available (left)  |  Min Buy (right) -->
       <div class="flex justify-between items-center text-[10px] text-gray-400 mb-5">
@@ -81,10 +81,10 @@
       <!-- Pair selector (UI only) -->
       <div class="grid grid-cols-1 gap-4 mb-4">
         <div>
-          <div class="relative no-ios-zoom">
+          <div class="relative no-ios-zoom text-[12px] text-[#a6a6a6]">
             <select id="pair" v-model="selectedPair"
-              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none">
-              <option disabled value="">Choose One</option>
+              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-[12px] font-semibold text-[#a6a6a6] focus:outline-none">
+              <option disabled value="">BTC/USDT</option>
               <option v-for="p in availablePairs" :key="p" :value="p">{{ p }}</option>
             </select>
           </div>
@@ -130,21 +130,23 @@
               <!-- Sell / Short -->
               <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50" type="button"
                 :style="{ backgroundColor: '#ff3131' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
-                @click="goHistory">
+                @click="selectSide('SELL')">
                 Sell / Short
               </button>
 
               <!-- Buy / Long -->
               <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50" type="button"
                 :style="{ backgroundColor: '#1ca69d' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
-                @click="goHistory">
+                @click="selectSide('BUY')">
                 Buy / Long
               </button>
+
             </div>
 
             <!-- Open Position -->
             <button class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
-              type="button" :disabled="loadingSubmit || atCapacity || !hasPairSelected" @click="submitWinLose">
+              type="button" :disabled="loadingSubmit || atCapacity || !hasPairSelected || !selectedSide"
+              @click="submitWinLose">
               {{
                 loadingSubmit
                   ? 'Processing…'
@@ -153,6 +155,7 @@
                     : 'Open Position'
               }}
             </button>
+
           </div>
         </div>
 
@@ -189,7 +192,7 @@
                 <span class="text-gray-400">SL</span>
                 <span class="font-semibold">{{
                   Number.isFinite(tx.sl) ? Math.round(tx.sl) + '%' : '—'
-                }}</span>
+                  }}</span>
               </div>
               <div class="flex flex-col">
                 <span class="text-gray-400">PNL</span>
@@ -226,6 +229,13 @@ const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error',
 /* ===== Helpers API ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 
+type Side = 'BUY' | 'SELL'
+const selectedSide = ref<Side | ''>('')
+
+function selectSide(side: Side) {
+  if (loadingSubmit.value || atCapacity.value || !hasPairSelected.value) return
+  selectedSide.value = side
+}
 const availablePairs = ref<string[]>(['BTC/USDT',
   'ETH/USDT',
   'BNB/USDT',
@@ -745,20 +755,24 @@ const submitError = ref<string | null>(null)
 const submitSuccess = ref<string | null>(null)
 const loadingSubmit = ref(false)
 
-async function submitWinLose() {
+async function submitWinLose(side?: Side) {
   if (atCapacity.value) {
     return alertError('Full position capacity (5/5). Complete one first.')
   }
 
   if (!hasPairSelected.value) return alertError('Select Pair Required')
 
+  // set side dari tombol buy/sell bila ada
+  if (side) selectedSide.value = side
+  if (!selectedSide.value) return alertError('Select Buy or Sell')
+
   const normalized = (amount.value || '').replace(',', '.').trim()
   const amt = Number(normalized)
   if (!Number.isFinite(amt) || amt <= 0) return alertError('Amount is invalid')
   if (amountError.value) return alertError(amountError.value)
-  if (!tp.value || tp.value < 1 || tp.value > 100)
+  if (!tp.value || tp.value < 1)
     return alertError('Your order quantity or price exceeds the range. please adjust your order')
-  if (!sl.value || sl.value < 10 || sl.value > 100)
+  if (!sl.value || sl.value < 10)
     return alertError('Your order quantity or price exceeds the range. please adjust your order')
 
   loadingSubmit.value = true
@@ -773,6 +787,9 @@ async function submitWinLose() {
         take_profit: tp.value,
         stop_loss: sl.value,
         order_time: orderTime,
+        // NEW:
+        keterangan: selectedSide.value,     // 'BUY' | 'SELL'
+        coin: selectedPair.value,           // contoh: 'BTC/USDT'
       }),
     })
     json() as { status: 'success'; transaction_id: number }
@@ -785,6 +802,7 @@ async function submitWinLose() {
     loadingSubmit.value = false
   }
 }
+
 
 /* ===== Polling MIN BUY (dan beberapa field penting) per 5 detik ===== */
 const MINBUY_POLL_MS = 5000

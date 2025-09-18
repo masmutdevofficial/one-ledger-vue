@@ -102,7 +102,7 @@
           <Icon icon="tabler:currency-dollar" class="w-4 h-4" />
         </div>
         <p class="text-gray-700 text-sm leading-5">
-          Trade &gt; 1000 USDT on all COPY Trade
+          Trade &gt; on all COPY Trade
           <span class="text-teal-600 font-semibold">{{ claim.bonus_copytrade_1000 }}/6</span>
         </p>
       </div>
