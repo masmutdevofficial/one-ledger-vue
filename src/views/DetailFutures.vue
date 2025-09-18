@@ -59,7 +59,7 @@
 
       <small v-show="!!amountError" class="block text-red-500 text-xs mb-2">{{
         amountError
-        }}</small>
+      }}</small>
 
       <!-- Available (left)  |  Min Buy (right) -->
       <div class="flex justify-between items-center text-[10px] text-gray-400 mb-5">
@@ -192,7 +192,7 @@
                 <span class="text-gray-400">SL</span>
                 <span class="font-semibold">{{
                   Number.isFinite(tx.sl) ? Math.round(tx.sl) + '%' : '—'
-                  }}</span>
+                }}</span>
               </div>
               <div class="flex flex-col">
                 <span class="text-gray-400">PNL</span>
@@ -755,15 +755,9 @@ const submitError = ref<string | null>(null)
 const submitSuccess = ref<string | null>(null)
 const loadingSubmit = ref(false)
 
-async function submitWinLose(side?: Side) {
-  if (atCapacity.value) {
-    return alertError('Full position capacity (5/5). Complete one first.')
-  }
-
+const submitWinLose = async (_evt?: MouseEvent) => {
+  if (atCapacity.value) return alertError('Full position capacity (5/5). Complete one first.')
   if (!hasPairSelected.value) return alertError('Select Pair Required')
-
-  // set side dari tombol buy/sell bila ada
-  if (side) selectedSide.value = side
   if (!selectedSide.value) return alertError('Select Buy or Sell')
 
   const normalized = (amount.value || '').replace(',', '.').trim()
@@ -787,7 +781,6 @@ async function submitWinLose(side?: Side) {
         take_profit: tp.value,
         stop_loss: sl.value,
         order_time: orderTime,
-        // NEW:
         keterangan: selectedSide.value,     // 'BUY' | 'SELL'
         coin: selectedPair.value,           // contoh: 'BTC/USDT'
       }),
@@ -802,8 +795,6 @@ async function submitWinLose(side?: Side) {
     loadingSubmit.value = false
   }
 }
-
-
 /* ===== Polling MIN BUY (dan beberapa field penting) per 5 detik ===== */
 const MINBUY_POLL_MS = 5000
 let traderPollHandle: number | undefined
