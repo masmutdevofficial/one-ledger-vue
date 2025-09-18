@@ -128,18 +128,26 @@
           <div class="w-full flex flex-row justify-between items-center mt-3 float-right gap-2">
             <div class="space-x-2">
               <!-- Sell / Short -->
-              <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50" type="button"
+              <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50
+         transition-shadow duration-150 shadow-md active:shadow-xl
+         active:shadow-[0_10px_24px_rgba(255,49,49,0.55)]
+         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400" type="button"
                 :style="{ backgroundColor: '#ff3131' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
-                @click="selectSide('SELL')">
+                :class="{ 'ring-2 ring-offset-2 ring-red-400': selectedSide === 'SELL' }" @click="selectSide('SELL')">
                 Sell / Short
               </button>
 
               <!-- Buy / Long -->
-              <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50" type="button"
+              <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50
+         transition-shadow duration-150 shadow-md active:shadow-xl
+         active:shadow-[0_10px_24px_rgba(28,166,157,0.55)]
+         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400" type="button"
                 :style="{ backgroundColor: '#1ca69d' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
-                @click="selectSide('BUY')">
+                :class="{ 'ring-2 ring-offset-2 ring-teal-400': selectedSide === 'BUY' }" @click="selectSide('BUY')">
                 Buy / Long
               </button>
+
+
 
             </div>
 
