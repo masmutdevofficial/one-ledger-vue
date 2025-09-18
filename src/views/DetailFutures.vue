@@ -9,46 +9,27 @@
     <!-- CONTENT -->
     <template v-else>
       <!-- Back -->
-      <button
-        aria-label="Back"
-        class="mb-4 inline-flex items-center text-black"
-        type="button"
-        @click="goBack"
-      >
+      <button aria-label="Back" class="mb-4 inline-flex items-center text-black" type="button" @click="goBack">
         <Icon icon="tabler:arrow-left" class="w-6 h-6" />
       </button>
 
       <!-- Profile & title -->
       <div class="flex items-center justify-between mb-1">
         <div class="flex items-center gap-4">
-          <img
-            :alt="`${trader.name} avatar`"
-            class="w-12 h-12 rounded-full object-cover"
-            :src="avatarUrl"
-            @error="onAvatarError"
-          />
+          <img :alt="`${trader.name} avatar`" class="w-12 h-12 rounded-full object-cover" :src="avatarUrl"
+            @error="onAvatarError" />
           <h1 class="font-extrabold text-lg flex items-center gap-2">
-            <RouterLink
-              to="/profile-copy-trade"
-              class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded"
-            >
+            <RouterLink to="/profile-copy-trade"
+              class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded">
               {{ trader.name }}
             </RouterLink>
-            <Icon
-              v-if="trader.is_featured"
-              icon="tabler:shield-check"
-              class="w-5 h-5 text-amber-500"
-            />
+            <Icon v-if="trader.is_featured" icon="tabler:shield-check" class="w-5 h-5 text-amber-500" />
           </h1>
         </div>
 
-        <router-link
-          v-if="trader && trader.id"
-          :to="`/chats/${trader.id}`"
+        <router-link v-if="trader && trader.id" :to="`/chats/${trader.id}`"
           class="ml-4 inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200"
-          aria-label="Open chat"
-          title="Message"
-        >
+          aria-label="Open chat" title="Message">
           <img src="/img/chat-copy-trader.png" alt="Menu" class="w-5 h-5 object-contain" />
         </router-link>
       </div>
@@ -56,8 +37,7 @@
       <p class="text-sm mb-2">{{ trader?.description || '' }}</p>
 
       <div
-        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none"
-      >
+        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
         <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
         <span>Profit Sharing 10%</span>
       </div>
@@ -67,24 +47,12 @@
       <label for="copyAmount" class="text-gray-400 text-xs mb-1 block">Copy Amount</label>
 
       <div class="flex items-center bg-gray-100 rounded-md h-10 mb-1 px-3 no-ios-zoom">
-        <input
-          id="copyAmount"
-          aria-label="Copy Amount input"
-          v-model="amount"
-          type="text"
-          inputmode="decimal"
-          class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none"
-          placeholder="Enter amount"
-          :disabled="atCapacity"
-          :class="atCapacity ? 'opacity-60 cursor-not-allowed' : ''"
-        />
+        <input id="copyAmount" aria-label="Copy Amount input" v-model="amount" type="text" inputmode="decimal"
+          class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none" placeholder="Enter amount"
+          :disabled="atCapacity" :class="atCapacity ? 'opacity-60 cursor-not-allowed' : ''" />
         <span class="text-xs font-semibold text-black ml-2">USDT</span>
-        <button
-          class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50"
-          type="button"
-          @click="setMax"
-          :disabled="atCapacity"
-        >
+        <button class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50" type="button" @click="setMax"
+          :disabled="atCapacity">
           Max
         </button>
       </div>
@@ -99,13 +67,8 @@
           <span>Available</span>
           <span v-if="!loadingSaldo" class="font-normal"> {{ fmtUSDT(saldo) }} USDT </span>
           <span v-else class="font-normal">...</span>
-          <button
-            aria-label="Add"
-            class="text-[#D6B94D] text-xs font-semibold"
-            type="button"
-            @click.prevent
-            title="Add"
-          ></button>
+          <button aria-label="Add" class="text-[#D6B94D] text-xs font-semibold" type="button" @click.prevent
+            title="Add"></button>
         </div>
         <div class="flex items-center gap-1">
           <span>Min Open Position</span>
@@ -115,36 +78,40 @@
         </div>
       </div>
 
+      <!-- Pair selector (UI only) -->
+      <div class="grid grid-cols-1 gap-4 mb-4">
+        <div>
+          <div class="relative no-ios-zoom">
+            <select id="pair" v-model="selectedPair"
+              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none">
+              <option disabled value="">Choose One</option>
+              <option v-for="p in availablePairs" :key="p" :value="p">{{ p }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <!-- Position Risk -->
       <div class="flex flex-row justify-between items-start">
         <h2 class="font-semibold text-base mb-2">Position Risk</h2>
-        <button
-          v-if="trader?.slug"
-          type="button"
-          class="inline-flex items-center text-gray-600 hover:text-black"
-          @click="goHistory"
-          aria-label="Open futures history"
-        >
+        <button v-if="trader?.slug" type="button" class="inline-flex items-center text-gray-600 hover:text-black"
+          @click="goHistory" aria-label="Open futures history">
           <Icon icon="tabler:file-description" class="w-4 h-4" />
         </button>
       </div>
+
       <div class="grid grid-cols-1 gap-4 mb-8">
         <div>
           <label for="sl" class="text-gray-400 text-xs mb-1 block">Stop Loss</label>
           <div class="relative no-ios-zoom">
-            <select
-              id="sl"
-              v-model.number="sl"
-              :disabled="false"
-              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none"
-            >
+            <select id="sl" v-model.number="sl" :disabled="false"
+              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none">
               <option disabled value="">Select</option>
               <option v-for="n in 10" :key="n" :value="n * 10">{{ n * 10 }}%</option>
             </select>
             <span
-              class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none"
-            >
-              % ROI
+              class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none">
+              %
             </span>
           </div>
         </div>
@@ -157,37 +124,49 @@
           <span class="text-black">{{ netCopyAmount }}</span>
         </div>
 
-        <div class="pb-5">
-          <button
-            class="mt-3 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 float-right disabled:opacity-50"
-            type="button"
-            :disabled="loadingSubmit || atCapacity"
-            @click="submitWinLose"
-          >
-            {{
-              loadingSubmit
-                ? 'Processing…'
-                : atCapacity
-                  ? 'Capacity Reached (5/5)'
-                  : 'Open Position'
-            }}
-          </button>
+        <div class="w-full pb-5">
+          <div class="w-full flex flex-row justify-between items-center mt-3 float-right gap-2">
+            <div class="space-x-2">
+              <!-- Sell / Short -->
+              <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50" type="button"
+                :style="{ backgroundColor: '#ff3131' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
+                @click="goHistory">
+                Sell / Short
+              </button>
+
+              <!-- Buy / Long -->
+              <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50" type="button"
+                :style="{ backgroundColor: '#1ca69d' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
+                @click="goHistory">
+                Buy / Long
+              </button>
+            </div>
+
+            <!-- Open Position -->
+            <button class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
+              type="button" :disabled="loadingSubmit || atCapacity || !hasPairSelected" @click="submitWinLose">
+              {{
+                loadingSubmit
+                  ? 'Processing…'
+                  : atCapacity
+                    ? 'Capacity Reached (5/5)'
+                    : 'Open Position'
+              }}
+            </button>
+          </div>
         </div>
 
         <p v-if="submitError" class="text-red-500 text-xs mt-2">{{ submitError }}</p>
         <p v-if="submitSuccess" class="text-green-500 text-xs mt-2">{{ submitSuccess }}</p>
       </div>
 
+
       <!-- === Open Positions List (max 5) === -->
       <section class="mb-8">
         <div v-if="!pendingList.length" class="text-xs text-gray-400">No Data Available.</div>
 
         <ul v-else class="space-y-3">
-          <li
-            v-for="(tx, idx) in sortedPending"
-            :key="tx.id"
-            class="rounded-md border border-gray-200 p-3"
-          >
+          <li v-for="(tx, idx) in sortedPending" :key="tx.id" class="rounded-md border border-gray-200 p-3">
             <!-- Header -->
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
@@ -201,10 +180,7 @@
 
             <!-- Progress -->
             <div class="w-full h-2 bg-gray-100 rounded overflow-hidden mb-2">
-              <div
-                class="h-2 bg-teal-400"
-                :style="{ width: (progressFor(tx) * 100).toFixed(2) + '%' }"
-              />
+              <div class="h-2 bg-teal-400" :style="{ width: (progressFor(tx) * 100).toFixed(2) + '%' }" />
             </div>
 
             <!-- Numbers -->
@@ -217,10 +193,7 @@
               </div>
               <div class="flex flex-col">
                 <span class="text-gray-400">PNL</span>
-                <span
-                  class="font-semibold"
-                  :class="pnlFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'"
-                >
+                <span class="font-semibold" :class="pnlFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'">
                   {{ signedMoney(pnlFor(tx), 4) }}
                 </span>
               </div>
@@ -252,6 +225,88 @@ const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error',
 
 /* ===== Helpers API ===== */
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+
+const availablePairs = ref<string[]>(['BTC/USDT',
+  'ETH/USDT',
+  'BNB/USDT',
+  'SOL/USDT',
+  'LTC/USDT',
+  'LINK/USDT',
+  'TON/USDT',
+  'SUI/USDT',
+  'XRP/USDT',
+  'QTUM/USDT',
+  'THETA/USDT',
+  'ADA/USDT',
+  'RAD/USDT',
+  'BAND/USDT',
+  'ALGO/USDT',
+  'POL/USDT',
+  'DOGE/USDT',
+  'LUNA/USDT',
+  'GALA/USDT',
+  'PEPE/USDT',
+  'CFX/USDT',
+  'TRX/USDT',
+  'TRUMP/USDT',
+  'SHIB/USDT',
+  'ARB/USDT',
+  'FIL/USDT',
+  'API3/USDT',
+  'ENA/USDT',
+  'BIO/USDT',
+  'UNI/USDT',
+  'BTT/USDT',
+  'SATS/USDT',
+  'MEME/USDT',
+  'GT/USDT',
+  'OP/USDT',
+  'AAVE/USDT',
+  'SNAKES/USDT',
+  'TIA/USDT',
+  'SOON/USDT',
+  'ONDO/USDT',
+  'NEO/USDT',
+  'SKL/USDT',
+  'MX/USDT',
+  'FARTCOIN/USDT',
+  'RATS/USDT',
+  'ETC/USDT',
+  'TRB/USDT',
+  'AVAX/USDT',
+  'BCH/USDT',
+  'BSV/USDT',
+  'IOTA/USDT',
+  'CYBER/USDT',
+  'WIF/USDT',
+  'CORE/USDT',
+  'WLD/USDT',
+  'SEI/USDT',
+  'VIRTUAL/USDT',
+  'RENDER/USDT',
+  'MOODENG/USDT',
+  'JUP/USDT',
+  'PONKE/USDT',
+  'MNT/USDT',
+  'PNUT/USDT',
+  'EIGEN/USDT',
+  'GRASS/USDT',
+  'RAY/USDT',
+  'EPIC/USDT',
+  'ZRO/USDT',
+  'BERA/USDT',
+  'CA/USDT',
+  'IP/USDT',
+  'KAITO/USDT',
+  'OMNI/USDT',
+  'A8/USDT',
+  'OBOL/USDT',
+  'SAGA/USDT',
+  'ORCA/USDT',
+  'SHELL/USDT',
+  'NAKA/USDT'])
+const selectedPair = ref<string>('') // UI only
+const hasPairSelected = computed(() => availablePairs.value.includes(selectedPair.value))
 
 // abortable fetch dengan timeout sederhana
 function withTimeout<T>(p: Promise<T>, ms = 10000): Promise<T> {
@@ -520,7 +575,7 @@ const showSummary = computed(() => {
   const raw = (amount.value || '').trim()
   if (!raw) return false
   const n = Number(raw.replace(',', '.'))
-  return Number.isFinite(n) && n > 0 && !amountError.value
+  return Number.isFinite(n) && n > 0 && !amountError.value && hasPairSelected.value
 })
 
 /* ===== TP / SL ===== */
@@ -540,7 +595,7 @@ async function fetchTakeProfit(): Promise<void> {
       let msg = `HTTP ${res.status}`
       try {
         msg = await res.text()
-      } catch {}
+      } catch { }
       throw new Error(msg)
     }
     const data = await res.json()
@@ -692,8 +747,10 @@ const loadingSubmit = ref(false)
 
 async function submitWinLose() {
   if (atCapacity.value) {
-    return alertError('Kapasitas posisi penuh (5/5). Selesaikan salah satu dulu.')
+    return alertError('Full position capacity (5/5). Complete one first.')
   }
+
+  if (!hasPairSelected.value) return alertError('Select Pair Required')
 
   const normalized = (amount.value || '').replace(',', '.').trim()
   const amt = Number(normalized)
