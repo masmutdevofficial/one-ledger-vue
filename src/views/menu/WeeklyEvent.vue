@@ -103,7 +103,7 @@
         </div>
         <p class="text-gray-700 text-sm leading-5">
           Trade &gt; 1000 USDT on all COPY Trade
-          <span class="text-teal-600 font-semibold">{{ claim.bonus_copytrade_1000 }}/5</span>
+          <span class="text-teal-600 font-semibold">{{ claim.bonus_copytrade_1000 }}/6</span>
         </p>
       </div>
       <div class="flex justify-between items-center text-xs text-gray-400">
@@ -202,8 +202,8 @@
         <!-- Footer -->
         <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
           <button type="button" class="px-4 py-2 rounded-lg font-medium text-[12px]" :class="readDone
-              ? 'bg-teal-600 text-white hover:bg-teal-700'
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            ? 'bg-teal-600 text-white hover:bg-teal-700'
+            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             " :disabled="!readDone" @click="acknowledge">
             I understand
           </button>
@@ -406,13 +406,10 @@ function buttonText(kind: ClaimKind, status: Tri): string {
  * 2 = claimed (sudah pernah klaim di server ATAU baru diklaim di sesi ini)
  */
 const copyTradeStatus = computed<Tri>(() => {
-  // sudah klaim di server
   if (claim.value.status_bonus_copytrade_1000) return 2
-  // baru saja klaim di sesi ini
   if (claimedKinds.value.has('copytrade1000')) return 2
-  // cek progres
   const progress = Number(claim.value.bonus_copytrade_1000) || 0
-  return progress >= 5 ? 1 : 0
+  return progress >= 6 ? 1 : 0
 })
 
 /** Handle Claim click */
