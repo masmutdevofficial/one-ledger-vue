@@ -128,9 +128,9 @@ useHead(headMeta)
 <template>
   <div v-if="blockedByDevice" class="blocked">
     <div class="blocked__card">
-      <strong>Akses dibatasi</strong>
-      <p>Website ini hanya bisa diakses melalui perangkat mobile.</p>
-      <p>Silakan buka lewat ponsel atau perkecil jendela ke lebar mobile.</p>
+      <strong>Access is restricted</strong>
+      <p>This website can only be accessed via mobile devices.</p>
+      <p>Please open it on a mobile device or minimize the window to mobile width.</p>
     </div>
   </div>
 
