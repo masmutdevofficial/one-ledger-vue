@@ -4,7 +4,6 @@ import ApiAlerts from '@/components/ApiAlerts.vue'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useHead } from '@vueuse/head'
 import { bootstrapA2HS } from '@/composables/useA2HS'
-import { LiveChatWidget } from '@livechat/widget-vue'
 bootstrapA2HS()
 
 const meta = ref<{
@@ -138,7 +137,6 @@ useHead(headMeta)
   <div v-else>
     <ApiAlerts />
     <RouterView />
-    <LiveChatWidget license="19204571" />
   </div>
 </template>
 

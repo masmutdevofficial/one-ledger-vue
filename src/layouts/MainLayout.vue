@@ -4,6 +4,46 @@ import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useNotificationCounter } from '@/composables/useNotificationCounter'
 
+// Deklarasi global agar TypeScript kenal objek LiveChatWidget
+declare global {
+  interface Window {
+    LiveChatWidget?: {
+      call: (method: string, ...args: any[]) => void
+      on?: (event: string, cb: (...args: any[]) => void) => void
+    }
+  }
+}
+
+function whenWidgetReady(): Promise<void> {
+  return new Promise((resolve) => {
+    if (window.LiveChatWidget) return resolve()
+    const check = setInterval(() => {
+      if (window.LiveChatWidget) {
+        clearInterval(check)
+        resolve()
+      }
+    }, 50)
+    setTimeout(() => {
+      clearInterval(check)
+      resolve() // fail-safe
+    }, 5000)
+  })
+}
+
+// Sembunyikan widget saat komponen mount (hindari bubble default)
+onMounted(async () => {
+  await whenWidgetReady()
+  try {
+    window.LiveChatWidget?.call('hide') // pastikan tidak nongol di pojok
+  } catch {}
+})
+
+async function openChat() {
+  await whenWidgetReady()
+  // Pastikan tampil sebagai popup saat diklik
+  window.LiveChatWidget?.call('maximize')
+}
+
 // state modal
 const showRestrict = ref(false)
 
@@ -312,15 +352,9 @@ onBeforeUnmount(() => {
         <!-- tetap mount widget tapi hidden -->
         <!-- Mount widget tapi sembunyikan launchernya -->
         <!-- Widget di-mount tapi disembunyikan -->
-        <a
-          href="https://tawk.to/chat/68b943c5971b36192093ca7a/1j49r1fhp"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Support"
-          class="focus:outline-none"
-        >
+        <button type="button" aria-label="Support" class="focus:outline-none" @click="openChat">
           <img src="/img/newmenu/support.png" alt="Menu" class="w-7 h-7 object-contain" />
-        </a>
+        </button>
       </nav>
 
       <!-- Search Bar hanya di /dashboard -->
