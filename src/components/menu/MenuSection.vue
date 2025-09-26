@@ -49,6 +49,20 @@ const logout = async () => {
 
 <template>
   <div class="space-y-6">
+    <RouterLink
+      to="/tracking"
+      class="w-full flex items-center justify-between text-gray-600 text-sm"
+    >
+      <div class="flex items-center space-x-3">
+        <img
+          src="/img/transfer2.png"
+          alt="Transaction Check"
+          class="w-6 h-6 object-contain brightness-40"
+        />
+        <span>Tracking</span>
+      </div>
+      <Icon icon="tabler:chevron-right" class="text-gray-400" />
+    </RouterLink>
     <RouterLink to="/verify" class="w-full flex items-center justify-between text-gray-600 text-sm">
       <div class="flex items-center space-x-3">
         <img

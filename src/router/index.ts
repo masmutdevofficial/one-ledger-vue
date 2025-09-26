@@ -99,6 +99,14 @@ const routes = [
         component: () => import('@/views/FuturesCopy.vue'),
       },
       {
+        path: 'tracking',
+        component: () => import('@/views/Tracking.vue'),
+      },
+      {
+        path: 'detail-tracking',
+        component: () => import('@/views/DetailTracking.vue'),
+      },
+      {
         path: 'account',
         component: () => import('@/views/DashboardUser.vue'),
       },
