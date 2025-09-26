@@ -2,7 +2,12 @@
   <div class="px-4 relative">
     <div class="flex flex-row justify-between items-center mb-4">
       <h2 class="font-semibold text-base select-none">Collective Copy Trade</h2>
-      <button aria-label="Back" class="mr-2 inline-flex items-center text-black" type="button" @click="goBack">
+      <button
+        aria-label="Back"
+        class="mr-2 inline-flex items-center text-black"
+        type="button"
+        @click="goBack"
+      >
         <Icon icon="tabler:x" class="w-4 h-4" />
       </button>
     </div>
@@ -19,12 +24,19 @@
 
           <!-- PnL filter -->
           <div class="relative">
-            <button type="button" class="flex items-center space-x-1 cursor-pointer" @click="togglePnlMenu">
+            <button
+              type="button"
+              class="flex items-center space-x-1 cursor-pointer"
+              @click="togglePnlMenu"
+            >
               <span>PnL</span>
               <Icon icon="tabler:chevron-down" class="w-3 h-3" />
             </button>
 
-            <div v-if="showPnl" class="absolute z-20 mt-2 bg-white border border-gray-200 rounded-lg p-3 shadow w-56">
+            <div
+              v-if="showPnl"
+              class="absolute z-20 mt-2 bg-white border border-gray-200 rounded-lg p-3 shadow w-56"
+            >
               <div class="text-[11px] text-gray-500 mb-2">Urutkan PnL</div>
               <div class="space-y-2 text-sm">
                 <label class="flex items-center space-x-2">
@@ -48,144 +60,171 @@
           </div>
         </div>
       </div>
-      <button type="button"
+      <button
+        type="button"
         class="border border-gray-400 bg-white text-gray-600 text-[12px] rounded-lg px-4 py-1 select-none active:bg-gray-200 transition-colors"
-        @click="openModalTerm" aria-haspopup="dialog" :aria-expanded="showModalTerm ? 'true' : 'false'"
-        aria-controls="modal-terms">
+        @click="openModalTerm"
+        aria-haspopup="dialog"
+        :aria-expanded="showModalTerm ? 'true' : 'false'"
+        aria-controls="modal-terms"
+      >
         T & C
       </button>
     </div>
 
     <!-- Modal Terms -->
-    <div v-if="showModalTerm" id="modal-terms" class="fixed inset-0 z-[51] flex items-center justify-center"
-      aria-modal="true" role="dialog">
+    <div
+      v-if="showModalTerm"
+      id="modal-terms"
+      class="fixed inset-0 z-[51] flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+    >
       <div class="absolute inset-0 bg-black/30" @click="closeModalTerm"></div>
 
       <div class="relative z-10 w-full max-w-lg mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 class="text-[12px] font-semibold">Terms &amp; Conditions</h3>
-          <button type="button" class="p-1 rounded hover:bg-gray-100" @click="closeModalTerm" aria-label="Close">
+          <button
+            type="button"
+            class="p-1 rounded hover:bg-gray-100"
+            @click="closeModalTerm"
+            aria-label="Close"
+          >
             <Icon icon="tabler:x" class="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        <div ref="scrollArea"
+        <div
+          ref="scrollArea"
           class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700 space-y-4"
-          @scroll="onScroll">
+          @scroll="onScroll"
+        >
           <!-- 1. Join the Pool -->
           <div>
             <h4 class="mt-1 font-semibold">1. Join the Pool</h4>
-            <ul class="list-disc pl-5 space-y-1 mt-1">
-              <li>
+            <div class="mt-1 space-y-1">
+              <p>
                 Each member who wishes to participate in the collective trading pool must deposit
                 funds according to the agreed amount.
-              </li>
-              <li>
+              </p>
+              <p>
                 Funds will be automatically secured in the smart contract for the duration of the
                 trading session.
-              </li>
-              <li>
+              </p>
+              <p>
                 All trading activities within the Pool are directed by the Master Trader. While
                 entry (opening) may be performed manually by members following the minimum
                 requirements, all closing of positions is executed collectively and automatically.
-              </li>
-              <li>By joining, you agree to follow the Pool rules.</li>
-            </ul>
+              </p>
+              <p>By joining, you agree to follow the Pool rules.</p>
+            </div>
           </div>
 
           <!-- 2. How Trading Works -->
           <div>
             <h4 class="mt-1 font-semibold">2. How Trading Works</h4>
-            <ul class="list-disc pl-5 space-y-1 mt-1">
-              <li>
+            <div class="mt-1 space-y-1">
+              <p>
                 Trading positions are opened according to the applied strategy, with members
                 required to follow the minimum entry instructions.
-              </li>
-              <li>
+              </p>
+              <p>
                 Closing of all trading positions is executed collectively and automatically under
                 the Master Trader’s direction.
-              </li>
-              <li>
+              </p>
+              <p>
                 All profit and loss calculations are performed automatically by the smart contract.
-              </li>
-              <li>
+              </p>
+              <p>
                 Followers can only participate in a maximum of 5 open positions at the same time.
-              </li>
-            </ul>
+              </p>
+            </div>
           </div>
 
           <!-- 3. Profit Distribution -->
           <div>
             <h4 class="mt-1 font-semibold">3. Profit Distribution</h4>
-            <ul class="list-disc pl-5 space-y-1 mt-1">
-              <li>
+            <div class="mt-1 space-y-1">
+              <p>
                 Profits and losses are shared proportionally based on each member’s contribution.
-              </li>
-              <li>
+              </p>
+              <p>
                 Final results will be displayed on the dashboard and can be withdrawn once the
                 session is completed.
-              </li>
-              <li>
+              </p>
+              <p>
                 If service fees apply, they are not automatically deducted from profit. Members are
                 required to pay service fees manually as instructed by the Pool management.
-              </li>
-            </ul>
+              </p>
+            </div>
           </div>
 
           <!-- 4. Discipline Rules -->
           <div>
             <h4 class="mt-1 font-semibold">4. Discipline Rules</h4>
-            <ul class="list-disc pl-5 space-y-1 mt-1">
-              <li>
-                If a member fails to meet Pool obligations (e.g., cancels participation, maintains
-                an insufficient balance, or attempts early withdrawal), their funds will be locked
-                until the trading session ends.
-              </li>
-              <li>
-                After the session concludes, any locked funds will be automatically and
-                proportionally redistributed among all members who remained actively participating
-                throughout the session as compensation.
-              </li>
-              <li>
-                By joining the Pool, all members acknowledge and accept this rule to ensure
-                fairness and prevent disruptions to the collective trading session.
-              </li>
-            </ul>
+            <div class="mt-1 space-y-1">
+              <p>
+                If a member fails to fulfill their Pool obligations (e.g., cancelling their
+                participation, maintaining an insufficient balance, or attempting an early
+                withdrawal), their funds will be locked until the end of the trading session.
+              </p>
+              <p>
+                After the session ends, the locked funds will be reviewed. If a member’s lack of
+                discipline causes losses to other participants, the entire balance will be
+                automatically and proportionally redistributed to all members who continued to
+                actively participate during the session as compensation.
+              </p>
+              <p>
+                However, if all trading positions have been closed and are profitable, any member
+                who fails to fulfill their Pool obligations will be disqualified or subject to an 8%
+                penalty as a form of disciplinary action.
+              </p>
+              <p>
+                By joining the Pool, all members acknowledge and agree to these rules to ensure
+                fairness and prevent disruption of collective trading sessions.
+              </p>
+            </div>
           </div>
 
           <!-- 5. Things to Understand -->
           <div>
             <h4 class="mt-1 font-semibold">5. Things to Understand</h4>
-            <ul class="list-disc pl-5 space-y-1 mt-1">
-              <li>Trading cryptocurrencies offers potential profit, but also involves risk.</li>
-              <li>
+            <div class="mt-1 space-y-1">
+              <p>Trading cryptocurrencies offers potential profit, but also involves risk.</p>
+              <p>
                 Profit is not guaranteed in every session as results depend on market conditions.
-              </li>
-              <li>By participating, members acknowledge and accept the risks involved.</li>
-            </ul>
+              </p>
+              <p>By participating, members acknowledge and accept the risks involved.</p>
+            </div>
           </div>
 
           <!-- 6. Smart Contract Transparency -->
           <div>
             <h4 class="mt-1 font-semibold">6. Smart Contract Transparency</h4>
-            <ul class="list-disc pl-5 space-y-1 mt-1">
-              <li>
+            <div class="mt-1 space-y-1">
+              <p>
                 All rules are coded into the smart contract, ensuring transparency and automation.
-              </li>
-              <li>No party can alter the final outcome once the session is in progress.</li>
-            </ul>
+              </p>
+              <p>No party can alter the final outcome once the session is in progress.</p>
+            </div>
           </div>
 
           <div class="h-2"></div>
         </div>
 
-
         <div class="px-4 py-3 border-t border-gray-100 flex justify-end">
-          <button type="button" class="px-4 py-2 rounded-lg font-medium text-[12px]" :class="
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg font-medium text-[12px]"
+            :class="
               readDone
                 ? 'bg-teal-600 text-white hover:bg-teal-700'
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            " :disabled="!readDone" @click="acknowledge">
+            "
+            :disabled="!readDone"
+            @click="acknowledge"
+          >
             I understand
           </button>
         </div>
@@ -194,35 +233,59 @@
 
     <!-- List items -->
     <ul class="space-y-6 h-screen overflow-y-auto mb-20">
-      <li v-for="item in sortedTraders" :key="item.id"
-        class="flex flex-col space-y-2 border border-gray-200 rounded-lg p-4">
+      <li
+        v-for="item in sortedTraders"
+        :key="item.id"
+        class="flex flex-col space-y-2 border border-gray-200 rounded-lg p-4"
+      >
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-2">
-            <img :alt="item.avatarAlt" class="w-8 h-8 rounded-full" height="32" :src="item.avatar" width="32" />
+            <img
+              :alt="item.avatarAlt"
+              class="w-8 h-8 rounded-full"
+              height="32"
+              :src="item.avatar"
+              width="32"
+            />
             <div class="flex flex-col justify-start">
               <div class="font-semibold text-[12px] flex items-center space-x-1 select-none">
                 <span>{{ item.username }}</span>
-                <Icon v-if="item.badge === 'crown'" icon="tabler:crown" class="text-yellow-400 w-4 h-4" />
-                <Icon v-else-if="item.badge === 'graduation-cap'" icon="tabler:school"
-                  class="text-yellow-600 w-4 h-4" />
+                <Icon
+                  v-if="item.badge === 'crown'"
+                  icon="tabler:crown"
+                  class="text-yellow-400 w-4 h-4"
+                />
+                <Icon
+                  v-else-if="item.badge === 'graduation-cap'"
+                  icon="tabler:school"
+                  class="text-yellow-600 w-4 h-4"
+                />
               </div>
               <div class="text-[12px] text-gray-400 flex items-center space-x-0.5 select-none">
                 <Icon icon="tabler:users" class="w-3 h-3" />
                 <span>
-                  <b>{{ item.followerLabel1 }}</b>{{ item.followerLabel2 }}
+                  <b>{{ item.followerLabel1 }}</b
+                  >{{ item.followerLabel2 }}
                 </span>
                 <Icon v-if="item.showClock" icon="tabler:clock" class="w-3 h-3" />
               </div>
             </div>
           </div>
 
-          <button v-if="item.button === 'Join'"
+          <button
+            v-if="item.button === 'Join'"
             class="bg-teal-300 text-white text-[12px] rounded-lg px-4 py-1 shadow-[0_0_8px_rgba(0,0,0,0.1)] select-none"
-            type="button" @click="join(item)">
+            type="button"
+            @click="join(item)"
+          >
             Join
           </button>
-          <button v-else class="bg-red-100 text-red-600 text-[12px] rounded-lg px-4 py-1 select-none" type="button"
-            disabled>
+          <button
+            v-else
+            class="bg-red-100 text-red-600 text-[12px] rounded-lg px-4 py-1 select-none"
+            type="button"
+            disabled
+          >
             Full
           </button>
         </div>
@@ -245,7 +308,9 @@
             <div class="flex items-start justify-between text-[12px] text-gray-400 select-none">
               <div class="flex flex-col justify-start">
                 <span>{{ item.labelMdd }}</span>
-                <span :class="item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none'">
+                <span
+                  :class="item.mddValue === '--' ? '' : 'font-semibold text-gray-900 select-none'"
+                >
                   {{ item.mddValue }}
                 </span>
               </div>
@@ -267,11 +332,18 @@
   </div>
 
   <!-- Modal Password -->
-  <div v-if="modal.open" class="fixed inset-0 z-51 flex items-center justify-center" aria-modal="true" role="dialog">
+  <div
+    v-if="modal.open"
+    class="fixed inset-0 z-51 flex items-center justify-center"
+    aria-modal="true"
+    role="dialog"
+  >
     <div class="absolute inset-0 bg-black/30" @click="closeModal"></div>
 
-    <form class="relative z-10 w-[92%] max-w-sm rounded-2xl bg-white p-5 shadow-lg no-ios-zoom"
-      @submit.prevent="submitPassword">
+    <form
+      class="relative z-10 w-[92%] max-w-sm rounded-2xl bg-white p-5 shadow-lg no-ios-zoom"
+      @submit.prevent="submitPassword"
+    >
       <div class="mb-3">
         <h3 class="text-base font-semibold">Enter Password</h3>
         <p class="mt-1 text-xs text-gray-500 select-none">
@@ -280,17 +352,30 @@
       </div>
 
       <label class="block text-xs text-gray-600 mb-1 select-none">Password</label>
-      <input v-model="modal.password" type="password" inputmode="text" autocomplete="current-password" required
-        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300" />
+      <input
+        v-model="modal.password"
+        type="password"
+        inputmode="text"
+        autocomplete="current-password"
+        required
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
+      />
 
       <p v-if="modal.error" class="mt-2 text-xs text-red-600">{{ modal.error }}</p>
 
       <div class="mt-4 flex items-center justify-end gap-2">
-        <button type="button" class="text-xs px-3 py-1.5 rounded border border-gray-300" @click="closeModal">
+        <button
+          type="button"
+          class="text-xs px-3 py-1.5 rounded border border-gray-300"
+          @click="closeModal"
+        >
           Cancel
         </button>
-        <button type="submit" class="text-xs px-3 py-1.5 rounded bg-teal-500 text-white disabled:opacity-60"
-          :disabled="modal.loading">
+        <button
+          type="submit"
+          class="text-xs px-3 py-1.5 rounded bg-teal-500 text-white disabled:opacity-60"
+          :disabled="modal.loading"
+        >
           {{ modal.loading ? 'Checking…' : 'Sign In' }}
         </button>
       </div>
@@ -298,14 +383,29 @@
   </div>
 
   <!-- ALERT (lokal) -->
-  <div v-if="alert.open" class="fixed z-[60] top-4 left-1/2 -translate-x-1/2 max-w-md mx-4" role="alert"
-    aria-live="assertive">
-    <div class="flex items-start gap-2 rounded-xl border px-3 py-2 shadow bg-white"
-      :class="alert.type === 'success' ? 'border-teal-300' : 'border-red-300'">
-      <Icon v-if="alert.type === 'success'" icon="tabler:circle-check" class="w-5 h-5 text-teal-600 mt-0.5" />
+  <div
+    v-if="alert.open"
+    class="fixed z-[60] top-4 left-1/2 -translate-x-1/2 max-w-md mx-4"
+    role="alert"
+    aria-live="assertive"
+  >
+    <div
+      class="flex items-start gap-2 rounded-xl border px-3 py-2 shadow bg-white"
+      :class="alert.type === 'success' ? 'border-teal-300' : 'border-red-300'"
+    >
+      <Icon
+        v-if="alert.type === 'success'"
+        icon="tabler:circle-check"
+        class="w-5 h-5 text-teal-600 mt-0.5"
+      />
       <Icon v-else icon="tabler:alert-triangle" class="w-5 h-5 text-red-600 mt-0.5" />
       <div class="text-sm text-gray-900 flex-1">{{ alert.message }}</div>
-      <button type="button" class="shrink-0 p-1 rounded hover:bg-gray-100" aria-label="Tutup" @click="closeAlert()">
+      <button
+        type="button"
+        class="shrink-0 p-1 rounded hover:bg-gray-100"
+        aria-label="Tutup"
+        @click="closeAlert()"
+      >
         <Icon icon="tabler:x" class="w-4 h-4 text-gray-500" />
       </button>
     </div>
