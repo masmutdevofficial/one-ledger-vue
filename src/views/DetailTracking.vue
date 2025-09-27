@@ -2,7 +2,7 @@
   <div class="w-full mx-auto px-4 py-3 bg-white shadow-md rounded-md scale-font-50">
     <!-- INVALID -->
     <div v-if="invalid" class="flex items-center justify-center h-48">
-      <p class="text-red-600 font-bold text-xl text-center">INVALID INVOICE ID</p>
+      <p class="text-red-600 font-bold text-xl text-center">INVALID TRACKING NUMBER</p>
     </div>
 
     <!-- LOADING -->
@@ -235,143 +235,232 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted, type Ref, type ComputedRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
-const API_URL = 'https://new-ota.masmutpanel.my.id/api/get_invoice_id.php'
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api' as const
+
+type Status = 'Pending' | 'InProgress' | 'Completed' | 'Cancelled' | 'Failed'
+
+interface SwiftPaymentTrackingManual {
+  id: number
+  id_users: number
+  status: Status
+  credited_to_beneficiary: boolean
+  gpi_tracking_number: string
+  payment_instruction_id: string | null
+  charges_option: 'SHA' | 'OUR' | 'BEN' | null
+  instructed_amount: number
+  instructed_currency: string
+  credited_amount: number | null
+  credited_currency: string | null
+  value_date: string | null
+  total_time_text: string | null
+  total_time_minutes: number | null
+  instructing_bic: string | null
+  instructing_bank_name: string | null
+  instructing_bank_country: string | null
+  instructing_tx_ref: string | null
+  instructing_duration_text: string | null
+  instructing_duration_minutes: number | null
+  intermediary_bic: string | null
+  intermediary_bank_name: string | null
+  intermediary_bank_country: string | null
+  intermediary_duration_text: string | null
+  intermediary_duration_minutes: number | null
+  intermediary_cum_deduction_text: string | null
+  beneficiary_bic: string | null
+  beneficiary_bank_name: string | null
+  beneficiary_bank_country: string | null
+  beneficiary_duration_text: string | null
+  beneficiary_duration_minutes: number | null
+  beneficiary_cum_deduction_text: string | null
+  payment_credited_at: string | null
+  payment_credited_tz: string | null
+  notes?: string | null
+  created_at: string
+}
+
+type ValidateResp = { status?: boolean }
+type DataInvoiceResp =
+  | { status: 'success'; data: SwiftPaymentTrackingManual }
+  | { status: 'error'; message?: string }
 
 const route = useRoute()
 const router = useRouter()
 
-const loading = ref(true)
-const invalid = ref(false)
-const data = ref({}) // payload data bila valid
+const loading = ref<boolean>(true)
+const invalid = ref<boolean>(false)
+const data: Ref<Partial<SwiftPaymentTrackingManual>> = ref({})
 
-// Helpers
-const isNil = (v) => v === null || v === undefined || v === ''
-const isNum = (v) => typeof v === 'number' && !Number.isNaN(v)
-const fmt = (v) => (isNil(v) ? '-' : v)
+/* Helpers */
+const isNil = (v: unknown): v is null | undefined | '' => v === null || v === undefined || v === ''
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v as number)
+const fmt = (v: unknown): string | number => (isNil(v) ? '-' : (v as string | number))
 
-const amountWithCcy = (amt, ccy) => {
+const amountWithCcy = (amt: unknown, ccy: unknown): string => {
   if (isNil(amt) && isNil(ccy)) return '-'
   if (isNil(amt)) return '-'
-  if (isNil(ccy)) return String(amt)
-  return `${ccy} ${Number(amt).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  if (isNil(ccy)) return String(amt as number)
+  const n = Number(amt)
+  return `${String(ccy)} ${Number.isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : amt}`
 }
 
-// Status UI
-const statusIcon = computed(() => {
-  const s = (data.value?.status || '').toLowerCase()
+/* Status UI */
+const statusIcon: ComputedRef<string> = computed(() => {
+  const s = String(data.value?.status || '').toLowerCase()
   if (s === 'completed') return 'tabler:circle-check'
   if (s === 'failed' || s === 'cancelled') return 'tabler:alert-triangle'
-  if (s === 'inprogress') return 'tabler:clock'
+  if (s === 'inprogress' || s === 'in progress' || s === 'pending') return 'tabler:clock'
   return 'tabler:help'
 })
-const statusClass = computed(() => {
-  const s = (data.value?.status || '').toLowerCase()
+const statusClass: ComputedRef<string> = computed(() => {
+  const s = String(data.value?.status || '').toLowerCase()
   if (s === 'completed') return 'text-green-700'
   if (s === 'failed' || s === 'cancelled') return 'text-red-600'
-  if (s === 'inprogress') return 'text-amber-600'
+  if (s === 'inprogress' || s === 'in progress') return 'text-amber-600'
   if (s === 'pending') return 'text-gray-600'
   return 'text-gray-600'
 })
 
-const normalizedStatus = computed(() => (data.value?.status || '').toLowerCase())
+const normalizedStatus: ComputedRef<string> = computed(() =>
+  String(data.value?.status || '').toLowerCase(),
+)
 
-const beneficiaryIcon = computed(() => {
+const beneficiaryIcon: ComputedRef<string> = computed(() => {
   const s = normalizedStatus.value
   if (s === 'completed') return 'tabler:circle-check'
   if (s === 'failed' || s === 'cancelled') return 'tabler:alert-triangle'
-  if (s === 'inprogress' || s === 'pending') return 'tabler:clock'
+  if (s === 'inprogress' || s === 'in progress' || s === 'pending') return 'tabler:clock'
   return 'tabler:help'
 })
 
-const beneficiaryBgClass = computed(() => {
+const beneficiaryBgClass: ComputedRef<string> = computed(() => {
   const s = normalizedStatus.value
   if (s === 'completed') return 'bg-green-700'
   if (s === 'failed' || s === 'cancelled') return 'bg-red-600'
-  if (s === 'inprogress') return 'bg-amber-600'
+  if (s === 'inprogress' || s === 'in progress') return 'bg-amber-600'
   if (s === 'pending') return 'bg-gray-500'
   return 'bg-gray-400'
 })
 
-// Get user id from localStorage (support beberapa bentuk penyimpanan)
-function getUserId() {
-  // prior: user_id langsung
-  const uid = localStorage.getItem('user_id')
-  if (uid && /^\d+$/.test(uid)) return Number(uid)
-  // ada juga yang menyimpan 'user'
-  const raw = localStorage.getItem('user')
-  if (!raw) return null
-  if (/^\d+$/.test(raw)) return Number(raw)
+/* JWT helpers */
+function base64UrlDecode(input: string): string {
   try {
-    const obj = JSON.parse(raw)
-    if (obj && typeof obj === 'object') {
-      if (typeof obj.id === 'number') return obj.id
-      if (typeof obj.user_id === 'number') return obj.user_id
-      if (typeof obj.id === 'string' && /^\d+$/.test(obj.id)) return Number(obj.id)
-      if (typeof obj.user_id === 'string' && /^\d+$/.test(obj.user_id)) return Number(obj.user_id)
-    }
-  } catch {}
-  return null
+    let s = input.replace(/-/g, '+').replace(/_/g, '/')
+    const pad = s.length % 4
+    if (pad) s += '='.repeat(4 - pad)
+    return decodeURIComponent(
+      Array.prototype.map
+        .call(atob(s), (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(''),
+    )
+  } catch {
+    return ''
+  }
 }
 
-async function fetchDetail() {
-  const invoiceId = route.query.invoice_id
-  const idUsers = getUserId()
+function getUserIdFromToken(token: string): number | null {
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  const payloadStr = base64UrlDecode(parts[1])
+  if (!payloadStr) return null
+  try {
+    const payload = JSON.parse(payloadStr) as Record<string, unknown>
+    const candidate =
+      (payload.id as unknown) ??
+      (payload.user_id as unknown) ??
+      (payload.sub as unknown) ??
+      (payload.uid as unknown)
+    const n = Number(candidate as unknown as number)
+    return Number.isFinite(n) ? n : null
+  } catch {
+    return null
+  }
+}
 
-  if (!invoiceId || !idUsers) {
+/* Fetch detail */
+async function fetchDetail(): Promise<void> {
+  loading.value = true
+  invalid.value = false
+
+  const token = localStorage.getItem('token')
+  const gpi = String((route.query.gpi_tracking_number as string) || '').trim()
+  if (!token || !gpi) {
+    invalid.value = true
+    loading.value = false
+    return
+  }
+
+  const userId = getUserIdFromToken(token)
+  if (!userId) {
     invalid.value = true
     loading.value = false
     return
   }
 
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_users: idUsers,
-        payment_instruction_id: String(invoiceId),
-      }),
+    // 1) validate gpi + user
+    const validateUrl =
+      `${API_BASE}/validate-invoice` +
+      `?id=${encodeURIComponent(String(userId))}` +
+      `&gpi_tracking_number=${encodeURIComponent(gpi)}`
+    const vres = await fetch(validateUrl, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
     })
 
-    const contentType = res.headers.get('content-type') || ''
-    if (!res.ok) {
-      // Endpoint kirim "Invalid ID" (text/plain) saat error/invalid
-      if (contentType.includes('application/json')) {
-        const j = await res.json()
-        invalid.value = true
-      } else {
-        const t = (await res.text()).trim()
-        invalid.value = true
-      }
+    let isValid = false
+    try {
+      const vjson = (await vres.json()) as ValidateResp
+      isValid = Boolean(vjson?.status)
+    } catch {
+      isValid = false
+    }
+
+    if (!isValid) {
+      invalid.value = true
       return
     }
 
-    if (contentType.includes('application/json')) {
-      const json = await res.json()
-      if (json?.status === 'success' && json?.data) {
-        data.value = json.data
-        invalid.value = false
-      } else {
-        invalid.value = true
-      }
-    } else {
-      const text = (await res.text()).trim()
-      invalid.value = text.toLowerCase() === 'invalid id'
+    // 2) fetch data
+    const detailUrl = `${API_BASE}/data-invoice?gpi_tracking_number=${encodeURIComponent(gpi)}`
+    const dres = await fetch(detailUrl, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!dres.ok) {
+      invalid.value = true
+      return
     }
-  } catch (_) {
+
+    const djson = (await dres.json()) as DataInvoiceResp
+    if (djson?.status === 'success' && (djson as any).data) {
+      const payload = (djson as Extract<DataInvoiceResp, { status: 'success' }>).data
+      // Normalize boolean
+      ;(payload as any).credited_to_beneficiary = Boolean((payload as any).credited_to_beneficiary)
+      data.value = payload
+      invalid.value = false
+    } else {
+      invalid.value = true
+    }
+  } catch {
     invalid.value = true
   } finally {
     loading.value = false
   }
 }
 
-function closePage() {
-  // kembali ke halaman sebelumnya atau root
+function closePage(): void {
   if (window.history.length > 1) window.history.back()
   else router.push('/')
 }
@@ -380,7 +469,7 @@ onMounted(fetchDetail)
 </script>
 
 <style scoped>
-/* Paksa semua font-size di dalam komponen menjadi 10px (sesuai permintaan sebelumnya) */
+/* Paksa semua font-size di dalam komponen menjadi 10px */
 .scale-font-50,
 .scale-font-50 * {
   font-size: 10px !important;
