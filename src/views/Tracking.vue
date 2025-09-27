@@ -78,7 +78,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+const API_BASE = 'https://one-ledger.masmutpanel.my.id/api' as const
 
 const gpiTrackingNumber = ref<string>('')
 const fieldError = ref<string>('')
@@ -107,44 +107,10 @@ function closeAlert() {
   alert.value.open = false
 }
 
-/** ===== Helper: ambil user id dari token (JWT) ===== */
-function base64UrlDecode(input: string): string {
-  try {
-    let s = input.replace(/-/g, '+').replace(/_/g, '/')
-    const pad = s.length % 4
-    if (pad) s += '='.repeat(4 - pad)
-    return decodeURIComponent(
-      Array.prototype.map
-        .call(atob(s), (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join(''),
-    )
-  } catch {
-    return ''
-  }
-}
-
-function getUserIdFromToken(token: string): number | null {
-  const parts = token.split('.')
-  if (parts.length !== 3) return null
-  const payloadStr = base64UrlDecode(parts[1])
-  if (!payloadStr) return null
-  try {
-    const payload = JSON.parse(payloadStr) as Record<string, unknown>
-    const candidate =
-      (payload.id as unknown) ??
-      (payload.user_id as unknown) ??
-      (payload.sub as unknown) ??
-      (payload.uid as unknown)
-    const n = Number(candidate)
-    return Number.isFinite(n) ? n : null
-  } catch {
-    return null
-  }
-}
-
 async function handleContinue() {
   fieldError.value = ''
-  if (!gpiTrackingNumber.value.trim()) {
+  const gpi = gpiTrackingNumber.value.trim()
+  if (!gpi) {
     fieldError.value = 'Please enter GPI tracking number.'
     return
   }
@@ -155,19 +121,10 @@ async function handleContinue() {
     return
   }
 
-  const userId = getUserIdFromToken(token)
-  if (!userId) {
-    openAlert('error', 'Invalid token: user id not found.')
-    return
-  }
-
   loading.value = true
   try {
-    const url =
-      `${API_BASE}/validate-invoice` +
-      `?id=${encodeURIComponent(String(userId))}` +
-      `&gpi_tracking_number=${encodeURIComponent(gpiTrackingNumber.value.trim())}`
-
+    // Sanctum: server tahu user dari Bearer token, jadi cukup kirim GPI saja
+    const url = `${API_BASE}/validate-invoice?gpi_tracking_number=${encodeURIComponent(gpi)}`
     const res = await fetch(url, {
       method: 'GET',
       headers: {
@@ -185,9 +142,7 @@ async function handleContinue() {
     }
 
     if (statusOk) {
-      router.push(
-        `/detail-tracking?gpi_tracking_number=${encodeURIComponent(gpiTrackingNumber.value.trim())}`,
-      )
+      router.push(`/detail-tracking?gpi_tracking_number=${encodeURIComponent(gpi)}`)
     } else {
       openAlert('error', 'Invalid tracking number or not found.')
     }

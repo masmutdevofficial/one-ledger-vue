@@ -305,7 +305,11 @@ const amountWithCcy = (amt: unknown, ccy: unknown): string => {
   if (isNil(amt)) return '-'
   if (isNil(ccy)) return String(amt as number)
   const n = Number(amt)
-  return `${String(ccy)} ${Number.isFinite(n) ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : amt}`
+  return `${String(ccy)} ${
+    Number.isFinite(n)
+      ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : amt
+  }`
 }
 
 /* Status UI */
@@ -346,67 +350,23 @@ const beneficiaryBgClass: ComputedRef<string> = computed(() => {
   return 'bg-gray-400'
 })
 
-/* JWT helpers */
-function base64UrlDecode(input: string): string {
-  try {
-    let s = input.replace(/-/g, '+').replace(/_/g, '/')
-    const pad = s.length % 4
-    if (pad) s += '='.repeat(4 - pad)
-    return decodeURIComponent(
-      Array.prototype.map
-        .call(atob(s), (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join(''),
-    )
-  } catch {
-    return ''
-  }
-}
-
-function getUserIdFromToken(token: string): number | null {
-  const parts = token.split('.')
-  if (parts.length !== 3) return null
-  const payloadStr = base64UrlDecode(parts[1])
-  if (!payloadStr) return null
-  try {
-    const payload = JSON.parse(payloadStr) as Record<string, unknown>
-    const candidate =
-      (payload.id as unknown) ??
-      (payload.user_id as unknown) ??
-      (payload.sub as unknown) ??
-      (payload.uid as unknown)
-    const n = Number(candidate as unknown as number)
-    return Number.isFinite(n) ? n : null
-  } catch {
-    return null
-  }
-}
-
-/* Fetch detail */
+/* Fetch detail (Sanctum token; server identifikasi user dari Bearer token) */
 async function fetchDetail(): Promise<void> {
   loading.value = true
   invalid.value = false
 
   const token = localStorage.getItem('token')
   const gpi = String((route.query.gpi_tracking_number as string) || '').trim()
+
   if (!token || !gpi) {
     invalid.value = true
     loading.value = false
     return
   }
 
-  const userId = getUserIdFromToken(token)
-  if (!userId) {
-    invalid.value = true
-    loading.value = false
-    return
-  }
-
   try {
-    // 1) validate gpi + user
-    const validateUrl =
-      `${API_BASE}/validate-invoice` +
-      `?id=${encodeURIComponent(String(userId))}` +
-      `&gpi_tracking_number=${encodeURIComponent(gpi)}`
+    // 1) validate gpi (tanpa kirim id)
+    const validateUrl = `${API_BASE}/validate-invoice?gpi_tracking_number=${encodeURIComponent(gpi)}`
     const vres = await fetch(validateUrl, {
       method: 'GET',
       headers: {
@@ -428,7 +388,7 @@ async function fetchDetail(): Promise<void> {
       return
     }
 
-    // 2) fetch data
+    // 2) fetch data-invoice
     const detailUrl = `${API_BASE}/data-invoice?gpi_tracking_number=${encodeURIComponent(gpi)}`
     const dres = await fetch(detailUrl, {
       method: 'GET',
@@ -446,7 +406,6 @@ async function fetchDetail(): Promise<void> {
     const djson = (await dres.json()) as DataInvoiceResp
     if (djson?.status === 'success' && (djson as any).data) {
       const payload = (djson as Extract<DataInvoiceResp, { status: 'success' }>).data
-      // Normalize boolean
       ;(payload as any).credited_to_beneficiary = Boolean((payload as any).credited_to_beneficiary)
       data.value = payload
       invalid.value = false
