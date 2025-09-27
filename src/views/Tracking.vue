@@ -3,10 +3,10 @@
     <h1 class="text-black text-lg font-normal mb-3">Payment Tracking</h1>
 
     <input
-      id="gpiTrackingNumber"
+      id="paymentInstructionId"
       type="text"
-      v-model="gpiTrackingNumber"
-      placeholder="GPI Tracking Number"
+      v-model="paymentInstructionId"
+      placeholder="Payment Instruction ID"
       class="w-full bg-gray-100 text-gray-400 placeholder-gray-400 rounded-lg py-3 px-4 mb-1 text-sm font-normal focus:outline-none"
       :disabled="loading"
     />
@@ -80,7 +80,7 @@ const router = useRouter()
 
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api' as const
 
-const gpiTrackingNumber = ref<string>('') // input tetap, hanya nama param API yang berubah
+const paymentInstructionId = ref<string>('')
 const fieldError = ref<string>('')
 const loading = ref<boolean>(false)
 
@@ -109,9 +109,9 @@ function closeAlert() {
 
 async function handleContinue() {
   fieldError.value = ''
-  const gpi = gpiTrackingNumber.value.trim()
-  if (!gpi) {
-    fieldError.value = 'Please enter GPI tracking number.'
+  const pid = paymentInstructionId.value.trim()
+  if (!pid) {
+    fieldError.value = 'Please enter Payment Instruction ID.'
     return
   }
 
@@ -123,8 +123,8 @@ async function handleContinue() {
 
   loading.value = true
   try {
-    // Kirim payment_instruction_id (BUKAN gpi_tracking_number)
-    const url = `${API_BASE}/validate-invoice?payment_instruction_id=${encodeURIComponent(gpi)}`
+    // Validasi berdasarkan payment_instruction_id
+    const url = `${API_BASE}/validate-invoice?payment_instruction_id=${encodeURIComponent(pid)}`
     const res = await fetch(url, {
       method: 'GET',
       headers: {
@@ -142,9 +142,9 @@ async function handleContinue() {
     }
 
     if (statusOk) {
-      router.push(`/detail-tracking?gpi_tracking_number=${encodeURIComponent(gpi)}`)
+      router.push(`/detail-tracking?payment_instruction_id=${encodeURIComponent(pid)}`)
     } else {
-      openAlert('error', 'Invalid tracking number.')
+      openAlert('error', 'Invalid Payment Instruction ID.')
     }
   } catch {
     openAlert('error', 'Failed to connect to server.')
