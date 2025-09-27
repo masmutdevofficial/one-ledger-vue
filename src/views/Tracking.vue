@@ -144,7 +144,7 @@ async function handleContinue() {
     if (statusOk) {
       router.push(`/detail-tracking?gpi_tracking_number=${encodeURIComponent(gpi)}`)
     } else {
-      openAlert('error', 'Invalid tracking number or not found.')
+      openAlert('error', 'Invalid tracking number.')
     }
   } catch {
     openAlert('error', 'Failed to connect to server.')
