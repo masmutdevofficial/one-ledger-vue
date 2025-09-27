@@ -199,7 +199,7 @@
         </div>
       </section>
 
-      <footer class="flex justify-center gap-4 py-5 bg-white rounded-b-md border-t border-gray-300">
+      <footer class="flex justify-center gap-4 py-5 bg-white rounded-b-md border-t border-gray-300 mb-10">
         <button
           type="button"
           class="border border-[#0071bc] hover:bg-[#e6f0fa] text-[#0071bc] text-sm font-normal px-5 py-2 rounded flex items-center gap-2"
