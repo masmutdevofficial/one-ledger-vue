@@ -39,9 +39,7 @@
           </div>
         </div>
 
-        <div
-          class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 px-5 py-4 text-sm text-gray-700"
-        >
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 px-5 py-4 text-sm text-gray-700">
           <div>
             <p class="font-semibold">GPI Tracking Number</p>
             <p>{{ fmt(data.gpi_tracking_number) }}</p>
@@ -85,23 +83,17 @@
         <!-- Instructing Bank -->
         <div class="relative pl-5">
           <div class="absolute left-0 top-2 flex flex-col items-center">
-            <div
-              class="w-6 h-6 rounded-full bg-[#0071bc] flex items-center justify-center text-white text-xs"
-            >
+            <div class="w-6 h-6 rounded-full bg-[#0071bc] flex items-center justify-center text-white text-xs">
               <Icon icon="tabler:arrow-down" />
             </div>
             <div class="w-[2px] bg-[#0071bc] flex-1 mt-1"></div>
           </div>
 
-          <div
-            class="bg-gray-100 px-4 ml-3 py-3 rounded text-xs font-semibold text-gray-700 uppercase"
-          >
+          <div class="bg-gray-100 px-4 ml-3 py-3 rounded text-xs font-semibold text-gray-700 uppercase">
             INSTRUCTING BANK
           </div>
 
-          <div
-            class="grid grid-cols-1 sm:grid-cols-2 ml-3 gap-x-8 gap-y-2 mt-2 text-xs text-gray-700"
-          >
+          <div class="grid grid-cols-1 sm:grid-cols-2 ml-3 gap-x-8 gap-y-2 mt-2 text-xs text-gray-700">
             <div>
               <p class="font-semibold">BIC</p>
               <p>{{ fmt(data.instructing_bic) }}</p>
@@ -128,23 +120,17 @@
         <!-- Intermediary Bank -->
         <div class="relative pl-5">
           <div class="absolute left-0 top-2 flex flex-col items-center">
-            <div
-              class="w-6 h-6 rounded-full bg-[#0071bc] flex items-center justify-center text-white text-xs"
-            >
+            <div class="w-6 h-6 rounded-full bg-[#0071bc] flex items-center justify-center text-white text-xs">
               <Icon icon="tabler:arrow-down" />
             </div>
             <div class="w-[2px] bg-[#0071bc] flex-1 mt-1"></div>
           </div>
 
-          <div
-            class="bg-gray-100 px-4 ml-3 py-3 rounded text-xs font-semibold text-gray-700 uppercase"
-          >
+          <div class="bg-gray-100 px-4 ml-3 py-3 rounded text-xs font-semibold text-gray-700 uppercase">
             INTERMEDIARY BANK
           </div>
 
-          <div
-            class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 ml-3 mt-2 text-xs text-gray-700"
-          >
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 ml-3 mt-2 text-xs text-gray-700">
             <div>
               <p class="font-semibold">BIC</p>
               <p>{{ fmt(data.intermediary_bic) }}</p>
@@ -171,23 +157,16 @@
         <!-- Beneficiary / Instructed Bank -->
         <div class="relative pl-5">
           <div class="absolute left-0 top-2 flex flex-col items-center">
-            <div
-              class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs"
-              :class="beneficiaryBgClass"
-            >
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs" :class="beneficiaryBgClass">
               <Icon :icon="beneficiaryIcon" />
             </div>
           </div>
 
-          <div
-            class="bg-gray-100 px-4 ml-3 py-3 rounded text-xs font-semibold text-gray-700 uppercase"
-          >
+          <div class="bg-gray-100 px-4 ml-3 py-3 rounded text-xs font-semibold text-gray-700 uppercase">
             BENEFICIARY / INSTRUCTED BANK
           </div>
 
-          <div
-            class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 ml-3 mt-2 text-xs text-gray-700"
-          >
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 ml-3 mt-2 text-xs text-gray-700">
             <div>
               <p class="font-semibold">BIC</p>
               <p>{{ fmt(data.beneficiary_bic) }}</p>
@@ -211,8 +190,7 @@
               <p>
                 {{
                   fmt(data.payment_credited_at)
-                    ? data.payment_credited_at +
-                      (data.payment_credited_tz ? ' ' + data.payment_credited_tz : '')
+                    ? data.payment_credited_at + (data.payment_credited_tz ? ' ' + data.payment_credited_tz : '')
                     : '-'
                 }}
               </p>
@@ -356,17 +334,25 @@ async function fetchDetail(): Promise<void> {
   invalid.value = false
 
   const token = localStorage.getItem('token')
-  const gpi = String((route.query.gpi_tracking_number as string) || '').trim()
 
-  if (!token || !gpi) {
+  // Ambil id dari URL: utamakan payment_instruction_id; fallback gpi_tracking_number
+  const paymentInstructionId = String(
+    (route.query.payment_instruction_id as string) ||
+      (route.query.gpi_tracking_number as string) ||
+      '',
+  ).trim()
+
+  if (!token || !paymentInstructionId) {
     invalid.value = true
     loading.value = false
     return
   }
 
   try {
-    // 1) validate gpi (tanpa kirim id)
-    const validateUrl = `${API_BASE}/validate-invoice?gpi_tracking_number=${encodeURIComponent(gpi)}`
+    // 1) validate by payment_instruction_id
+    const validateUrl = `${API_BASE}/validate-invoice?payment_instruction_id=${encodeURIComponent(
+      paymentInstructionId,
+    )}`
     const vres = await fetch(validateUrl, {
       method: 'GET',
       headers: {
@@ -388,15 +374,31 @@ async function fetchDetail(): Promise<void> {
       return
     }
 
-    // 2) fetch data-invoice
-    const detailUrl = `${API_BASE}/data-invoice?gpi_tracking_number=${encodeURIComponent(gpi)}`
-    const dres = await fetch(detailUrl, {
+    // 2) fetch data-invoice (coba pakai payment_instruction_id; fallback ke gpi_tracking_number)
+    let detailUrl = `${API_BASE}/data-invoice?payment_instruction_id=${encodeURIComponent(
+      paymentInstructionId,
+    )}`
+    let dres = await fetch(detailUrl, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
       },
     })
+
+    // fallback kalau endpoint hanya kenal gpi_tracking_number:
+    if (!dres.ok) {
+      detailUrl = `${API_BASE}/data-invoice?gpi_tracking_number=${encodeURIComponent(
+        paymentInstructionId,
+      )}`
+      dres = await fetch(detailUrl, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+    }
 
     if (!dres.ok) {
       invalid.value = true

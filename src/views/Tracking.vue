@@ -80,7 +80,7 @@ const router = useRouter()
 
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api' as const
 
-const gpiTrackingNumber = ref<string>('')
+const gpiTrackingNumber = ref<string>('') // input tetap, hanya nama param API yang berubah
 const fieldError = ref<string>('')
 const loading = ref<boolean>(false)
 
@@ -123,8 +123,8 @@ async function handleContinue() {
 
   loading.value = true
   try {
-    // Sanctum: server tahu user dari Bearer token, jadi cukup kirim GPI saja
-    const url = `${API_BASE}/validate-invoice?gpi_tracking_number=${encodeURIComponent(gpi)}`
+    // Kirim payment_instruction_id (BUKAN gpi_tracking_number)
+    const url = `${API_BASE}/validate-invoice?payment_instruction_id=${encodeURIComponent(gpi)}`
     const res = await fetch(url, {
       method: 'GET',
       headers: {
