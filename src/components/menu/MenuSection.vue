@@ -59,7 +59,7 @@ const logout = async () => {
           alt="Transaction Check"
           class="w-6 h-6 object-contain brightness-40"
         />
-        <span>Tracking</span>
+        <span>Tracking Funds</span>
       </div>
       <Icon icon="tabler:chevron-right" class="text-gray-400" />
     </RouterLink>

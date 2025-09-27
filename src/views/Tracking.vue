@@ -3,74 +3,23 @@
     <h1 class="text-black text-lg font-normal mb-3">Payment Tracking</h1>
 
     <input
-      id="emailPhone"
+      id="gpiTrackingNumber"
       type="text"
-      v-model="emailPhone"
-      placeholder="Tracking ID"
+      v-model="gpiTrackingNumber"
+      placeholder="GPI Tracking Number"
       class="w-full bg-gray-100 text-gray-400 placeholder-gray-400 rounded-lg py-3 px-4 mb-1 text-sm font-normal focus:outline-none"
-      :disabled="false"
+      :disabled="loading"
     />
     <small v-if="fieldError" class="block text-xs text-red-600 mb-3">{{ fieldError }}</small>
 
     <button
       type="button"
-      class="w-full bg-teal-400 hover:bg-teal-500 text-white text-sm font-normal py-3 rounded-lg"
+      class="w-full bg-teal-400 hover:bg-teal-500 text-white text-sm font-normal py-3 rounded-lg disabled:opacity-60"
+      :disabled="loading"
       @click="handleContinue"
     >
-      Continue
+      {{ loading ? 'Checking…' : 'Continue' }}
     </button>
-  </div>
-
-  <!-- Modal Password (lokal) -->
-  <div
-    v-if="pwModal.open"
-    class="fixed inset-0 z-51 flex items-center justify-center"
-    aria-modal="true"
-    role="dialog"
-  >
-    <div class="absolute inset-0 bg-black/30" @click="closePwModal"></div>
-
-    <form
-      class="no-ios-zoom relative z-10 w-[92%] max-w-sm rounded-2xl bg-white p-5 shadow-lg"
-      @submit.prevent="submitPassword"
-    >
-      <div class="mb-3">
-        <h3 class="text-base font-semibold">Security Check</h3>
-        <p class="mt-1 text-xs text-gray-600">
-          Enter your security password (same as your login password) to continue.
-        </p>
-      </div>
-
-      <label class="block text-xs text-gray-600 mb-1">Password</label>
-      <input
-        v-model="pwModal.password"
-        type="password"
-        inputmode="text"
-        autocomplete="current-password"
-        required
-        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300"
-      />
-
-      <p v-if="pwModal.error" class="mt-2 text-xs text-red-600">{{ pwModal.error }}</p>
-
-      <div class="mt-4 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          class="text-xs px-3 py-1.5 rounded border border-gray-300"
-          @click="closePwModal"
-          :disabled="pwModal.loading"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="text-xs px-3 py-1.5 rounded bg-teal-500 text-white disabled:opacity-60"
-          :disabled="pwModal.loading"
-        >
-          {{ pwModal.loading ? 'Verifying…' : 'Verify & Continue' }}
-        </button>
-      </div>
-    </form>
   </div>
 
   <!-- ALERT lokal -->
@@ -131,8 +80,9 @@ const router = useRouter()
 
 const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
 
-const emailPhone = ref<string>('')
+const gpiTrackingNumber = ref<string>('')
 const fieldError = ref<string>('')
+const loading = ref<boolean>(false)
 
 /* ===== Alert lokal ===== */
 type AlertType = 'success' | 'error'
@@ -157,113 +107,94 @@ function closeAlert() {
   alert.value.open = false
 }
 
-/* ===== Modal password ===== */
-const pwModal = ref<{ open: boolean; password: string; loading: boolean; error: string }>({
-  open: false,
-  password: '',
-  loading: false,
-  error: '',
-})
-
-function handleContinue() {
-  fieldError.value = ''
-  if (!emailPhone.value.trim()) {
-    fieldError.value = 'Please enter email or phone.'
-    return
-  }
-
-  const token = localStorage.getItem('token')
-  if (!token) {
-    openAlert('error', 'Unauthorized: token not found.')
-    return
-  }
-
-  // buka modal password
-  pwModal.value.open = true
-  pwModal.value.password = ''
-  pwModal.value.error = ''
-}
-
-function closePwModal() {
-  if (pwModal.value.loading) return
-  pwModal.value.open = false
-  pwModal.value.password = ''
-  pwModal.value.error = ''
-}
-
-async function submitPassword() {
-  pwModal.value.error = ''
-  const token = localStorage.getItem('token')
-  if (!token) {
-    openAlert('error', 'Unauthorized: token not found.')
-    return
-  }
-  if (!pwModal.value.password.trim()) {
-    pwModal.value.error = 'Password is required.'
-    return
-  }
-
-  pwModal.value.loading = true
+/** ===== Helper: ambil user id dari token (JWT) ===== */
+function base64UrlDecode(input: string): string {
   try {
-    // 1) verify password (text/plain)
-    const res = await fetch(`${API_BASE}/verify-transfer-password`, {
-      method: 'POST',
+    let s = input.replace(/-/g, '+').replace(/_/g, '/')
+    const pad = s.length % 4
+    if (pad) s += '='.repeat(4 - pad)
+    return decodeURIComponent(
+      Array.prototype.map
+        .call(atob(s), (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(''),
+    )
+  } catch {
+    return ''
+  }
+}
+
+function getUserIdFromToken(token: string): number | null {
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  const payloadStr = base64UrlDecode(parts[1])
+  if (!payloadStr) return null
+  try {
+    const payload = JSON.parse(payloadStr) as Record<string, unknown>
+    const candidate =
+      (payload.id as unknown) ??
+      (payload.user_id as unknown) ??
+      (payload.sub as unknown) ??
+      (payload.uid as unknown)
+    const n = Number(candidate)
+    return Number.isFinite(n) ? n : null
+  } catch {
+    return null
+  }
+}
+
+async function handleContinue() {
+  fieldError.value = ''
+  if (!gpiTrackingNumber.value.trim()) {
+    fieldError.value = 'Please enter GPI tracking number.'
+    return
+  }
+
+  const token = localStorage.getItem('token')
+  if (!token) {
+    openAlert('error', 'Unauthorized: token not found.')
+    return
+  }
+
+  const userId = getUserIdFromToken(token)
+  if (!userId) {
+    openAlert('error', 'Invalid token: user id not found.')
+    return
+  }
+
+  loading.value = true
+  try {
+    const url =
+      `${API_BASE}/validate-invoice` +
+      `?id=${encodeURIComponent(String(userId))}` +
+      `&gpi_tracking_number=${encodeURIComponent(gpiTrackingNumber.value.trim())}`
+
+    const res = await fetch(url, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/plain, */*',
+        Accept: 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ password: pwModal.value.password }),
     })
-    const msg = await res.text()
 
-    if (res.status === 200) {
-      // 2) continue: check email/phone target
-      const res2 = await fetch(`${API_BASE}/check-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ email: emailPhone.value }),
-      })
+    let statusOk = false
+    try {
+      const data = (await res.json()) as { status?: boolean }
+      statusOk = Boolean(data?.status)
+    } catch {
+      statusOk = false
+    }
 
-      if (!res2.ok) {
-        // coba ambil detail error json/text
-        let errText = `Failed to verify recipient (HTTP ${res2.status}).`
-        try {
-          const t = await res2.text()
-          errText = t || errText
-        } catch {}
-        openAlert('error', errText)
-        pwModal.value.loading = false
-        return
-      }
-
-      const data = (await res2.json()) as {
-        status?: string
-        data?: { email?: string }
-        message?: string
-      }
-      if (data.status === 'success' && data.data && data.data.email) {
-        closePwModal()
-        router.push(`/transfer-detail?email=${encodeURIComponent(data.data.email)}`)
-      } else {
-        openAlert('error', data.message || 'User not found or not verified!')
-      }
-    } else if (res.status === 401) {
-      pwModal.value.error = msg || 'Unauthorized.'
-    } else if (res.status === 422) {
-      // pesan dari API: "Password is incorrect." atau lainnya
-      pwModal.value.error = msg || 'Password is incorrect.'
+    if (statusOk) {
+      router.push(
+        `/detail-tracking?gpi_tracking_number=${encodeURIComponent(gpiTrackingNumber.value.trim())}`,
+      )
     } else {
-      pwModal.value.error = msg || `Verification failed (HTTP ${res.status}).`
+      openAlert('error', 'Invalid tracking number or not found.')
     }
   } catch {
-    pwModal.value.error = 'Failed to connect to server.'
+    openAlert('error', 'Failed to connect to server.')
   } finally {
-    pwModal.value.loading = false
+    loading.value = false
   }
 }
 </script>
