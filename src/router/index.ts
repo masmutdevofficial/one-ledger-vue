@@ -184,7 +184,7 @@ const routes = [
       },
       {
         path: 'futures/:username/history',
-        component: () => import('@/views/FuturesHistory.vue'),
+        component: () => import('@/views/NewFuturesHistory.vue'),
       },
       // 404 Not Found
       {
