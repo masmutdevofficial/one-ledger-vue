@@ -1,6 +1,17 @@
 <!-- TradeHistoryCard.vue -->
 <template>
   <div class="mx-5 mb-20">
+    <div class="relative flex items-center justify-center py-4">
+      <button
+        type="button"
+        class="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-700 transition hover:bg-gray-100 "
+        aria-label="Back"
+        @click="goBack"
+      >
+        <Icon icon="tabler:arrow-left" class="h-5 w-5" />
+      </button>
+      <h2 class="text-sm font-semibold text-black ">My Trade</h2>
+    </div>
     <div v-if="loading" class="text-sm text-gray-500 py-6 text-center">Loading history…</div>
     <div v-else-if="errorMsg" class="text-sm text-red-500 py-6 text-center">{{ errorMsg }}</div>
     <div v-else-if="list.length === 0" class="text-sm text-gray-500 py-6 text-center">Tidak ada history.</div>
@@ -84,7 +95,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
 /** --- API base + helper --- */
@@ -118,6 +129,7 @@ type HistoryItem = {
 
 /** --- State --- */
 const route = useRoute()
+const router = useRouter()
 const items = ref<HistoryItem[]>([])
 const loading = ref(true)
 const errorMsg = ref<string | null>(null)
@@ -186,4 +198,9 @@ onMounted(load)
 
 /** List untuk template */
 const list = computed(() => items.value)
+
+function goBack() {
+  if (window.history.length > 1) router.back()
+  else router.push('/dashboard')
+}
 </script>

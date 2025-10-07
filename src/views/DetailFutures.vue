@@ -30,7 +30,7 @@
         <router-link v-if="trader && trader.id" :to="`/chats/${trader.id}`"
           class="ml-4 inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200"
           aria-label="Open chat" title="Message">
-          <img src="/img/chat-copy-trader.png" alt="Menu" class="w-5 h-5 object-contain" />
+          <img src="/img/chat-copy-trader.png" alt="Menu" class="w-4 h-4 object-contain" />
         </router-link>
       </div>
 
