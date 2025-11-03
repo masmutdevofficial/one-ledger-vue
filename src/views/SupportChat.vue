@@ -286,6 +286,15 @@ const isSendDisabled = computed(() => !draft.value.trim() && pending.value.lengt
 // Reply state (selected message to reply to)
 const replyTo = ref<{ sender: Sender; textSnippet: string } | null>(null)
 
+// Persisted reply context per message id and pending patches to reconcile after reload
+const replyContextById = ref<Record<string, { sender: Sender; textSnippet: string }>>({})
+const pendingReplyPatches = ref<Array<{
+  text: string
+  attNames: string[]
+  reply: { sender: Sender; textSnippet: string }
+  ts: number
+}>>([])
+
 /* ====== Actions ====== */
 function goBack() {
   if (window.history.length > 1) router.back()
@@ -367,6 +376,16 @@ async function send() {
       ? await Promise.all(oldPending.map(up => uploadFile(up)))
       : []
     const atts = uploaded.map(u => ({ type: u.type, url: u.url, file_name: u.name, mime_type: u.mime }))
+    // Create a pending patch so reply context is restored after reloading from server
+    const patchReply = optimistic.replyTo
+    if (patchReply) {
+      pendingReplyPatches.value.push({
+        text: optimistic.text || '',
+        attNames: (optimistic.attachments || []).map(a => a.name || '').filter(Boolean),
+        reply: patchReply,
+        ts: Date.now(),
+      })
+    }
     await svcHttp(`/svc/conversations/${conversationId.value}/messages`, {
       method: 'POST',
       body: JSON.stringify({ body: text || undefined, attachments: atts })
@@ -529,9 +548,45 @@ async function loadMessages() {
   const me = getUserId() || 0
   const rows = await svcHttp<SvcMessageItem[]>(`/svc/conversations/${conversationId.value}/messages?limit=50`)
   const mapped = rows.slice().reverse().map((m) => mapServerMessage(m, me))
+  // Rehydrate any known reply contexts by message id
+  for (const msg of mapped) {
+    const ctx = replyContextById.value[msg.id]
+    if (ctx) msg.replyTo = ctx
+  }
   messages.value = mapped
+  // Attempt to match and persist reply context for the last sent message if pending
+  applyPendingReplyPatches()
   await nextTick()
   scrollToBottom()
+}
+
+function arraysEqual(a: string[], b: string[]) {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+  return true
+}
+
+function applyPendingReplyPatches() {
+  if (!pendingReplyPatches.value.length || !messages.value.length) return
+  const now = Date.now()
+  // Try to match most recent user messages first
+  const userMessages = messages.value.filter(m => m.sender === 'user').slice().reverse()
+  const remaining: typeof pendingReplyPatches.value = []
+  for (const patch of pendingReplyPatches.value) {
+    // Expire patches older than 2 minutes to avoid wrong matches
+    if (now - patch.ts > 2 * 60 * 1000) continue
+    const match = userMessages.find(m => {
+      const names = (m.attachments || []).map(a => a.name || '').filter(Boolean)
+      return (m.text || '') === patch.text && arraysEqual(names, patch.attNames)
+    })
+    if (match) {
+      replyContextById.value[match.id] = patch.reply
+      match.replyTo = patch.reply
+    } else {
+      remaining.push(patch)
+    }
+  }
+  pendingReplyPatches.value = remaining
 }
 
 async function fetchUnread() {
