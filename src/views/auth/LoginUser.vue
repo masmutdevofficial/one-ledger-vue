@@ -102,6 +102,12 @@ async function login() {
       loading.value = false
       return
     }
+
+    // === simpan id user ===
+    if (data?.user?.id != null) {
+      localStorage.setItem('id', String(data.user.id))
+    }
+
     localStorage.setItem('token', data.token)
     router.push('/dashboard')
   } catch (error: unknown) {
