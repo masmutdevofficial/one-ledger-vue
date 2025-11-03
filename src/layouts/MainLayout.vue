@@ -115,12 +115,14 @@ function isActive(path: string): boolean {
   return route.path.startsWith(path)
 }
 
-const noHeaderPaths = ['/account'] // bisa ditambah: '/account/settings', dll
+const noHeaderPaths = ['/account', '/customer-service'] // bisa ditambah: '/account/settings', dll
 const hideHeader = computed(() => noHeaderPaths.some((p) => route.path.startsWith(p)))
 const hideBottomNav = computed(
   () =>
     route.name === 'chats' ||
     route.path.includes('/chats') ||
+    route.name === 'customer-service' ||
+    route.path.includes('/customer-service') ||
     route.name === 'smart-arbitrage' ||
     route.path.includes('/smart-arbitrage') ||
     route.name === 'event' ||
@@ -404,7 +406,7 @@ onBeforeUnmount(() => {
       <!-- Main Content -->
       <main
         class="flex-1 overflow-y-auto relative"
-        :class="$route.path === '/dashboard' ? '-pt-5' : 'pt-5'"
+        :class="['/dashboard', '/customer-service'].includes($route.path) ? '-pt-5' : 'pt-5'"
       >
         <!-- Loader -->
         <div

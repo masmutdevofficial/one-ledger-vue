@@ -167,6 +167,10 @@ const routes = [
         component: () => import('@/views/menu/MegaDrop.vue'),
       },
       {
+        path: 'customer-service',
+        component: () => import('@/views/SupportChat.vue'),
+      },
+      {
         path: 'chats/:threadId',
         component: () => import('@/views/CustomerServiceCopyTrade.vue'),
       },
