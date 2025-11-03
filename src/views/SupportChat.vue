@@ -48,7 +48,13 @@
           <div
             class="max-w-[85%] rounded-2xl px-3 py-2 relative"
             :class="m.sender === 'user' ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'"
+            @click="startReply(m)"
           >
+            <!-- Reply context inside bubble -->
+            <div v-if="m.replyTo" class="mb-1 border-l-2 pl-2 text-xs opacity-80">
+              Replying to {{ m.replyTo.sender === 'user' ? 'you' : 'assistant' }}:
+              {{ m.replyTo.textSnippet }}
+            </div>
             <!-- Text -->
             <p v-if="m.text" class="whitespace-pre-line break-words">
               {{ m.text }}
@@ -145,6 +151,14 @@
 
     <!-- Composer -->
     <form class="sticky bottom-0 bg-white border-t border-gray-200 shadow-md px-4 py-3" @submit.prevent="send">
+      <!-- Reply bar -->
+      <div v-if="replyTo" class="mb-2 text-xs text-gray-700 bg-gray-100 rounded p-2 flex items-center justify-between">
+        <div>
+          Replying to {{ replyTo.sender === 'user' ? 'you' : 'assistant' }}:
+          <strong>{{ replyTo.textSnippet }}</strong>
+        </div>
+        <button type="button" class="ml-2 text-gray-500" @click="replyTo = null" aria-label="Cancel reply">×</button>
+      </div>
       <div class="flex items-center gap-2">
         <!-- Input + plus button inside -->
         <div class="relative w-full">
@@ -237,6 +251,8 @@ interface Message {
   attachments?: AttachmentPreview[]
   status?: MsgStatus // hanya untuk 'user'
   createdAt: Date
+  // optional reply context (client-side)
+  replyTo?: { sender: Sender; textSnippet: string }
 }
 
 const router = useRouter()
@@ -266,6 +282,9 @@ const previewUrl = ref('')
 const previewName = ref('')
 
 const isSendDisabled = computed(() => !draft.value.trim() && pending.value.length === 0)
+
+// Reply state (selected message to reply to)
+const replyTo = ref<{ sender: Sender; textSnippet: string } | null>(null)
 
 /* ====== Actions ====== */
 function goBack() {
@@ -335,10 +354,12 @@ async function send() {
     attachments: pending.value.length ? [...pending.value] : undefined,
     status: 'sent',
     createdAt: new Date(),
+    replyTo: replyTo.value || undefined,
   }
   messages.value.push(optimistic)
   const oldPending = [...pending.value]
   draft.value = ''
+  replyTo.value = null
   nextTick(scrollToBottom)
 
   try {
@@ -389,6 +410,17 @@ function scrollToBottom() {
   const el = chatEl.value
   if (!el) return
   el.scrollTop = el.scrollHeight
+}
+
+function truncate(text: string, len: number) {
+  if (!text) return ''
+  return text.length > len ? text.slice(0, len) + '…' : text
+}
+
+function startReply(m: Message) {
+  const firstAtt = m.attachments && m.attachments.length ? m.attachments[0] : undefined
+  const text = m.text || (firstAtt ? firstAtt.name || firstAtt.type : '') || ''
+  replyTo.value = { sender: m.sender, textSnippet: truncate(text, 24) }
 }
 
 function openAttachment(a: AttachmentPreview) {
