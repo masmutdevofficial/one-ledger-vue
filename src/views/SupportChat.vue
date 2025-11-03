@@ -55,19 +55,21 @@
             </p>
 
             <!-- Attachments inside bubble -->
-            <div v-if="m.attachments?.length" class="mt-2 grid grid-cols-3 gap-2">
+            <div v-if="m.attachments?.length" class="mt-2 grid gap-2" :class="attachmentsGridColsClass(m.attachments.length)">
               <template v-for="a in m.attachments" :key="a.id">
                 <!-- Image preview -->
                 <img
                   v-if="a.type === 'image'"
                   :src="a.url"
                   :alt="a.name"
-                  class="w-28 h-28 object-cover rounded-lg border border-black/10"
+                  class="w-28 h-28 object-cover rounded-lg border border-black/10 cursor-pointer"
+                  @click.stop="openAttachment(a)"
                 />
                 <!-- PDF tile -->
                 <div
                   v-else
-                  class="w-28 h-28 rounded-lg border border-black/10 bg-white/70 grid place-items-center text-center p-2"
+                  class="w-28 h-28 rounded-lg border border-black/10 bg-white/70 grid place-items-center text-center p-2 cursor-pointer"
+                  @click.stop="openAttachment(a)"
                 >
                   <Icon icon="mdi:file-pdf-box" class="size-8 text-red-500" />
                   <p class="text-[11px] mt-1 line-clamp-2">{{ a.name }}</p>
@@ -190,6 +192,24 @@
         </button>
       </div>
     </form>
+
+    <!-- Attachment Preview Modal -->
+    <div
+      v-if="isPreviewOpen"
+      class="fixed inset-0 z-50 grid place-items-center bg-black/30 backdrop-blur-sm"
+      @click="closePreview"
+    >
+      <div class="max-w-[92vw] max-h-[88vh] bg-white rounded-lg shadow-xl overflow-hidden" @click.stop>
+        <div class="flex items-center justify-between px-4 py-2 border-b border-black/10">
+          <div class="text-sm font-medium truncate max-w-[70vw]">{{ previewName }}</div>
+          <button class="text-gray-600 hover:text-black px-2 py-1" @click="closePreview" aria-label="Close">✕</button>
+        </div>
+        <div class="p-2">
+          <img v-if="previewType === 'image'" :src="previewUrl" :alt="previewName" class="max-w-[88vw] max-h-[78vh] object-contain" />
+          <iframe v-else-if="previewType === 'pdf'" :src="previewUrl" class="w-[88vw] h-[78vh]" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -238,6 +258,12 @@ const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 const ACCEPT = '.pdf,.jpeg,.jpg,.webp,.png'
 
 const messages = ref<Message[]>([])
+
+// Attachment preview modal state
+const isPreviewOpen = ref(false)
+const previewType = ref<'image' | 'pdf' | null>(null)
+const previewUrl = ref('')
+const previewName = ref('')
 
 const isSendDisabled = computed(() => !draft.value.trim() && pending.value.length === 0)
 
@@ -363,6 +389,29 @@ function scrollToBottom() {
   const el = chatEl.value
   if (!el) return
   el.scrollTop = el.scrollHeight
+}
+
+function openAttachment(a: AttachmentPreview) {
+  previewType.value = a.type
+  previewUrl.value = a.url
+  previewName.value = a.name
+  isPreviewOpen.value = true
+}
+
+function closePreview() {
+  isPreviewOpen.value = false
+  previewType.value = null
+  previewUrl.value = ''
+  previewName.value = ''
+}
+
+function attachmentsGridColsClass(count: number) {
+  // Map to explicit Tailwind classes to avoid purge issues
+  return {
+    'grid-cols-1': count === 1,
+    'grid-cols-2': count === 2,
+    'grid-cols-3': count >= 3,
+  }
 }
 
 // simulateDelivery removed (now using real backend)
