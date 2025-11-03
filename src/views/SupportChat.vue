@@ -25,68 +25,83 @@
 
     <!-- Messages -->
     <main ref="chatEl" class="mt-3 flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-3">
-      <div
-        v-for="m in messages"
-        :key="m.id"
-        class="flex"
-        :class="m.sender === 'user' ? 'justify-end' : 'justify-start'"
-      >
+      <!-- Loading skeleton -->
+      <template v-if="isLoading">
+        <div class="flex justify-start">
+          <div class="w-2/3 h-14 bg-gray-100 rounded-2xl animate-pulse" />
+        </div>
+        <div class="flex justify-end">
+          <div class="w-1/2 h-10 bg-gray-100 rounded-2xl animate-pulse" />
+        </div>
+        <div class="flex justify-start">
+          <div class="w-3/4 h-16 bg-gray-100 rounded-2xl animate-pulse" />
+        </div>
+      </template>
+
+      <template v-else>
         <div
-          class="max-w-[85%] rounded-2xl px-3 py-2 relative"
-          :class="m.sender === 'user' ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'"
+          v-for="m in messages"
+          :key="m.id"
+          class="flex"
+          :class="m.sender === 'user' ? 'justify-end' : 'justify-start'"
         >
-          <!-- Text -->
-          <p v-if="m.text" class="whitespace-pre-line break-words">
-            {{ m.text }}
-          </p>
-
-          <!-- Attachments inside bubble -->
-          <div v-if="m.attachments?.length" class="mt-2 grid grid-cols-3 gap-2">
-            <template v-for="a in m.attachments" :key="a.id">
-              <!-- Image preview -->
-              <img
-                v-if="a.type === 'image'"
-                :src="a.url"
-                :alt="a.name"
-                class="w-28 h-28 object-cover rounded-lg border border-black/10"
-              />
-              <!-- PDF tile -->
-              <div
-                v-else
-                class="w-28 h-28 rounded-lg border border-black/10 bg-white/70 grid place-items-center text-center p-2"
-              >
-                <Icon icon="mdi:file-pdf-box" class="size-8 text-red-500" />
-                <p class="text-[11px] mt-1 line-clamp-2">{{ a.name }}</p>
-              </div>
-            </template>
-          </div>
-
-          <!-- time + ticks (bottom-right inside bubble) -->
           <div
-            class="mt-1 flex items-center gap-1 text-[10px] leading-none"
-            :class="m.sender === 'user' ? 'justify-end text-white/70' : 'justify-end text-gray-500'"
+            class="max-w-[85%] rounded-2xl px-3 py-2 relative"
+            :class="m.sender === 'user' ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'"
           >
-            <span>{{ formatTime(m.createdAt) }}</span>
-            <span v-if="m.sender === 'user'">
-              <Icon
-                v-if="m.status === 'sent'"
-                icon="mdi:check"
-                class="size-3.5 align-middle text-white/70"
-              />
-              <Icon
-                v-else-if="m.status === 'delivered'"
-                icon="mdi:check-all"
-                class="size-3.5 align-middle text-white/70"
-              />
-              <Icon
-                v-else
-                icon="mdi:check-all"
-                class="size-3.5 align-middle text-sky-500"
-              />
-            </span>
+            <!-- Text -->
+            <p v-if="m.text" class="whitespace-pre-line break-words">
+              {{ m.text }}
+            </p>
+
+            <!-- Attachments inside bubble -->
+            <div v-if="m.attachments?.length" class="mt-2 grid grid-cols-3 gap-2">
+              <template v-for="a in m.attachments" :key="a.id">
+                <!-- Image preview -->
+                <img
+                  v-if="a.type === 'image'"
+                  :src="a.url"
+                  :alt="a.name"
+                  class="w-28 h-28 object-cover rounded-lg border border-black/10"
+                />
+                <!-- PDF tile -->
+                <div
+                  v-else
+                  class="w-28 h-28 rounded-lg border border-black/10 bg-white/70 grid place-items-center text-center p-2"
+                >
+                  <Icon icon="mdi:file-pdf-box" class="size-8 text-red-500" />
+                  <p class="text-[11px] mt-1 line-clamp-2">{{ a.name }}</p>
+                </div>
+              </template>
+            </div>
+
+            <!-- time + ticks (bottom-right inside bubble) -->
+            <div
+              class="mt-1 flex items-center gap-1 text-[10px] leading-none"
+              :class="m.sender === 'user' ? 'justify-end text-white/70' : 'justify-end text-gray-500'"
+            >
+              <span>{{ formatTime(m.createdAt) }}</span>
+              <span v-if="m.sender === 'user'">
+                <Icon
+                  v-if="m.status === 'sent'"
+                  icon="mdi:check"
+                  class="size-3.5 align-middle text-white/70"
+                />
+                <Icon
+                  v-else-if="m.status === 'delivered'"
+                  icon="mdi:check-all"
+                  class="size-3.5 align-middle text-white/70"
+                />
+                <Icon
+                  v-else
+                  icon="mdi:check-all"
+                  class="size-3.5 align-middle text-sky-500"
+                />
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
     </main>
 
     <!-- Previews (to be sent) -->
@@ -179,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onUnmounted, computed } from 'vue'
+import { ref, nextTick, onUnmounted, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
 
@@ -191,7 +206,8 @@ interface AttachmentPreview {
   name: string
   type: 'image' | 'pdf'
   size: number
-  url: string // ObjectURL
+  url: string // ObjectURL or server URL
+  file?: File // present for unsent attachments
 }
 
 interface Message {
@@ -208,20 +224,20 @@ const chatEl = ref<HTMLElement | null>(null)
 const draft = ref('')
 const pending = ref<AttachmentPreview[]>([])
 const errorMsg = ref('')
+const isLoading = ref(true)
+const unreadCount = ref(0)
+const conversationId = ref<number | null>(null)
+const pollTimer = ref<number | null>(null)
+
+const BASE = 'https://api-chat-oneled.masmut.dev'
+const SERVICE_KEY = 'Frontera'
 
 const fileEl = ref<HTMLInputElement | null>(null)
 const MAX_FILES = 3
 const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 const ACCEPT = '.pdf,.jpeg,.jpg,.webp,.png'
 
-const messages = ref<Message[]>([
-  {
-    id: uid(),
-    sender: 'bot',
-    text: 'Hello! How can we assist you today?',
-    createdAt: new Date(),
-  },
-])
+const messages = ref<Message[]>([])
 
 const isSendDisabled = computed(() => !draft.value.trim() && pending.value.length === 0)
 
@@ -264,6 +280,7 @@ function onFileChange(e: Event) {
       size: f.size,
       type: f.type === 'application/pdf' ? 'pdf' : 'image',
       url,
+      file: f,
     })
   }
 
@@ -277,11 +294,15 @@ function removePending(idx: number) {
   pending.value.splice(idx, 1)
 }
 
-function send() {
+async function send() {
   const text = draft.value.trim()
   if (!text && pending.value.length === 0) return
+  if (!conversationId.value) {
+    await ensureConversation()
+    if (!conversationId.value) return
+  }
 
-  const msg: Message = {
+  const optimistic: Message = {
     id: uid(),
     sender: 'user',
     text: text || undefined,
@@ -289,25 +310,28 @@ function send() {
     status: 'sent',
     createdAt: new Date(),
   }
-
-  messages.value.push(msg)
+  messages.value.push(optimistic)
+  const oldPending = [...pending.value]
   draft.value = ''
-  clearPendingBlobs()
   nextTick(scrollToBottom)
 
-  // Simulasi status WhatsApp
-  simulateDelivery(msg.id)
-
-  // Simulasi balasan bot
-  setTimeout(() => {
-    messages.value.push({
-      id: uid(),
-      sender: 'bot',
-      text: 'Terima kasih! Kami akan cek pertanyaan Anda.',
-      createdAt: new Date(),
+  try {
+    const uploaded = oldPending.length
+      ? await Promise.all(oldPending.map(up => uploadFile(up)))
+      : []
+    const atts = uploaded.map(u => ({ type: u.type, url: u.url, file_name: u.name, mime_type: u.mime }))
+    await svcHttp(`/svc/conversations/${conversationId.value}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ body: text || undefined, attachments: atts })
     })
-    nextTick(scrollToBottom)
-  }, 900)
+    await loadMessages()
+    await markRead()
+  } catch (e) {
+    console.error('send fail', e)
+    errorMsg.value = (e as Error)?.message || 'Failed to send'
+  } finally {
+    clearPendingBlobs()
+  }
 }
 
 /* ====== Helpers ====== */
@@ -341,22 +365,122 @@ function scrollToBottom() {
   el.scrollTop = el.scrollHeight
 }
 
-function simulateDelivery(id: string) {
-  // delivered
-  setTimeout(() => {
-    const m = messages.value.find(x => x.id === id)
-    if (m && m.sender === 'user') m.status = 'delivered'
-  }, 700)
-
-  // read
-  setTimeout(() => {
-    const m = messages.value.find(x => x.id === id)
-    if (m && m.sender === 'user') m.status = 'read'
-  }, 1600)
-}
+// simulateDelivery removed (now using real backend)
 
 onUnmounted(() => {
   // bersihkan objectURL jika ada yang tersisa
   for (const p of pending.value) URL.revokeObjectURL(p.url)
+  if (pollTimer.value) window.clearInterval(pollTimer.value)
 })
+
+/* ====== Backend integration ====== */
+function getUserId(): number | null {
+  try {
+    const raw = localStorage.getItem('id')
+    const n = Number(raw)
+    return Number.isFinite(n) && n > 0 ? n : null
+  } catch { return null }
+}
+
+async function svcHttp<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+  const userId = getUserId()
+  if (!userId) throw new Error('User id not found in localStorage')
+  const headers: Record<string, string> = { 'x-service-key': SERVICE_KEY, 'x-user-id': String(userId) }
+  const extra = init?.headers
+  if (extra instanceof Headers) {
+    extra.forEach((v, k) => { headers[k] = v })
+  } else if (Array.isArray(extra)) {
+    for (const [k, v] of extra) headers[k] = v
+  } else if (extra && typeof extra === 'object') {
+    Object.assign(headers, extra as Record<string, string>)
+  }
+  const hasBody = typeof init?.body === 'string'
+  if (hasBody && !headers['Content-Type']) headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${BASE}${path}`, { ...init, headers })
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`
+    try { const j = await res.json(); if (j && j.message) msg = j.message } catch {}
+    throw new Error(msg)
+  }
+  const json = await res.json()
+  if (json && json.status === 'success' && 'data' in json) return json.data as T
+  return json as T
+}
+
+async function uploadFile(p: AttachmentPreview): Promise<{ url: string; name: string; mime: string; type: 'image' | 'pdf' }> {
+  if (!p.file) return { url: p.url, name: p.name, mime: p.type === 'image' ? 'image/*' : 'application/pdf', type: p.type }
+  const fd = new FormData()
+  fd.append('file', p.file)
+  const res = await fetch(`${BASE}/api/uploads`, { method: 'POST', body: fd })
+  if (!res.ok) throw new Error('Upload failed')
+  const json = await res.json().catch(() => null)
+  const item = Array.isArray(json?.data) ? json.data[0] : json?.data
+  if (!item?.url) throw new Error('Invalid upload response')
+  return { url: item.url, name: item.file_name || p.name, mime: item.mime_type || 'application/octet-stream', type: p.type }
+}
+
+async function ensureConversation() {
+  if (conversationId.value) return conversationId.value
+  const data = await svcHttp<Array<{ id: number }>>('/svc/conversations/direct', { method: 'POST' })
+  const id = Array.isArray(data) ? data[0]?.id : undefined
+  conversationId.value = Number(id)
+  return conversationId.value
+}
+
+interface SvcAttachment { type: 'image' | 'pdf'; url: string; file_name?: string | null; mime_type?: string | null; byte_size?: number | null }
+interface SvcMessageItem { id: number; conversation_id: number; sender_id: number | null; body: string | null; created_at: string; attachments?: SvcAttachment[] }
+
+function mapServerMessage(m: SvcMessageItem, me: number): Message {
+  const attachments: AttachmentPreview[] | undefined = Array.isArray(m.attachments) && m.attachments.length
+    ? m.attachments.map((a) => ({ id: uid(), name: a.file_name || 'file', type: a.type, size: a.byte_size || 0, url: a.url }))
+    : undefined
+  return {
+    id: String(m.id),
+    sender: m.sender_id && Number(m.sender_id) === me ? 'user' : 'bot',
+    text: m.body || undefined,
+    attachments,
+    createdAt: new Date(m.created_at)
+  }
+}
+
+async function loadMessages() {
+  if (!conversationId.value) await ensureConversation()
+  const me = getUserId() || 0
+  const rows = await svcHttp<SvcMessageItem[]>(`/svc/conversations/${conversationId.value}/messages?limit=50`)
+  const mapped = rows.slice().reverse().map((m) => mapServerMessage(m, me))
+  messages.value = mapped
+  await nextTick()
+  scrollToBottom()
+}
+
+async function fetchUnread() {
+  const rows = await svcHttp<Array<{ conversation_id: number; unread: number }>>('/svc/unread')
+  unreadCount.value = rows.reduce((acc, r) => acc + Number(r.unread || 0), 0)
+}
+
+async function markRead() {
+  if (!conversationId.value) return
+  await svcHttp(`/svc/conversations/${conversationId.value}/read`, { method: 'POST' })
+  unreadCount.value = 0
+}
+
+async function init() {
+  isLoading.value = true
+  try {
+    await ensureConversation()
+    await loadMessages()
+    await markRead()
+    await fetchUnread()
+    // Poll every 15s
+    pollTimer.value = window.setInterval(async () => {
+      await loadMessages()
+      await markRead()
+      await fetchUnread()
+    }, 15000)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => { init() })
 </script>
