@@ -4,44 +4,60 @@ import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useNotificationCounter } from '@/composables/useNotificationCounter'
 
-// Deklarasi global agar TypeScript kenal objek LiveChatWidget
-declare global {
-  interface Window {
-    LiveChatWidget?: {
-      call: (method: string, ...args: any[]) => void
-      on?: (event: string, cb: (...args: any[]) => void) => void
-    }
+// ===== Support chat unread (via Fastify /svc) =====
+const SERVICE_KEY = 'Frontera'
+const BASE = 'https://api-chat-oneled.masmut.dev'
+const supportUnread = ref(0)
+const supportLabel = computed(() => (supportUnread.value > 99 ? '99+' : String(supportUnread.value)))
+let supportTimer: number | null = null
+
+function getUserId(): number | null {
+  try {
+    const raw = localStorage.getItem('id')
+    const n = Number(raw)
+    return Number.isFinite(n) && n > 0 ? n : null
+  } catch {
+    return null
   }
 }
 
-function whenWidgetReady(): Promise<void> {
-  return new Promise((resolve) => {
-    if (window.LiveChatWidget) return resolve()
-    const check = setInterval(() => {
-      if (window.LiveChatWidget) {
-        clearInterval(check)
-        resolve()
-      }
-    }, 50)
-    setTimeout(() => {
-      clearInterval(check)
-      resolve() // fail-safe
-    }, 5000)
-  })
+function getProp(obj: unknown, key: string): unknown {
+  if (obj && typeof obj === 'object' && key in (obj as Record<string, unknown>)) {
+    return (obj as Record<string, unknown>)[key]
+  }
+  return undefined
 }
 
-// Sembunyikan widget saat komponen mount (hindari bubble default)
-onMounted(async () => {
-  await whenWidgetReady()
-  try {
-    window.LiveChatWidget?.call('hide') // pastikan tidak nongol di pojok
-  } catch {}
-})
+async function svcHttp<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+  const userId = getUserId()
+  if (!userId) throw new Error('User id not found')
+  const headers: Record<string, string> = { 'x-service-key': SERVICE_KEY, 'x-user-id': String(userId) }
+  const extra = init?.headers
+  if (extra instanceof Headers) extra.forEach((v, k) => (headers[k] = v))
+  else if (Array.isArray(extra)) for (const [k, v] of extra) headers[k] = v
+  else if (extra && typeof extra === 'object') Object.assign(headers, extra as Record<string, string>)
+  const hasBody = typeof init?.body === 'string'
+  if (hasBody && !headers['Content-Type']) headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${BASE}${path}`, { ...init, headers })
+  const json: unknown = await res.json().catch(() => null)
+  if (!res.ok) {
+    const msgVal = getProp(json, 'message')
+    const msg = typeof msgVal === 'string' ? msgVal : `HTTP ${res.status}`
+    throw new Error(msg)
+  }
+  const statusVal = getProp(json, 'status')
+  const dataVal = getProp(json, 'data')
+  if (statusVal === 'success' && dataVal !== undefined) return dataVal as T
+  return json as T
+}
 
-async function openChat() {
-  await whenWidgetReady()
-  // Pastikan tampil sebagai popup saat diklik
-  window.LiveChatWidget?.call('maximize')
+async function fetchSupportUnread() {
+  try {
+    const rows = await svcHttp<Array<{ conversation_id: number; unread: number }>>('/svc/unread')
+    supportUnread.value = rows.reduce((acc, r) => acc + Number(r.unread || 0), 0)
+  } catch {
+    supportUnread.value = 0
+  }
 }
 
 // state modal
@@ -109,6 +125,13 @@ onMounted(async () => {
     }
   }
   isLoading.value = false
+
+  // kick off support unread polling for authenticated pages
+  if (!publicPages.includes(route.path)) {
+    await fetchSupportUnread()
+    if (supportTimer) window.clearInterval(supportTimer)
+    supportTimer = window.setInterval(fetchSupportUnread, 15000)
+  }
 })
 
 function isActive(path: string): boolean {
@@ -294,6 +317,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('focus', onFocus)
+  if (supportTimer) window.clearInterval(supportTimer)
 })
 </script>
 
@@ -350,13 +374,23 @@ onBeforeUnmount(() => {
           </RouterLink>
         </div>
 
-        <!-- Support -->
-        <!-- tetap mount widget tapi hidden -->
-        <!-- Mount widget tapi sembunyikan launchernya -->
-        <!-- Widget di-mount tapi disembunyikan -->
-        <button type="button" aria-label="Support" class="focus:outline-none" @click="openChat">
+        <!-- Support (link to customer-service with unread badge) -->
+        <RouterLink
+          to="/customer-service"
+          aria-label="Support"
+          class="focus:outline-none relative inline-block"
+        >
           <img src="/img/newmenu/support.png" alt="Menu" class="w-7 h-7 object-contain" />
-        </button>
+          <span
+            v-if="supportUnread > 0"
+            :class="[
+              'absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse min-w-[1rem] px-1',
+              badgeClass,
+            ]"
+          >
+            {{ supportLabel }}
+          </span>
+        </RouterLink>
       </nav>
 
       <!-- Search Bar hanya di /dashboard -->
