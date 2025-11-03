@@ -47,11 +47,19 @@
         >
           <div
             class="max-w-[85%] rounded-2xl px-3 py-2 relative"
-            :class="m.sender === 'user' ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'"
-            @click="startReply(m)"
+            :id="`msg-${m.id}`"
+            :class="[
+              m.sender === 'user' ? 'bg-black text-white' : 'bg-gray-100 text-gray-900',
+              highlightedIds.has(String(m.id)) ? 'ring-2 ring-yellow-400' : ''
+            ]"
           >
             <!-- Reply context inside bubble -->
-            <div v-if="m.replyTo" class="mb-1 border-l-2 pl-2 text-xs opacity-80">
+            <div
+              v-if="m.replyTo"
+              class="mb-1 border-l-2 pl-2 text-xs opacity-80 cursor-pointer hover:underline"
+              @click.stop="m.replyTo?.refId && jumpToMessage(m.replyTo.refId)"
+              title="Jump to replied message"
+            >
               Replying to {{ m.replyTo.sender === 'user' ? 'you' : 'assistant' }}:
               {{ m.replyTo.textSnippet }}
             </div>
@@ -106,6 +114,14 @@
                   class="size-3.5 align-middle text-sky-500"
                 />
               </span>
+            </div>
+            <div
+              class="mt-0.5 text-[11px]"
+              :class="m.sender === 'user' ? 'text-white/70 text-right' : 'text-gray-600 text-left'"
+            >
+              <button type="button" class="hover:underline cursor-pointer" @click.stop="startReply(m)">
+                Reply
+              </button>
             </div>
           </div>
         </div>
@@ -252,7 +268,7 @@ interface Message {
   status?: MsgStatus // hanya untuk 'user'
   createdAt: Date
   // optional reply context (client-side)
-  replyTo?: { sender: Sender; textSnippet: string }
+  replyTo?: { sender: Sender; textSnippet: string; refId?: number }
 }
 
 const router = useRouter()
@@ -274,6 +290,7 @@ const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 const ACCEPT = '.pdf,.jpeg,.jpg,.webp,.png'
 
 const messages = ref<Message[]>([])
+const highlightedIds = ref<Set<string>>(new Set())
 
 // Attachment preview modal state
 const isPreviewOpen = ref(false)
@@ -285,6 +302,7 @@ const isSendDisabled = computed(() => !draft.value.trim() && pending.value.lengt
 
 // Reply state (selected message to reply to)
 const replyTo = ref<{ sender: Sender; textSnippet: string } | null>(null)
+const replyTargetId = ref<number | null>(null)
 
 // Persisted reply context per message id and pending patches to reconcile after reload
 const replyContextById = ref<Record<string, { sender: Sender; textSnippet: string }>>({})
@@ -369,6 +387,7 @@ async function send() {
   const oldPending = [...pending.value]
   draft.value = ''
   replyTo.value = null
+  replyTargetId.value = null
   nextTick(scrollToBottom)
 
   try {
@@ -388,7 +407,7 @@ async function send() {
     }
     await svcHttp(`/svc/conversations/${conversationId.value}/messages`, {
       method: 'POST',
-      body: JSON.stringify({ body: text || undefined, attachments: atts })
+      body: JSON.stringify({ body: text || undefined, replyToMessageId: replyTargetId.value ?? undefined, attachments: atts })
     })
     await loadMessages()
     await markRead()
@@ -440,6 +459,19 @@ function startReply(m: Message) {
   const firstAtt = m.attachments && m.attachments.length ? m.attachments[0] : undefined
   const text = m.text || (firstAtt ? firstAtt.name || firstAtt.type : '') || ''
   replyTo.value = { sender: m.sender, textSnippet: truncate(text, 24) }
+  replyTargetId.value = Number(m.id) || null
+}
+
+function jumpToMessage(refId: number) {
+  if (!refId) return
+  const el = document.getElementById(`msg-${refId}`)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    highlightedIds.value.add(String(refId))
+    window.setTimeout(() => {
+      highlightedIds.value.delete(String(refId))
+    }, 1200)
+  }
 }
 
 function openAttachment(a: AttachmentPreview) {
@@ -528,7 +560,7 @@ async function ensureConversation() {
 }
 
 interface SvcAttachment { type: 'image' | 'pdf'; url: string; file_name?: string | null; mime_type?: string | null; byte_size?: number | null }
-interface SvcMessageItem { id: number; conversation_id: number; sender_id: number | null; body: string | null; created_at: string; attachments?: SvcAttachment[] }
+interface SvcMessageItem { id: number; conversation_id: number; sender_id: number | null; body: string | null; reply_to_message_id: number | null; created_at: string; attachments?: SvcAttachment[] }
 
 function mapServerMessage(m: SvcMessageItem, me: number): Message {
   const attachments: AttachmentPreview[] | undefined = Array.isArray(m.attachments) && m.attachments.length
@@ -548,7 +580,21 @@ async function loadMessages() {
   const me = getUserId() || 0
   const rows = await svcHttp<SvcMessageItem[]>(`/svc/conversations/${conversationId.value}/messages?limit=50`)
   const mapped = rows.slice().reverse().map((m) => mapServerMessage(m, me))
-  // Rehydrate any known reply contexts by message id
+  // Link server-side reply contexts when referenced message is within the batch
+  const byId = new Map(rows.map(r => [Number(r.id), r]))
+  for (let i = 0; i < mapped.length; i++) {
+    const original = rows[rows.length - 1 - i]
+    if (!original) continue
+    if (original.reply_to_message_id) {
+      const ref = byId.get(Number(original.reply_to_message_id))
+      if (ref) {
+        const firstAtt = (ref.attachments || [])[0]
+        const snippet = ref.body || (firstAtt ? firstAtt.file_name || firstAtt.type : '') || ''
+          mapped[i].replyTo = { sender: ref.sender_id && Number(ref.sender_id) === me ? 'user' : 'bot', textSnippet: truncate(snippet, 24), refId: Number(original.reply_to_message_id) }
+      }
+    }
+  }
+  // Rehydrate any known reply contexts by message id (fallback/persist)
   for (const msg of mapped) {
     const ctx = replyContextById.value[msg.id]
     if (ctx) msg.replyTo = ctx
