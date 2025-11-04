@@ -41,6 +41,7 @@ const logout = async () => {
     // ignore
   } finally {
     localStorage.removeItem('token')
+    localStorage.removeItem('id')
     showLogoutModal.value = false
     router.replace('/login')
   }
