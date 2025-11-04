@@ -163,6 +163,7 @@ const modal = useApiAlertStore()
 
 const logout = () => {
   localStorage.removeItem('token')
+  localStorage.removeItem('id')
   showLogoutModal.value = false
   router.replace('/login')
 }
