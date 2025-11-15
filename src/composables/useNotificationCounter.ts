@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+const API_BASE = 'https://su.oneled.io/api'
 
 function getToken(): string | null {
   return localStorage.getItem('token')

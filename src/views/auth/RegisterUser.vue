@@ -119,7 +119,7 @@ const handleRegister = async () => {
 
   loading.value = true
   try {
-    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/register', {
+    const res = await fetch('https://su.oneled.io/api/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

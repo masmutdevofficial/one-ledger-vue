@@ -94,7 +94,7 @@ async function fetchStatus() {
 
     // Pakai endpoint query-string: /withdraws/status?order_id=...
     const res = await fetch(
-      `https://one-ledger.masmutpanel.my.id/api/withdraws/status?order_id=${encodeURIComponent(orderId.value)}`,
+      `https://su.oneled.io/api/withdraws/status?order_id=${encodeURIComponent(orderId.value)}`,
       {
         headers: {
           Accept: 'application/json',

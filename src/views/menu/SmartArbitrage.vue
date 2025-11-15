@@ -341,7 +341,7 @@ import { useRoute } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
 /** KONFIGURASI */
-const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const API_BASE = 'https://su.oneled.io'
 const TOKEN = localStorage.getItem('token') ?? ''
 
 /** STORE ALERT */

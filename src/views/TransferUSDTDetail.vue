@@ -111,7 +111,7 @@ onMounted(async () => {
   try {
     const token = localStorage.getItem('token')
     if (!token) return
-    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/get-saldo', {
+    const res = await fetch('https://su.oneled.io/api/get-saldo', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
@@ -145,7 +145,7 @@ async function handleContinue() {
       confirming.value = false
       return
     }
-    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/save-transfer', {
+    const res = await fetch('https://su.oneled.io/api/save-transfer', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

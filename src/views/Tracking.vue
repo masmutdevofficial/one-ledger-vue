@@ -78,7 +78,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api' as const
+const API_BASE = 'https://su.oneled.io/api' as const
 
 const paymentInstructionId = ref<string>('')
 const fieldError = ref<string>('')

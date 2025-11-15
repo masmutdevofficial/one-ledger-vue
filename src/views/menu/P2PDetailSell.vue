@@ -110,7 +110,7 @@ const router = useRouter()
 const route = useRoute()
 const modal = useApiAlertStore()
 
-const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const API_BASE = 'https://su.oneled.io'
 const TOKEN = () => localStorage.getItem('token') || ''
 
 function goBack() {

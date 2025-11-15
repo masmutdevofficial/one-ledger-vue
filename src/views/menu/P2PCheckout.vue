@@ -46,7 +46,7 @@ const selectedFile = ref<File | null>(null)
 const showUploadModal = ref(false)
 const uploading = ref(false)
 
-const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const API_BASE = 'https://su.oneled.io'
 const getToken = () => localStorage.getItem('token') || ''
 
 function triggerFileSelect() {

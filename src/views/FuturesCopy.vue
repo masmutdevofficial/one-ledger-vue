@@ -571,7 +571,7 @@ const sortedTraders = computed(() => {
 })
 
 /** ==== Polling Config ==== */
-const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const API_BASE = 'https://su.oneled.io'
 const POLL_MS = 5000
 const hasPasswordBySlug = ref<Record<string, boolean>>({})
 let pollId: number | null = null

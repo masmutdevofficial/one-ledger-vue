@@ -266,7 +266,7 @@
         <div class="flex items-start space-x-4">
           <img
             v-if="news && news.image"
-            :src="`https://one-ledger.masmutpanel.my.id${news.image}`"
+            :src="`https://su.oneled.io${news.image}`"
             alt="News Image"
             class="w-24 h-16 object-cover rounded-lg"
           />
@@ -462,7 +462,7 @@ import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
 
 /** ===== Konstanta ===== */
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+const API_BASE = 'https://su.oneled.io/api'
 const WS_BASE = 'wss://ledgersocketone.online'
 const ICON_FALLBACK = '/img/crypto/_default.svg'
 const iconPath = (s: string) => `/img/crypto/${s.toLowerCase()}.svg`

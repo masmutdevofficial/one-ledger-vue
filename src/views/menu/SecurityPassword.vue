@@ -156,7 +156,7 @@ async function handleSubmit() {
   }
 
   try {
-    const res = await fetch('https://one-ledger.masmutpanel.my.id/api/change-password', {
+    const res = await fetch('https://su.oneled.io/api/change-password', {
       method: 'POST',
       headers: {
         Accept: 'application/json',

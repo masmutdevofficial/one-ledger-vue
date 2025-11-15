@@ -111,7 +111,7 @@ import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+const API_BASE = 'https://su.oneled.io/api'
 
 type ChatMessage = {
   id: number

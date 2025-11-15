@@ -235,7 +235,7 @@ const alertSuccess = (msg: string, onClose?: () => void) => apiAlert.open('Succe
 const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error', msg, onClose)
 
 /* ===== Helpers API ===== */
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+const API_BASE = 'https://su.oneled.io/api'
 
 type Side = 'BUY' | 'SELL'
 const selectedSide = ref<Side | ''>('')
@@ -434,7 +434,7 @@ const avatarBroken = ref(false)
 function ensureAbsoluteUrl(u?: string | null): string | null {
   if (!u) return null
   if (/^https?:\/\//i.test(u)) return u
-  const base = 'https://one-ledger.masmutpanel.my.id/'
+  const base = 'https://su.oneled.io/'
   return base + u.replace(/^\/+/, '')
 }
 const avatarUrl = computed(() => {

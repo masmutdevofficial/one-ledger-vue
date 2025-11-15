@@ -213,7 +213,7 @@ router.beforeEach(async (to, from, next) => {
   if (token) {
     try {
       // Validasi token ke server
-      const res = await fetch('https://one-ledger.masmutpanel.my.id/api/auth-token', {
+      const res = await fetch('https://su.oneled.io/api/auth-token', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

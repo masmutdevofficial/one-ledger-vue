@@ -11,7 +11,7 @@ interface MenuItem {
 }
 
 const router = useRouter()
-const API_BASE = 'https://one-ledger.masmutpanel.my.id/api'
+const API_BASE = 'https://su.oneled.io/api'
 
 const showLanguageSelector = ref(false)
 const showLogoutModal = ref(false)

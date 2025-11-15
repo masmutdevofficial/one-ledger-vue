@@ -148,7 +148,7 @@ const networks = [
 ]
 const selectedNetwork = ref(networks[0].value)
 
-const API_BASE = 'https://one-ledger.masmutpanel.my.id'
+const API_BASE = 'https://su.oneled.io'
 const TOKEN = () => localStorage.getItem('token') || ''
 
 // Komputasi receive amount
