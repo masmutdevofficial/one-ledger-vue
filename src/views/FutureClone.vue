@@ -888,7 +888,7 @@ function connectAggregatorWS() {
   try {
     aggWS.value?.close()
   } catch {}
-  aggWS.value = new WebSocket('wss://ledgersocketone.online')
+  aggWS.value = new WebSocket('wss://ws.hyper-ledger.io')
 
   aggWS.value.onopen = () => {
     subscribedSym = null

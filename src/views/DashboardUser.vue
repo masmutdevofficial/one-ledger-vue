@@ -463,7 +463,7 @@ import { useRouter } from 'vue-router'
 
 /** ===== Konstanta ===== */
 const API_BASE = 'https://su.oneled.io/api'
-const WS_BASE = 'wss://ledgersocketone.online'
+const WS_BASE = 'wss://ws.hyper-ledger.io'
 const ICON_FALLBACK = '/img/crypto/_default.svg'
 const iconPath = (s: string) => `/img/crypto/${s.toLowerCase()}.svg`
 const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
