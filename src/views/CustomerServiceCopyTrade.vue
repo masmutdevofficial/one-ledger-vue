@@ -255,7 +255,7 @@ import { useApiAlertStore } from '@/stores/apiAlert'
 /** ================== Config ================== */
 const API_BASE =
   (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_API_BASE ??
-  'https://su.oneled.io/api'
+  'https://abc.oneled.io/api'
 const POLL_MS = 3500
 const PAGE_STEP = 50
 const MAX_LIMIT = 200
@@ -392,7 +392,7 @@ function parseAttachments(s: string | null | undefined): ViewAttachment[] {
       const [name, storage_path, mime, size] = chunk.split('|')
       const url = storage_path?.startsWith('http')
         ? storage_path
-        : `https://su.oneled.io/storage/${storage_path}`
+        : `https://abc.oneled.io/storage/${storage_path}`
       const sizeBytes = Number(size || 0)
       const isImage = (mime || '').startsWith('image/')
       return { name, url, mime, sizeBytes, isImage }

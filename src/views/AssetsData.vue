@@ -237,7 +237,7 @@ type AssetItem = {
 }
 
 /** ===== Konstanta ===== */
-const API_BASE = 'https://su.oneled.io/api'
+const API_BASE = 'https://abc.oneled.io/api'
 const WS_BASE = 'wss://ws.hyper-ledger.io'
 const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`

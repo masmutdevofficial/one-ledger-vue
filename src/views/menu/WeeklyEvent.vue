@@ -220,7 +220,7 @@ import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
 /** ===== Constants ===== */
-const API_BASE = 'https://su.oneled.io/api'
+const API_BASE = 'https://abc.oneled.io/api'
 const getToken = (): string =>
   typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
 

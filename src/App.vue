@@ -79,7 +79,7 @@ onMounted(async () => {
 
   // fetch meta
   try {
-    const res = await fetch('https://su.oneled.io/api/meta-web')
+    const res = await fetch('https://abc.oneled.io/api/meta-web')
     if (!res.ok) throw new Error('Gagal mengambil meta')
     const data = await res.json()
     meta.value = data

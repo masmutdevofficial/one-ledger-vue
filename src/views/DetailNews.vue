@@ -57,7 +57,7 @@
 
       <figure v-if="news.image" class="mt-2">
         <img
-          :src="`https://su.oneled.io${news.image}`"
+          :src="`https://abc.oneled.io${news.image}`"
           :alt="news.title"
           class="w-full rounded-lg border border-gray-100"
           loading="lazy"
@@ -95,7 +95,7 @@ type LoadState = 'loading' | 'success' | 'error'
 const route = useRoute()
 const router = useRouter()
 
-const apiBase = import.meta.env.VITE_API_BASE ?? 'https://su.oneled.io/api' // contoh: https://api.domain.com
+const apiBase = import.meta.env.VITE_API_BASE ?? 'https://abc.oneled.io/api' // contoh: https://api.domain.com
 
 const stateRef = reactive<{
   state: LoadState

@@ -67,7 +67,7 @@ export default defineConfig({
           // API Laravel (hindari cache data privat)
           {
             urlPattern: ({ url }) =>
-              url.origin === 'https://su.oneled.io' &&
+              url.origin === 'https://abc.oneled.io' &&
               url.pathname.startsWith('/api'),
             handler: 'NetworkOnly',
           },

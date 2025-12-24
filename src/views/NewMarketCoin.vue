@@ -1679,7 +1679,7 @@ onUnmounted(() => {
 /* ===== Order submit (tetap) ===== */
 const submitting = ref(false)
 const submitError = ref<string>('')
-const API_BASE = 'https://su.oneled.io/api'
+const API_BASE = 'https://abc.oneled.io/api'
 function bestBid(): number {
   const bids = depthData.value?.tick?.bids
   return Array.isArray(bids) && bids.length ? Number(bids[0][0]) : 0

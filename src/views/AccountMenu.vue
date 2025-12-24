@@ -177,7 +177,7 @@ onMounted(async () => {
       return
     }
 
-    const res = await fetch('https://su.oneled.io/api/get-account-data', {
+    const res = await fetch('https://abc.oneled.io/api/get-account-data', {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
@@ -205,7 +205,7 @@ const updateUsername = async () => {
       return
     }
 
-    const res = await fetch('https://su.oneled.io/api/update-account-data', {
+    const res = await fetch('https://abc.oneled.io/api/update-account-data', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

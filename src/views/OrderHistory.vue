@@ -126,7 +126,7 @@ type Item = {
   executed_at: string
 }
 
-const API_BASE = 'https://su.oneled.io/api'
+const API_BASE = 'https://abc.oneled.io/api'
 
 const loading = ref(true)
 const errorMsg = ref<string | null>(null)

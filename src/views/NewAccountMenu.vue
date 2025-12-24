@@ -194,7 +194,7 @@ import MenuSection from '@/components/menu/MenuSection.vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
 // ====== Config API ======
-const API_BASE = 'https://su.oneled.io/api'
+const API_BASE = 'https://abc.oneled.io/api'
 function getToken(): string | null {
   return localStorage.getItem('token')
 }

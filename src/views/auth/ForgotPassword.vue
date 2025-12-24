@@ -64,7 +64,7 @@ async function submitEmail() {
 
   loading.value = true
   try {
-    const res = await fetch('https://su.oneled.io/api/forgot-password', {
+    const res = await fetch('https://abc.oneled.io/api/forgot-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

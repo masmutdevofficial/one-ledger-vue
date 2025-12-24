@@ -218,7 +218,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
-const API_BASE = 'https://su.oneled.io'
+const API_BASE = 'https://abc.oneled.io'
 const TOKEN = localStorage.getItem('token') ?? ''
 const modal = useApiAlertStore()
 
