@@ -725,7 +725,7 @@ function goAsset(a: { symbol: string }) {
 
 // ====== Assets realtime WS (ticker + kline 1day) ======
 type KlinePeriod = '1day'
-const ASSETS_WS_URL = 'wss://ws.hyper-ledger.io'
+const ASSETS_WS_URL = 'wss://ws.hyper-led.com'
 
 // fast lookup untuk update harga
 const assetMap = new Map<string, AssetItem>()
@@ -1185,7 +1185,7 @@ function connectAggregatorWS() {
   try {
     aggWS.value?.close()
   } catch {}
-  aggWS.value = new WebSocket('wss://ws.hyper-ledger.io')
+  aggWS.value = new WebSocket('wss://ws.hyper-led.com')
 
   aggWS.value.onopen = () => {
     subscribedSym = null

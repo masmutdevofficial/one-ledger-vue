@@ -137,7 +137,7 @@ type CacheShape = Record<string, CachedItem>
 /** ==================== Const ==================== */
 const LS_KEY = 'cryptoSnapshot:v1'
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 menit; set 0 kalau tak mau TTL
-const WS_BASE = 'wss://ws.hyper-ledger.io'
+const WS_BASE = 'wss://ws.hyper-led.com'
 
 // Path icon dari /public (Vite serve di root).
 const BASE = import.meta.env.BASE_URL || '/'

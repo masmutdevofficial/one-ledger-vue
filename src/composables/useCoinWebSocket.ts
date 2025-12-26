@@ -14,9 +14,9 @@ export function useCoinWebSocket(coin: string, interval: string = '1min') {
 
   // Compose endpoint URL
   function getWsUrl() {
-    // Contoh: wss://ws.hyper-ledger.io/btcusdt/1min
+    // Contoh: wss://ws.hyper-led.com/btcusdt/1min
     // interval = '1min', '15min', 'depth', dst
-    return `wss://ws.hyper-ledger.io/${coin.toLowerCase()}/${interval}`
+    return `wss://ws.hyper-led.com/${coin.toLowerCase()}/${interval}`
   }
 
   function connect() {
