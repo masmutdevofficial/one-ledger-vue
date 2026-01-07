@@ -217,7 +217,7 @@
         </ul>
       </section>
 
-      <ChatCard />
+      <ChatCard :copyTraderId="trader.id" />
     </template>
   </main>
 </template>
