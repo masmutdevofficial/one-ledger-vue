@@ -189,7 +189,7 @@ function clampToAvailable(usdt: number): number {
 async function fetchOffer() {
   const token = localStorage.getItem('token')
   if (!token) throw new Error('Unauthorized.')
-  const res = await fetch(`https://abc.oneled.io/api/p2p-offers/${idParam.value}`, {
+  const res = await fetch(`https://tech.oneled.io/api/p2p-offers/${idParam.value}`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   })
   if (!res.ok) {
@@ -260,7 +260,7 @@ async function placeOrder() {
 
     submitLoading.value = true
 
-    const res = await fetch('https://abc.oneled.io/api/deposits', {
+    const res = await fetch('https://tech.oneled.io/api/deposits', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

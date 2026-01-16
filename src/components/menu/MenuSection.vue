@@ -11,7 +11,7 @@ interface MenuItem {
 }
 
 const router = useRouter()
-const API_BASE = 'https://abc.oneled.io/api'
+const API_BASE = 'https://tech.oneled.io/api'
 
 const showLanguageSelector = ref(false)
 const showLogoutModal = ref(false)

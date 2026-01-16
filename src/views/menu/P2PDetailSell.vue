@@ -110,7 +110,7 @@ const router = useRouter()
 const route = useRoute()
 const modal = useApiAlertStore()
 
-const API_BASE = 'https://abc.oneled.io'
+const API_BASE = 'https://tech.oneled.io'
 const TOKEN = () => localStorage.getItem('token') || ''
 
 function goBack() {

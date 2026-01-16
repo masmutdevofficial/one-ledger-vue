@@ -163,7 +163,7 @@ import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
 /* ===== API helpers ===== */
-const API_BASE = 'https://abc.oneled.io/api'
+const API_BASE = 'https://tech.oneled.io/api'
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '')
 async function authFetch(path: string, init: RequestInit = {}) {
   const token = getToken()

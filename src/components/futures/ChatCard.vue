@@ -111,7 +111,7 @@ import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
-const API_BASE = 'https://abc.oneled.io/api'
+const API_BASE = 'https://tech.oneled.io/api'
 
 type ChatMessage = {
   id: number

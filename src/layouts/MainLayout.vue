@@ -5,7 +5,7 @@ import { Icon } from '@iconify/vue'
 import { useNotificationCounter } from '@/composables/useNotificationCounter'
 
 // ===== Support chat unread (internal Laravel API) =====
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://abc.oneled.io/api'
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://tech.oneled.io/api'
 const supportUnread = ref(0)
 const supportLabel = computed(() => (supportUnread.value > 99 ? '99+' : String(supportUnread.value)))
 let supportTimer: number | null = null

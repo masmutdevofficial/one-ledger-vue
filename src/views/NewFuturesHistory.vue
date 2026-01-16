@@ -99,7 +99,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
 /** --- API base + helper --- */
-const API_BASE = 'https://abc.oneled.io/api'
+const API_BASE = 'https://tech.oneled.io/api'
 async function authFetch(path: string, init: RequestInit = {}) {
   const token = localStorage.getItem('token')
   if (!token) throw new Error('Token not found')

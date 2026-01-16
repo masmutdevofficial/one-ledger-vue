@@ -218,7 +218,7 @@ import { ref, computed, onMounted, type Ref, type ComputedRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 
-const API_BASE = 'https://abc.oneled.io/api' as const
+const API_BASE = 'https://tech.oneled.io/api' as const
 
 type Status = 'Pending' | 'InProgress' | 'Completed' | 'Cancelled' | 'Failed'
 

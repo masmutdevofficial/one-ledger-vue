@@ -281,7 +281,7 @@ const unreadCount = ref(0)
 const conversationId = ref<number | null>(null)
 const pollTimer = ref<number | null>(null)
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://abc.oneled.io/api'
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://tech.oneled.io/api'
 const API_ORIGIN = API_BASE.replace(/\/?api\/?$/, '')
 const CDN_BASE = (import.meta.env.VITE_CDN_URL as string | undefined) ?? 'https://cdn.one-led.io'
 

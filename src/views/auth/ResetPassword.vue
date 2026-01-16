@@ -86,7 +86,7 @@ async function checkToken() {
   }
 
   try {
-    const res = await fetch('https://abc.oneled.io/api/validate-reset-token', {
+    const res = await fetch('https://tech.oneled.io/api/validate-reset-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -128,7 +128,7 @@ async function submitPassword() {
 
   loading.value = true
   try {
-    const res = await fetch('https://abc.oneled.io/api/reset-password', {
+    const res = await fetch('https://tech.oneled.io/api/reset-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

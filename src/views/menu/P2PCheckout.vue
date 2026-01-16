@@ -46,7 +46,7 @@ const selectedFile = ref<File | null>(null)
 const showUploadModal = ref(false)
 const uploading = ref(false)
 
-const API_BASE = 'https://abc.oneled.io'
+const API_BASE = 'https://tech.oneled.io'
 const getToken = () => localStorage.getItem('token') || ''
 
 function triggerFileSelect() {

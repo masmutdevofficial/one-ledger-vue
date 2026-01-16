@@ -402,7 +402,7 @@ async function fetchOffers() {
 
     const viewParam = activeTab.value === 'sell' ? '?view=sell' : ''
     // ganti ke relative path jika API sama domain: '/api/p2p-offers'
-    const res = await fetch(`https://abc.oneled.io/api/p2p-offers${viewParam}`, {
+    const res = await fetch(`https://tech.oneled.io/api/p2p-offers${viewParam}`, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)

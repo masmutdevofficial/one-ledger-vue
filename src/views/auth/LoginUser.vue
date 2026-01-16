@@ -74,7 +74,7 @@ const loading = ref(false)
 async function login() {
   loading.value = true
   try {
-    const res = await fetch('https://abc.oneled.io/api/login', {
+    const res = await fetch('https://tech.oneled.io/api/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

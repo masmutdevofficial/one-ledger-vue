@@ -119,7 +119,7 @@ interface CoinItem {
   slug: CoinSlug
 }
 
-const API_BASE = 'https://abc.oneled.io'
+const API_BASE = 'https://tech.oneled.io'
 const router = useRouter()
 const modal = useApiAlertStore()
 

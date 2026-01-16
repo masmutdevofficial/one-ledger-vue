@@ -285,7 +285,7 @@ const alertSuccess = (msg: string, onClose?: () => void) => apiAlert.open('Succe
 const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error', msg, onClose)
 
 /* ===== Helpers API ===== */
-const API_BASE = 'https://abc.oneled.io/api'
+const API_BASE = 'https://tech.oneled.io/api'
 
 type Side = 'BUY' | 'SELL'
 const selectedSide = ref<Side | ''>('')
@@ -505,7 +505,7 @@ function kickToFuturesCopy(message: string) {
 function ensureAbsoluteUrl(u?: string | null): string | null {
   if (!u) return null
   if (/^https?:\/\//i.test(u)) return u
-  const base = 'https://abc.oneled.io/'
+  const base = 'https://tech.oneled.io/'
   return base + u.replace(/^\/+/, '')
 }
 const avatarUrl = computed(() => {

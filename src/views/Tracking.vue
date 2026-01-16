@@ -78,7 +78,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const API_BASE = 'https://abc.oneled.io/api' as const
+const API_BASE = 'https://tech.oneled.io/api' as const
 
 const paymentInstructionId = ref<string>('')
 const fieldError = ref<string>('')

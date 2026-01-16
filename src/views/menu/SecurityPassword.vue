@@ -156,7 +156,7 @@ async function handleSubmit() {
   }
 
   try {
-    const res = await fetch('https://abc.oneled.io/api/change-password', {
+    const res = await fetch('https://tech.oneled.io/api/change-password', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
