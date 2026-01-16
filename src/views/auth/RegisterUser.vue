@@ -304,7 +304,6 @@
 
           <div class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-xs leading-relaxed text-gray-700 space-y-4">
             <div>
-              <p><b>Effective Date:</b> [Insert Date]</p>
               <p class="mt-2">
                 These Terms of Use ("Terms") govern your access to and use of <i>OneLedger Exchange</i> ("OneLedger",
                 "we", "our", or "us"), including our website, applications, and digital asset trading services
