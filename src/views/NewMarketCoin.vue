@@ -615,7 +615,8 @@ const kind = ref<SeriesKind>('candlestick')
 // ===== TF yang dipakai klien =====
 const tfs = ['5m', '15m', '1h', '1d'] as const
 type TF = (typeof tfs)[number]
-const tf = ref<TF>('1h')
+// default 15m supaya langsung ada data (server umumnya menyediakan 15min)
+const tf = ref<TF>('15m')
 
 const modal = useApiAlertStore()
 const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
@@ -754,6 +755,10 @@ interface DepthData {
 
 // include 60min utk 1h
 type OriginPeriod = '5min' | '15min' | '30min' | '60min' | '1day'
+
+function isOriginPeriod(p: string): p is OriginPeriod {
+  return p === '5min' || p === '15min' || p === '30min' || p === '60min' || p === '1day'
+}
 
 type ObCacheEntry = {
   k1d?: { open: number; close: number; ts: number }
@@ -1001,6 +1006,55 @@ function upsertCandleBuffer(
   }
 }
 
+// ===== REST history loader (Huobi) untuk isi awal candle supaya tidak putus-putus =====
+async function loadHistoryForCurrentTF() {
+  try {
+    const sym = pairToQuery(selectedPair.value)
+    if (!sym.endsWith('usdt')) return
+
+    // map TF → Huobi period string
+    let period = ''
+    let origin: OriginPeriod | null = null
+    if (tf.value === '5m') {
+      period = '5min'
+      origin = '5min'
+    } else if (tf.value === '15m') {
+      period = '15min'
+      origin = '15min'
+    } else if (tf.value === '1h') {
+      period = '60min'
+      origin = '60min'
+    } else {
+      period = '1day'
+      origin = '1day'
+    }
+    if (!origin) return
+
+    const url = `https://api.huobi.pro/market/history/kline?symbol=${sym}&period=${period}&size=${WANT_BARS}`
+    const res = await fetch(url)
+    if (!res.ok) return
+    const json = await res.json()
+    if (!json || !Array.isArray(json.data)) return
+
+    // Huobi kline: [{ id, open, close, low, high, vol, amount, ... }]
+    for (const k of json.data as any[]) {
+      const tsMs = Number(k.id) * 1000
+      const open = Number(k.open)
+      const close = Number(k.close)
+      const high = Number(k.high)
+      const low = Number(k.low)
+      const vol = Number(k.vol ?? k.amount ?? 0)
+      if (!Number.isFinite(open) || !Number.isFinite(close)) continue
+      upsertCandleBuffer(origin, tsMs, { open, high, low, close, vol })
+    }
+
+    // karena API Huobi mengembalikan urutan terbaru → lama, kita tetap flush buffer yg sudah dibucket
+    scheduleChartFlush()
+  } catch {
+    // silent fail, WS live tetap jalan
+  }
+}
+
 /* ============ TF → OriginPeriod + limit (300 bar) ============ */
 function tfPlan(x: TF): { base: OriginPeriod; baseLimit: number; dailyLimit: number } {
   if (x === '5m') return { base: '5min', baseLimit: WANT_BARS, dailyLimit: WANT_BARS }
@@ -1216,7 +1270,9 @@ function connectAggregatorWS() {
             const asks = Array.isArray(it.asks) ? (it.asks as [number, number][]) : []
             pendingDepth = { ts: it.ts, asks, bids, sym: symLower }
           } else if (it.type === 'kline') {
-            const p = String(it.period) as OriginPeriod
+            const pRaw = String(it.period || '')
+            if (!isOriginPeriod(pRaw)) continue
+            const p = pRaw
             const open = Number(it.open),
               close = Number(it.close)
             const high = Number(it.high),
@@ -1249,7 +1305,9 @@ function connectAggregatorWS() {
       }
 
       if (type === 'kline') {
-        const p = String(msg.period) as OriginPeriod
+        const pRaw = String(msg.period || '')
+        if (!isOriginPeriod(pRaw)) return
+        const p = pRaw
         const open = Number(msg.open)
         const close = Number(msg.close)
         const high = Number(msg.high)
@@ -1632,6 +1690,8 @@ onMounted(() => {
   selectedPair.value = pairFromUrl || 'BTC/USDT'
 
   hydrateFromCache(selectedPair.value)
+  // isi awal history candle dari REST Huobi supaya chart tidak putus-putus saat load pertama
+  loadHistoryForCurrentTF()
   connectAggregatorWS()
   scheduleResubscribe()
   getAvailable()
@@ -1664,6 +1724,8 @@ function selectPair(pair: string) {
 watch(tf, () => {
   scheduleResubscribe()
   scheduleChartFlush()
+  // ketika user ganti TF, ambil ulang history untuk TF baru
+  loadHistoryForCurrentTF()
 })
 
 onUnmounted(() => {

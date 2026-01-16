@@ -4,57 +4,28 @@ import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useNotificationCounter } from '@/composables/useNotificationCounter'
 
-// ===== Support chat unread (via Fastify /svc) =====
-const SERVICE_KEY = 'Frontera'
-const BASE = 'https://api-chat-oneled.masmut.dev'
+// ===== Support chat unread (internal Laravel API) =====
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://abc.oneled.io/api'
 const supportUnread = ref(0)
 const supportLabel = computed(() => (supportUnread.value > 99 ? '99+' : String(supportUnread.value)))
 let supportTimer: number | null = null
 
-function getUserId(): number | null {
-  try {
-    const raw = localStorage.getItem('id')
-    const n = Number(raw)
-    return Number.isFinite(n) && n > 0 ? n : null
-  } catch {
-    return null
-  }
-}
-
-function getProp(obj: unknown, key: string): unknown {
-  if (obj && typeof obj === 'object' && key in (obj as Record<string, unknown>)) {
-    return (obj as Record<string, unknown>)[key]
-  }
-  return undefined
-}
-
-async function svcHttp<T = unknown>(path: string, init?: RequestInit): Promise<T> {
-  const userId = getUserId()
-  if (!userId) throw new Error('User id not found')
-  const headers: Record<string, string> = { 'x-service-key': SERVICE_KEY, 'x-user-id': String(userId) }
-  const extra = init?.headers
-  if (extra instanceof Headers) extra.forEach((v, k) => (headers[k] = v))
-  else if (Array.isArray(extra)) for (const [k, v] of extra) headers[k] = v
-  else if (extra && typeof extra === 'object') Object.assign(headers, extra as Record<string, string>)
-  const hasBody = typeof init?.body === 'string'
-  if (hasBody && !headers['Content-Type']) headers['Content-Type'] = 'application/json'
-  const res = await fetch(`${BASE}${path}`, { ...init, headers })
-  const json: unknown = await res.json().catch(() => null)
-  if (!res.ok) {
-    const msgVal = getProp(json, 'message')
-    const msg = typeof msgVal === 'string' ? msgVal : `HTTP ${res.status}`
-    throw new Error(msg)
-  }
-  const statusVal = getProp(json, 'status')
-  const dataVal = getProp(json, 'data')
-  if (statusVal === 'success' && dataVal !== undefined) return dataVal as T
-  return json as T
-}
-
 async function fetchSupportUnread() {
   try {
-    const rows = await svcHttp<Array<{ conversation_id: number; unread: number }>>('/svc/unread')
-    supportUnread.value = rows.reduce((acc, r) => acc + Number(r.unread || 0), 0)
+    const token = localStorage.getItem('token')?.trim() ?? ''
+    if (!token) {
+      supportUnread.value = 0
+      return
+    }
+
+    const res = await fetch(`${API_BASE}/cs/me/unread`, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    })
+    const json = (await res.json().catch(() => null)) as null | { data?: Array<{ unread?: number }> }
+    if (!res.ok) throw new Error((json as any)?.message || `HTTP ${res.status}`)
+
+    const rows = Array.isArray(json?.data) ? json.data : []
+    supportUnread.value = rows.reduce((acc, r) => acc + Number(r?.unread || 0), 0)
   } catch {
     supportUnread.value = 0
   }
@@ -132,6 +103,10 @@ onMounted(async () => {
     if (supportTimer) window.clearInterval(supportTimer)
     supportTimer = window.setInterval(fetchSupportUnread, 15000)
   }
+})
+
+onBeforeUnmount(() => {
+  if (supportTimer) window.clearInterval(supportTimer)
 })
 
 function isActive(path: string): boolean {

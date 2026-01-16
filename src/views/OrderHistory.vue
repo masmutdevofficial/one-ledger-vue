@@ -3,7 +3,7 @@
     <div v-if="loading" class="text-sm text-gray-500 py-6 text-center">Loading history…</div>
     <div v-else-if="errorMsg" class="text-sm text-red-500 py-6 text-center">{{ errorMsg }}</div>
     <div v-else-if="items.length === 0" class="text-sm text-gray-500 py-6 text-center">
-      Tidak ada history.
+      No history.
     </div>
 
     <div v-else class="space-y-6">

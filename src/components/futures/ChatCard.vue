@@ -39,7 +39,7 @@
           </div>
         </template>
 
-        <div v-if="!effectiveCopyTraderId" class="text-sm text-gray-500">Memuat…</div>
+        <div v-if="!copyTraderId" class="text-sm text-gray-500">Memuat…</div>
       </div>
 
       <!-- Input + emoji -->
@@ -93,7 +93,7 @@
           <button
             type="button"
             @click="handleSend"
-            :disabled="!canSend || sending || !effectiveCopyTraderId"
+            :disabled="!canSend || sending || !copyTraderId"
             class="inline-flex items-center justify-center rounded-md p-2 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Kirim"
           >
@@ -145,13 +145,6 @@ type NotifResp = { data: NotifRow | null }
 const route = useRoute()
 const modal = useApiAlertStore()
 
-const props = defineProps<{
-  /** Jika tersedia (mis. dari parent), lookup tidak dilakukan */
-  copyTraderId?: number | null
-  /** Optional override untuk key lookup (slug/name) */
-  lookupKey?: string | null
-}>()
-
 function getToken(): string {
   return localStorage.getItem('token') ?? ''
 }
@@ -198,22 +191,18 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 /** Resolve copyTraderId dari /futures/:username */
-const resolvedCopyTraderId = ref<number | null>(null)
-const effectiveCopyTraderId = computed<number | null>(() => props.copyTraderId ?? resolvedCopyTraderId.value)
-
+const copyTraderId = ref<number | null>(null)
 async function resolveCopyTraderId(): Promise<void> {
-  const keyFromProp = String(props.lookupKey ?? '').trim()
-  const keyFromRoute = String((route.params as any)?.slug ?? (route.params as any)?.username ?? '').trim()
-  const key = (keyFromProp || keyFromRoute).trim()
-  if (!key) {
-    modal.open('Error', 'Param slug/username tidak ada di URL')
+  const usernameParam = String(route.params.username ?? '').trim()
+  if (!usernameParam) {
+    modal.open('Error', 'Param :username tidak ada di URL')
     return
   }
-  const resp = await apiRequest<LookupResp>(
-    `/copy-traders/lookup?name=${encodeURIComponent(key)}&slug=${encodeURIComponent(key)}`,
-  )
-  resolvedCopyTraderId.value = resp?.data?.id ?? null
-  if (!resolvedCopyTraderId.value) modal.open('Error', 'Copy trader tidak ditemukan')
+  const key = encodeURIComponent(usernameParam)
+  // URL param biasanya berupa slug (contoh: bbc-trade-v1). Kirim slug + name agar backend bisa resolve keduanya.
+  const resp = await apiRequest<LookupResp>(`/copy-traders/lookup?slug=${key}&name=${key}`)
+  copyTraderId.value = resp?.data?.id ?? null
+  if (!copyTraderId.value) modal.open('Error', 'Copy trader tidak ditemukan')
 }
 
 /** State */
@@ -392,10 +381,8 @@ function mapApiMsg(m: ApiMessage): ChatMessage {
 }
 
 async function loadInitial(): Promise<void> {
-  if (!effectiveCopyTraderId.value) return
-  const res = await apiRequest<ListResp>(
-    `/copy-traders/${effectiveCopyTraderId.value}/community?limit=50`,
-  )
+  if (!copyTraderId.value) return
+  const res = await apiRequest<ListResp>(`/copy-traders/${copyTraderId.value}/community?limit=50`)
   messages.value = []
   seenMsgIds.clear()
   for (const m of (res.data ?? []).map(mapApiMsg)) pushUnique(m)
@@ -404,14 +391,14 @@ async function loadInitial(): Promise<void> {
 }
 
 async function pollNew(): Promise<void> {
-  if (!effectiveCopyTraderId.value) return
+  if (!copyTraderId.value) return
   if (sending.value || pollBusy) return
   pollBusy = true
   try {
     const url =
       lastId == null
-        ? `/copy-traders/${effectiveCopyTraderId.value}/community?limit=50`
-        : `/copy-traders/${effectiveCopyTraderId.value}/community?after_id=${lastId}`
+        ? `/copy-traders/${copyTraderId.value}/community?limit=50`
+        : `/copy-traders/${copyTraderId.value}/community?after_id=${lastId}`
     const res = await apiRequest<AnyListResp>(url)
     const arr = (res?.data ?? []) as ApiMessage[]
     for (const m of arr.map(mapApiMsg)) pushUnique(m)
@@ -427,12 +414,10 @@ async function pollNew(): Promise<void> {
 }
 
 async function pollNotif(): Promise<void> {
-  if (!effectiveCopyTraderId.value || notifBusy) return
+  if (!copyTraderId.value || notifBusy) return
   notifBusy = true
   try {
-    const res = await apiRequest<NotifResp>(
-      `/copy-traders/${effectiveCopyTraderId.value}/notif-latest`,
-    )
+    const res = await apiRequest<NotifResp>(`/copy-traders/${copyTraderId.value}/notif-latest`)
     const row = res.data
     if (!row) return
     const key = `${row.id}|${row.username}|${row.amount}`
@@ -455,8 +440,8 @@ async function pollNotif(): Promise<void> {
 /** Lifecycle */
 onMounted(async () => {
   try {
-    if (!effectiveCopyTraderId.value) await resolveCopyTraderId()
-    if (!effectiveCopyTraderId.value) return
+    await resolveCopyTraderId()
+    if (!copyTraderId.value) return
     await loadInitial()
     pollHandle = window.setInterval(pollNew, POLL_MS)
     pollNotifHandle = window.setInterval(pollNotif, POLL_NOTIF_MS)
@@ -472,18 +457,15 @@ onBeforeUnmount((): void => {
 
 /** Send */
 async function handleSend(): Promise<void> {
-  if (!canSend.value || sending.value || !effectiveCopyTraderId.value) return
+  if (!canSend.value || sending.value || !copyTraderId.value) return
   try {
     sending.value = true
     const text = draft.value.trim()
     draft.value = ''
-    const created = await apiRequest<ApiMessage>(
-      `/copy-traders/${effectiveCopyTraderId.value}/community`,
-      {
+    const created = await apiRequest<ApiMessage>(`/copy-traders/${copyTraderId.value}/community`, {
       method: 'POST',
       body: JSON.stringify({ message: text }),
-      },
-    )
+    })
     pushUnique(mapApiMsg(created))
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Gagal mengirim pesan'

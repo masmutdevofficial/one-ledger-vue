@@ -171,6 +171,10 @@ const routes = [
         component: () => import('@/views/SupportChat.vue'),
       },
       {
+        path: 'r2-files',
+        component: () => import('@/views/R2FilesView.vue'),
+      },
+      {
         path: 'chats/:threadId',
         component: () => import('@/views/CustomerServiceCopyTrade.vue'),
       },

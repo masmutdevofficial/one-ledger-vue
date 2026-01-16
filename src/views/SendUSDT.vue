@@ -63,7 +63,7 @@
           id="amount"
           type="text"
           v-model="amount"
-          placeholder="Minimum 10"
+          placeholder="Minimum 100"
           class="flex-grow bg-transparent text-xs font-normal text-gray-400 placeholder-gray-400 outline-none"
         />
         <span class="text-xs font-normal text-gray-700 mr-3 select-none">USDT</span>
@@ -263,8 +263,12 @@ async function submitWithdraw() {
   const rawAmount = parseFloat(amount.value.replace(',', '.')) || 0
   const sendAmount = rawAmount - 1
 
-  if (!rawAmount || rawAmount < 10) {
-    modal.open('Error', 'Minimum amount is 10')
+  if (!rawAmount) {
+    modal.open('Error', 'Amount is required.')
+    return
+  }
+  if (sendAmount < 100) {
+    modal.open('Error', 'Minimum withdrawal amount is $100.')
     return
   }
   if (sendAmount <= 0) {

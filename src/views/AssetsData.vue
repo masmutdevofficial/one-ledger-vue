@@ -165,16 +165,24 @@ watch(isTotalHidden, (v) => {
 const totalValueUsdtStr = computed(() => {
   if (isTotalHidden.value) return '••••'
   return totalValue.value !== null
-    ? totalValue.value.toLocaleString('id-ID', { minimumFractionDigits: 2 })
+    ? formatNumberThousandsDot(totalValue.value, 2)
     : '...'
 })
 
 const totalValueUsdStr = computed(() => {
   if (isTotalHidden.value) return '••••'
   return totalValue.value !== null
-    ? totalValue.value.toLocaleString('en-US', { minimumFractionDigits: 2 })
+    ? formatNumberThousandsDot(totalValue.value, 2)
     : '...'
 })
+
+function formatNumberThousandsDot(nu: number, digits = 2): string {
+  if (!Number.isFinite(nu)) return '0'
+  return new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(nu)
+}
 
 /** ===== Utils ===== */
 const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
@@ -194,20 +202,14 @@ const ROBOT_ICON = '/img/robot-logo.png'
 
 const saldoText = computed(() =>
   saldoAwal.value !== null
-    ? saldoAwal.value.toLocaleString('id-ID', {
-      minimumFractionDigits: 6,
-      maximumFractionDigits: 6,
-    })
+    ? formatNumberThousandsDot(saldoAwal.value, 2)
     : '...',
 )
 const smartArbAwal = ref<number | null>(null)
 
 const smartArbText = computed(() =>
   smartArbAwal.value !== null
-    ? smartArbAwal.value.toLocaleString('id-ID', {
-      minimumFractionDigits: 6,
-      maximumFractionDigits: 6,
-    })
+    ? formatNumberThousandsDot(smartArbAwal.value, 2)
     : '...',
 )
 
@@ -487,10 +489,13 @@ async function loadSaldo() {
       smartArbAwal.value = Number(data.saldo_smart_arbitrage) || 0 // <- ini ditambah
       upsertSaldoCache(v)
     } else {
-      modal.open('Error', 'Gagal mengambil saldo.')
+      modal.open('Error', 'Failed to fetch balance.')
     }
   } catch (e: unknown) {
-    modal.open('Error', `Gagal terhubung ke server saldo. ${e instanceof Error ? e.message : ''}`)
+    modal.open(
+      'Error',
+      `Failed to connect to the balance server. ${e instanceof Error ? e.message : ''}`,
+    )
   }
 }
 

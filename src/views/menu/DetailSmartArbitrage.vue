@@ -381,7 +381,7 @@ onMounted(async () => {
   try {
     await Promise.all([loadSmart(), loadSaldo()])
   } catch {
-    modal.open('Error', 'Gagal memuat data.')
+    modal.open('Error', 'Failed to load data.')
   }
 })
 onBeforeUnmount(() => lockScroll(false))

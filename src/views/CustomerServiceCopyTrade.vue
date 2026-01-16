@@ -548,7 +548,7 @@ function cancelReply() {
 
 async function send() {
   if (!chatId.value) {
-    modal.open('Error', 'Chat belum siap (thread belum dibuat).')
+    modal.open('Error', 'Chat is not ready (thread has not been created yet).')
     return
   }
   // … validasi file/text seperti sebelumnya …

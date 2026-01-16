@@ -103,7 +103,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
 const router = useRouter()
@@ -112,7 +112,7 @@ const modal = useApiAlertStore()
 
 function goBack() {
   if (window.history.length > 1) router.back()
-  else router.push('/buy-p2p')
+  else router.push('/p2p')
 }
 
 type ApiRow = {
@@ -151,6 +151,24 @@ const idParam = computed<number | null>(() => {
 
 const nf0 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
+const POLL_MS = 10_000
+let pollTimer: number | null = null
+const kicked = ref(false)
+
+function kickToP2P(message: string) {
+  if (kicked.value) return
+  kicked.value = true
+
+  if (pollTimer != null) {
+    window.clearInterval(pollTimer)
+    pollTimer = null
+  }
+
+  modal.open('Offer unavailable', message, () => {
+    router.replace('/p2p')
+  })
+}
+
 const limitText = computed(() => {
   if (!offer.value) return ''
   const fiat = offer.value.fiat_currency || 'IDR'
@@ -182,7 +200,12 @@ async function fetchOffer() {
     } catch {}
     throw new Error(msg)
   }
-  offer.value = await res.json()
+
+  const row = (await res.json()) as ApiRow
+  offer.value = row
+  if (row?.status !== 'active') {
+    kickToP2P('This offer is no longer active. Please choose another advertiser.')
+  }
 }
 
 function onClickMax() {
@@ -287,10 +310,26 @@ onMounted(async () => {
   try {
     if (!idParam.value) throw new Error('Invalid or missing id.')
     await fetchOffer()
+
+    pollTimer = window.setInterval(async () => {
+      if (kicked.value) return
+      try {
+        await fetchOffer()
+      } catch {
+        kickToP2P('This offer is no longer available. Please choose another advertiser.')
+      }
+    }, POLL_MS)
   } catch (e) {
     errorMsg.value = e instanceof Error ? e.message : 'Unknown error.'
   } finally {
     loading.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (pollTimer != null) {
+    window.clearInterval(pollTimer)
+    pollTimer = null
   }
 })
 </script>

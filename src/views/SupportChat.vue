@@ -281,8 +281,9 @@ const unreadCount = ref(0)
 const conversationId = ref<number | null>(null)
 const pollTimer = ref<number | null>(null)
 
-const BASE = 'https://api-chat-oneled.masmut.dev'
-const SERVICE_KEY = 'Frontera'
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://abc.oneled.io/api'
+const API_ORIGIN = API_BASE.replace(/\/?api\/?$/, '')
+const CDN_BASE = (import.meta.env.VITE_CDN_URL as string | undefined) ?? 'https://cdn.one-led.io'
 
 const fileEl = ref<HTMLInputElement | null>(null)
 const MAX_FILES = 3
@@ -391,10 +392,6 @@ async function send() {
   nextTick(scrollToBottom)
 
   try {
-    const uploaded = oldPending.length
-      ? await Promise.all(oldPending.map(up => uploadFile(up)))
-      : []
-    const atts = uploaded.map(u => ({ type: u.type, url: u.url, file_name: u.name, mime_type: u.mime }))
     // Create a pending patch so reply context is restored after reloading from server
     const patchReply = optimistic.replyTo
     if (patchReply) {
@@ -405,12 +402,24 @@ async function send() {
         ts: Date.now(),
       })
     }
-    await svcHttp(`/svc/conversations/${conversationId.value}/messages`, {
-      method: 'POST',
-      body: JSON.stringify({ body: text || undefined, replyToMessageId: replyTargetId.value ?? undefined, attachments: atts })
-    })
+
+    const fd = new FormData()
+    if (text) fd.append('message', text)
+
+    let type: 'text' | 'image' | 'file' = 'text'
+    if (oldPending.length) {
+      const anyImage = oldPending.some((p) => p.type === 'image')
+      type = anyImage ? 'image' : 'file'
+      for (const p of oldPending) {
+        if (p.file) fd.append('files[]', p.file, p.name)
+      }
+    }
+    fd.append('type', type)
+    if (replyTargetId.value) fd.append('reply_to_message_id', String(replyTargetId.value))
+
+    await apiHttp('/cs/me/messages', { method: 'POST', body: fd })
     await loadMessages()
-    await markRead()
+    unreadCount.value = 0
   } catch (e) {
     console.error('send fail', e)
     errorMsg.value = (e as Error)?.message || 'Failed to send'
@@ -514,86 +523,112 @@ function getUserId(): number | null {
   } catch { return null }
 }
 
-async function svcHttp<T = unknown>(path: string, init?: RequestInit): Promise<T> {
-  const userId = getUserId()
-  if (!userId) throw new Error('User id not found in localStorage')
-  const headers: Record<string, string> = { 'x-service-key': SERVICE_KEY, 'x-user-id': String(userId) }
-  const extra = init?.headers
-  if (extra instanceof Headers) {
-    extra.forEach((v, k) => { headers[k] = v })
-  } else if (Array.isArray(extra)) {
-    for (const [k, v] of extra) headers[k] = v
-  } else if (extra && typeof extra === 'object') {
-    Object.assign(headers, extra as Record<string, string>)
+async function apiHttp<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+  const token = localStorage.getItem('token')?.trim() ?? ''
+  if (!token) throw new Error('Unauthorized')
+
+  const headers = new Headers(init?.headers || undefined)
+  headers.set('Accept', 'application/json')
+  headers.set('Authorization', `Bearer ${token}`)
+
+  const isForm = typeof FormData !== 'undefined' && init?.body instanceof FormData
+  if (!isForm && init?.body !== undefined && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
   }
-  const hasBody = typeof init?.body === 'string'
-  if (hasBody && !headers['Content-Type']) headers['Content-Type'] = 'application/json'
-  const res = await fetch(`${BASE}${path}`, { ...init, headers })
+
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers })
+  const json = await res.json().catch(() => null)
   if (!res.ok) {
-    let msg = `HTTP ${res.status}`
-    try { const j = await res.json(); if (j && j.message) msg = j.message } catch {}
+    const msg = (json && typeof json === 'object' && (json as any).message) ? (json as any).message : `HTTP ${res.status}`
     throw new Error(msg)
   }
-  const json = await res.json()
-  if (json && json.status === 'success' && 'data' in json) return json.data as T
   return json as T
-}
-
-async function uploadFile(p: AttachmentPreview): Promise<{ url: string; name: string; mime: string; type: 'image' | 'pdf' }> {
-  if (!p.file) return { url: p.url, name: p.name, mime: p.type === 'image' ? 'image/*' : 'application/pdf', type: p.type }
-  const fd = new FormData()
-  fd.append('file', p.file)
-  const res = await fetch(`${BASE}/api/uploads`, { method: 'POST', body: fd })
-  if (!res.ok) throw new Error('Upload failed')
-  const json = await res.json().catch(() => null)
-  const item = Array.isArray(json?.data) ? json.data[0] : json?.data
-  if (!item?.url) throw new Error('Invalid upload response')
-  return { url: item.url, name: item.file_name || p.name, mime: item.mime_type || 'application/octet-stream', type: p.type }
 }
 
 async function ensureConversation() {
   if (conversationId.value) return conversationId.value
-  const data = await svcHttp<Array<{ id: number }>>('/svc/conversations/direct', { method: 'POST' })
-  const id = Array.isArray(data) ? data[0]?.id : undefined
-  conversationId.value = Number(id)
+  const chat = await apiHttp<{ id: number }>('/cs/me/chat', { method: 'GET' })
+  conversationId.value = Number(chat?.id)
   return conversationId.value
 }
 
-interface SvcAttachment { type: 'image' | 'pdf'; url: string; file_name?: string | null; mime_type?: string | null; byte_size?: number | null }
-interface SvcMessageItem { id: number; conversation_id: number; sender_id: number | null; body: string | null; reply_to_message_id: number | null; created_at: string; attachments?: SvcAttachment[] }
+interface CsMessageItem {
+  id: number
+  id_users_sender: number
+  body: string | null
+  type: 'text' | 'image' | 'file'
+  reply_to_message_id: number | null
+  created_at: string
+  attachments?: string | null
+}
 
-function mapServerMessage(m: SvcMessageItem, me: number): Message {
-  const attachments: AttachmentPreview[] | undefined = Array.isArray(m.attachments) && m.attachments.length
-    ? m.attachments.map((a) => ({ id: uid(), name: a.file_name || 'file', type: a.type, size: a.byte_size || 0, url: a.url }))
-    : undefined
+function parseAttachments(raw?: string | null): AttachmentPreview[] | undefined {
+  if (!raw) return undefined
+  const out: AttachmentPreview[] = []
+  for (const row of raw.split(';;')) {
+    if (!row) continue
+    const parts = row.split('|')
+    const oname = parts[0] || 'file'
+    const spath = parts[1] || ''
+    const mime = parts[2] || 'application/octet-stream'
+    const size = Number(parts[3] || 0)
+    if (!spath) continue
+
+    const normalized = String(spath).replace(/^\/+/, '')
+    const url = normalized.startsWith('http://') || normalized.startsWith('https://')
+      ? normalized
+      : normalized.startsWith('uploads/')
+        ? `${CDN_BASE.replace(/\/+$/, '')}/${normalized}`
+        : `${API_ORIGIN}/storage/${normalized}`
+
+    out.push({
+      id: uid(),
+      name: oname,
+      type: mime.startsWith('image/') ? 'image' : 'pdf',
+      size,
+      url,
+    })
+  }
+  return out.length ? out : undefined
+}
+
+function mapServerMessage(m: CsMessageItem, me: number): Message {
   return {
     id: String(m.id),
-    sender: m.sender_id && Number(m.sender_id) === me ? 'user' : 'bot',
+    sender: Number(m.id_users_sender) === me ? 'user' : 'bot',
     text: m.body || undefined,
-    attachments,
-    createdAt: new Date(m.created_at)
+    attachments: parseAttachments(m.attachments),
+    status: Number(m.id_users_sender) === me ? 'read' : undefined,
+    createdAt: new Date(m.created_at),
+    replyTo: undefined,
   }
 }
 
 async function loadMessages() {
-  if (!conversationId.value) await ensureConversation()
   const me = getUserId() || 0
-  const rows = await svcHttp<SvcMessageItem[]>(`/svc/conversations/${conversationId.value}/messages?limit=50`)
-  const mapped = rows.slice().reverse().map((m) => mapServerMessage(m, me))
-  // Link server-side reply contexts when referenced message is within the batch
-  const byId = new Map(rows.map(r => [Number(r.id), r]))
-  for (let i = 0; i < mapped.length; i++) {
-    const original = rows[rows.length - 1 - i]
-    if (!original) continue
-    if (original.reply_to_message_id) {
-      const ref = byId.get(Number(original.reply_to_message_id))
-      if (ref) {
-        const firstAtt = (ref.attachments || [])[0]
-        const snippet = ref.body || (firstAtt ? firstAtt.file_name || firstAtt.type : '') || ''
-          mapped[i].replyTo = { sender: ref.sender_id && Number(ref.sender_id) === me ? 'user' : 'bot', textSnippet: truncate(snippet, 24), refId: Number(original.reply_to_message_id) }
-      }
+  const res = await apiHttp<{ data: CsMessageItem[] }>(`/cs/me/messages?limit=50`, { method: 'GET' })
+  const rows = Array.isArray(res?.data) ? res.data : []
+  const mapped = rows.map((m) => mapServerMessage(m, me))
+
+  // Link reply contexts when referenced message is within the batch
+  const mappedById = new Map<number, Message>(mapped.map(mm => [Number(mm.id), mm]))
+  for (const item of rows) {
+    const refId = item.reply_to_message_id ? Number(item.reply_to_message_id) : 0
+    if (!refId) continue
+    const msg = mappedById.get(Number(item.id))
+    if (!msg) continue
+
+    const refMsg = mappedById.get(refId)
+    if (refMsg) {
+      const firstAtt = refMsg.attachments && refMsg.attachments.length ? refMsg.attachments[0] : undefined
+      const snippet = refMsg.text || (firstAtt ? firstAtt.name || firstAtt.type : '') || ''
+      msg.replyTo = { sender: refMsg.sender, textSnippet: truncate(snippet, 24), refId }
+    } else {
+      const snippet = item.body || ''
+      msg.replyTo = { sender: 'bot', textSnippet: truncate(snippet, 24), refId }
     }
   }
+
   // Rehydrate any known reply contexts by message id (fallback/persist)
   for (const msg of mapped) {
     const ctx = replyContextById.value[msg.id]
@@ -636,14 +671,9 @@ function applyPendingReplyPatches() {
 }
 
 async function fetchUnread() {
-  const rows = await svcHttp<Array<{ conversation_id: number; unread: number }>>('/svc/unread')
-  unreadCount.value = rows.reduce((acc, r) => acc + Number(r.unread || 0), 0)
-}
-
-async function markRead() {
-  if (!conversationId.value) return
-  await svcHttp(`/svc/conversations/${conversationId.value}/read`, { method: 'POST' })
-  unreadCount.value = 0
+  const res = await apiHttp<{ data: Array<{ unread?: number }> }>('/cs/me/unread', { method: 'GET' })
+  const rows = Array.isArray(res?.data) ? res.data : []
+  unreadCount.value = rows.reduce((acc, r) => acc + Number(r?.unread || 0), 0)
 }
 
 async function init() {
@@ -651,13 +681,11 @@ async function init() {
   try {
     await ensureConversation()
     await loadMessages()
-    await markRead()
-    await fetchUnread()
+    unreadCount.value = 0
     // Poll every 15s
     pollTimer.value = window.setInterval(async () => {
       await loadMessages()
-      await markRead()
-      await fetchUnread()
+      unreadCount.value = 0
     }, 15000)
   } finally {
     isLoading.value = false

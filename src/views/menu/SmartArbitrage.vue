@@ -460,7 +460,7 @@ async function loadSmartList(): Promise<void> {
     })
   } catch (err) {
     console.error('loadSmartList error:', err)
-    modal.open('Error', 'Gagal mengambil daftar Smart Arbitrage.')
+    modal.open('Error', 'Failed to fetch the Smart Arbitrage list.')
   }
 }
 
@@ -481,7 +481,7 @@ async function cancelTransaction(smartId: number): Promise<void> {
       await Promise.all([loadSaldo(), loadSmartList()])
     })
   } catch {
-    modal.open('Error', 'Gagal membatalkan transaksi.')
+    modal.open('Error', 'Failed to cancel the transaction.')
   } finally {
     loadingCancelId.value = null
   }
@@ -504,7 +504,7 @@ async function claimBySmartId(smartId: number): Promise<void> {
       await Promise.all([loadSaldo(), loadSmartList()])
     })
   } catch {
-    modal.open('Error', 'Gagal melakukan claim.')
+    modal.open('Error', 'Failed to claim.')
   } finally {
     loadingClaimId.value = null
   }
@@ -563,7 +563,7 @@ async function loadSaldo(): Promise<void> {
     saldoSmart.value = Number(json.saldo_smart_arbitrage || 0)
   } catch (err) {
     console.error('loadSaldo error:', err)
-    modal.open('Error', 'Gagal mengambil saldo (saldo_smart_arbitrage).')
+    modal.open('Error', 'Failed to fetch balance (saldo_smart_arbitrage).')
   }
 }
 

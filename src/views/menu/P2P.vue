@@ -1,5 +1,29 @@
 <template>
   <div class="max-w-md mx-auto p-4 relative">
+    <!-- Tabs: Buy / Sell (default Buy) -->
+    <div class="flex items-center gap-2 mb-3" role="tablist" aria-label="P2P side">
+      <button
+        type="button"
+        role="tab"
+        :aria-selected="activeTab === 'buy' ? 'true' : 'false'"
+        class="px-3 py-1 text-xs font-semibold rounded-md border"
+        :class="activeTab === 'buy' ? 'bg-teal-500 text-white border-teal-500' : 'bg-white text-gray-700 border-gray-200'"
+        @click="activeTab = 'buy'"
+      >
+        Buy
+      </button>
+      <button
+        type="button"
+        role="tab"
+        :aria-selected="activeTab === 'sell' ? 'true' : 'false'"
+        class="px-3 py-1 text-xs font-semibold rounded-md border"
+        :class="activeTab === 'sell' ? 'bg-red-500 text-white border-red-500' : 'bg-white text-gray-700 border-gray-200'"
+        @click="activeTab = 'sell'"
+      >
+        Sell
+      </button>
+    </div>
+
     <!-- Top filter bar -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center space-x-4 text-sm font-normal text-gray-900">
@@ -25,10 +49,16 @@
 
     <!-- POPUP: Amount -->
     <div v-if="showAmount" class="absolute z-10 bg-white border border-gray-200 rounded-lg p-3 shadow w-90">
-      <label class="block text-xs text-gray-500 mb-1">Jumlah USDT</label>
+      <label class="block text-xs text-gray-500 mb-1">USDT Amount</label>
       <div class="flex items-center space-x-2">
-        <input v-model.number="amountUsdt" type="number" min="0" step="0.0001"
-          class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm" placeholder="mis. 150" />
+        <input
+          v-model.number="amountUsdt"
+          type="number"
+          min="0"
+          step="0.0001"
+          class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
+          placeholder="e.g. 150"
+        />
         <button type="button" class="text-xs px-2 py-1 border rounded" @click="applyAmount">
           Apply
         </button>
@@ -37,34 +67,34 @@
         </button>
       </div>
       <p class="mt-2 text-[11px] text-gray-500">
-        Menampilkan penjual yang <em>available</em> ≥ jumlah USDT dan nilai fiat (USDT × harga)
-        berada dalam rentang <em>Limit</em>.
+        Shows sellers with <em>available</em> ≥ the USDT amount, and whose fiat value (USDT × price)
+        falls within the <em>Limit</em> range.
       </p>
     </div>
 
     <!-- POPUP: Limit (Payment) -->
     <div v-if="showLimit" class="absolute z-10 bg-white border border-gray-200 rounded-lg p-3 shadow w-64 left-40">
-      <label class="block text-xs text-gray-500 mb-2">Filter berdasarkan Limit (IDR)</label>
+      <label class="block text-xs text-gray-500 mb-2">Filter by Limit (IDR)</label>
       <div class="space-y-1 text-sm">
         <label class="flex items-center space-x-2">
           <input type="radio" value="ALL" v-model="limitPreset" />
-          <span>Semua</span>
+          <span>All</span>
         </label>
         <label class="flex items-center space-x-2">
           <input type="radio" value="LT1M" v-model="limitPreset" />
-          <span>&lt; 1.000.000</span>
+          <span>&lt; 1,000,000</span>
         </label>
         <label class="flex items-center space-x-2">
           <input type="radio" value="1-5M" v-model="limitPreset" />
-          <span>1 — 5 juta</span>
+          <span>1 — 5 million</span>
         </label>
         <label class="flex items-center space-x-2">
           <input type="radio" value="5-10M" v-model="limitPreset" />
-          <span>5 — 10 juta</span>
+          <span>5 — 10 million</span>
         </label>
         <label class="flex items-center space-x-2">
           <input type="radio" value="GTE10M" v-model="limitPreset" />
-          <span>≥ 10 juta</span>
+          <span>≥ 10 million</span>
         </label>
       </div>
       <div class="mt-2 flex items-center space-x-2">
@@ -76,9 +106,10 @@
         </button>
       </div>
       <p class="mt-2 text-[11px] text-gray-500">
-        Menyaring berdasarkan rentang <em>Limit</em> fiat penjual.
+        Filters sellers based on their fiat <em>Limit</em> range.
       </p>
     </div>
+
 
     <!-- Trade items -->
     <div v-for="trade in filteredTrades" :key="trade.id" class="mb-3 border border-gray-200 rounded-lg p-3 text-[11px]">
@@ -131,14 +162,22 @@
           <span>{{ trade.time }}</span>
         </div>
 
-        <!-- BUY & SELL buttons -->
-        <div class="flex items-center gap-2">
-          <button class="bg-teal-500 text-white text-[10px] font-semibold rounded-md px-4 py-[3px]" type="button"
-            @click="goDetail(trade.id)">
+        <!-- Action button (depends on active tab) -->
+        <div class="flex items-center">
+          <button
+            v-if="activeTab === 'buy'"
+            class="bg-teal-500 text-white text-[10px] font-semibold rounded-md px-4 py-[3px]"
+            type="button"
+            @click="goDetail(trade.id)"
+          >
             Buy
           </button>
-          <button class="bg-red-500 text-white text-[10px] font-semibold rounded-md px-4 py-[3px]" type="button"
-            @click="goDetailSell(trade.id)">
+          <button
+            v-else
+            class="bg-red-500 text-white text-[10px] font-semibold rounded-md px-4 py-[3px]"
+            type="button"
+            @click="goDetailSell(trade.id)"
+          >
             Sell
           </button>
         </div>
@@ -165,7 +204,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -204,6 +243,10 @@ type Trade = {
 const trades = ref<Trade[]>([])
 const loading = ref(true)
 const errorMsg = ref<string | null>(null)
+
+// Tabs
+type ActiveTab = 'buy' | 'sell'
+const activeTab = ref<ActiveTab>('buy')
 
 // === FILTER STATE ===
 const showAmount = ref(false)
@@ -357,8 +400,9 @@ async function fetchOffers() {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Unauthorized')
 
+    const viewParam = activeTab.value === 'sell' ? '?view=sell' : ''
     // ganti ke relative path jika API sama domain: '/api/p2p-offers'
-    const res = await fetch('https://abc.oneled.io/api/p2p-offers', {
+    const res = await fetch(`https://abc.oneled.io/api/p2p-offers${viewParam}`, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -373,4 +417,8 @@ async function fetchOffers() {
 }
 
 onMounted(fetchOffers)
+
+watch(activeTab, () => {
+  fetchOffers()
+})
 </script>

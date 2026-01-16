@@ -129,7 +129,7 @@
             <div class="space-x-2">
               <!-- Sell / Short -->
               <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50
-         transition-shadow duration-150 shadow-md active:shadow-xl
+                transition-shadow duration-150 shadow-md
          active:shadow-[0_10px_24px_rgba(255,49,49,0.55)]
          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400" type="button"
                 :style="{ backgroundColor: '#ff3131' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
@@ -139,7 +139,7 @@
 
               <!-- Buy / Long -->
               <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50
-         transition-shadow duration-150 shadow-md active:shadow-xl
+                transition-shadow duration-150 shadow-md
          active:shadow-[0_10px_24px_rgba(28,166,157,0.55)]
          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400" type="button"
                 :style="{ backgroundColor: '#1ca69d' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
@@ -177,47 +177,97 @@
         <div v-if="!pendingList.length" class="text-xs text-gray-400">No Data Available.</div>
 
         <ul v-else class="space-y-3">
-          <li v-for="(tx, idx) in sortedPending" :key="tx.id" class="rounded-md border border-gray-200 p-3">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-                  #{{ idx + 1 }}
+          <li
+            v-for="(tx) in sortedPending"
+            :key="tx.id"
+            class="rounded-md border border-gray-200 bg-white p-4"
+          >
+            <!-- TOP: Pair/Type + leverage (kiri) | ROE (kanan) -->
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-2 min-w-0">
+                <!-- BUY: B hijau | SELL: S merah -->
+                <span
+                  class="h-5 w-5 rounded inline-flex items-center justify-center"
+                  :class="
+                    tx.side === 'SELL'
+                      ? 'bg-red-500/15 border border-red-200'
+                      : 'bg-teal-500/15 border border-teal-200'
+                  "
+                >
+                  <span
+                    class="text-[10px] font-bold"
+                    :class="tx.side === 'SELL' ? 'text-red-600' : 'text-teal-600'"
+                  >{{ tx.side === 'SELL' ? 'S' : 'B' }}</span>
                 </span>
-                <span class="text-xs text-gray-500">Open Position</span>
+
+                <div class="min-w-0">
+                  <div class="flex items-baseline gap-2 min-w-0">
+                    <div class="truncate text-sm font-semibold text-gray-900">
+                      {{ selectedPair || formatPairFromSymbol(tx.symbol) || 'BTC/USDT' }}
+                    </div>
+                    <div class="shrink-0 text-xs text-gray-500">
+                      {{ tx.contractType || 'Perpetual' }}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <span class="text-xs font-semibold">{{ fmtMoney(tx.amount, 4) }} USDT</span>
+
+
             </div>
 
-            <!-- Progress -->
-            <div class="w-full h-2 bg-gray-100 rounded overflow-hidden mb-2">
-              <div class="h-2 bg-teal-400" :style="{ width: (progressFor(tx) * 100).toFixed(2) + '%' }" />
+            <!-- MIDDLE: Unrealized PNL + ROE (aligned) -->
+            <div class="mt-4 flex items-start justify-between">
+              <div>
+                <div class="text-[11px] text-gray-400">Unrealized PNL (USDT)</div>
+                <div
+                  class="mt-1 text-2xl font-semibold tracking-tight"
+                  :class="pnlFor(tx) >= 0 ? 'text-teal-600' : 'text-red-600'"
+                >
+                  {{ fmtMoney(pnlFor(tx), 2) }}
+                </div>
+              </div>
+
+              <div>
+                <div class="text-[11px] text-right text-gray-400">ROE</div>
+                <div
+                  class="mt-1 text-2xl font-semibold tracking-tight"
+                  :class="roeFor(tx) >= 0 ? 'text-teal-600' : 'text-red-600'"
+                >
+                  {{ roeFor(tx) >= 0 ? '+' : '' }}{{ fmtMoney(roeFor(tx), 2) }}%
+                </div>
+              </div>
             </div>
 
-            <!-- Numbers -->
-            <div class="grid grid-cols-3 gap-2 text-[11px]">
-              <div class="flex flex-col">
-                <span class="text-gray-400">SL</span>
-                <span class="font-semibold">{{
-                  Number.isFinite(tx.sl) ? Math.round(tx.sl) + '%' : '—'
-                }}</span>
-              </div>
-              <div class="flex flex-col">
-                <span class="text-gray-400">PNL</span>
-                <span class="font-semibold" :class="pnlFor(tx) >= 0 ? 'text-teal-500' : 'text-red-500'">
-                  {{ signedMoney(pnlFor(tx), 4) }}
-                </span>
-              </div>
+            <!-- BOTTOM: Est. Total / Open Position / SL -->
+            <div class="mt-4 grid grid-cols-3 gap-3 text-[10px]">
               <div class="flex flex-col">
                 <span class="text-gray-400">Est. Total</span>
-                <span class="font-semibold">{{ fmtMoney(currentTotalFor(tx), 4) }}</span>
+                <span class="font-semibold text-gray-900">
+                  {{ fmtMoney(currentTotalFor(tx), 4) }}
+                </span>
+              </div>
+
+              <div class="flex flex-col text-center">
+                <span class="text-gray-400 whitespace-nowrap">Open Position</span>
+                <span class="font-semibold text-gray-900">
+                  {{ fmtMoney(tx.amount, 2) }}
+                </span>
+              </div>
+
+              <div class="flex flex-col text-right">
+                <span class="text-gray-400">SL</span>
+                <span class="font-semibold text-teal-600">
+                  {{ Number.isFinite(tx.sl) ? Math.round(Math.abs(tx.sl)) + '%' : '—' }}
+                </span>
               </div>
             </div>
+
           </li>
         </ul>
       </section>
 
-      <ChatCard :copyTraderId="trader.id" />
+
+      <ChatCard />
     </template>
   </main>
 </template>
@@ -239,6 +289,7 @@ const API_BASE = 'https://abc.oneled.io/api'
 
 type Side = 'BUY' | 'SELL'
 const selectedSide = ref<Side | ''>('')
+const sideByTxId = new Map<number, Side>()
 
 function selectSide(side: Side) {
   if (loadingSubmit.value || atCapacity.value || !hasPairSelected.value) return
@@ -326,6 +377,14 @@ const availablePairs = ref<string[]>(['BTC/USDT',
 const selectedPair = ref<string>('') // UI only
 const hasPairSelected = computed(() => availablePairs.value.includes(selectedPair.value))
 
+function formatPairFromSymbol(sym?: string): string | null {
+  const s = (sym ?? '').trim()
+  if (!s) return null
+  if (s.includes('/')) return s
+  if (s.toUpperCase().endsWith('USDT') && s.length > 4) return `${s.slice(0, -4)}/USDT`
+  return s
+}
+
 // abortable fetch dengan timeout sederhana
 function withTimeout<T>(p: Promise<T>, ms = 10000): Promise<T> {
   return Promise.race([
@@ -360,7 +419,7 @@ async function authFetch(path: string, init: RequestInit = {}) {
 // deteksi error jaringan / SW no-response
 function isIgnorableNetworkError(e: unknown): boolean {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return true
-  const msg = String((e as any)?.message || e || '').toLowerCase()
+  const msg = (e instanceof Error ? e.message : String(e ?? '')).toLowerCase()
   return (
     msg.includes('no-response') ||
     msg.includes('failed to fetch') ||
@@ -380,11 +439,6 @@ function fmtUSDT(n: number): string {
 function fmtMoney(n: number, dp = 4): string {
   if (!Number.isFinite(n)) return '0'
   return n.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
-}
-function signedMoney(v: number, dp = 2): string {
-  if (!Number.isFinite(v)) return '0'
-  const s = v >= 0 ? '+' : ''
-  return s + v.toFixed(dp)
 }
 
 /* ===== Types & state ===== */
@@ -421,6 +475,15 @@ type PendingTx = {
   sl: number
   createdAtUtc: string
   orderTimeMin: number
+
+  side?: Side
+
+  // optional display fields (fallbacks are handled in template)
+  symbol?: string
+  contractType?: string
+  marginMode?: string
+  leverage?: string | number
+  size?: number | null
 }
 
 const router = useRouter()
@@ -430,6 +493,14 @@ const trader = ref<Trader | null>(null)
 const loading = ref(true)
 const pageError = ref<string | null>(null)
 const avatarBroken = ref(false)
+const kickedOut = ref(false)
+
+function kickToFuturesCopy(message: string) {
+  if (kickedOut.value) return
+  kickedOut.value = true
+  alertError(message)
+  router.replace('/futures')
+}
 
 function ensureAbsoluteUrl(u?: string | null): string | null {
   if (!u) return null
@@ -466,11 +537,10 @@ async function ensureAccess(slug: string): Promise<boolean> {
     })
     const res = json() as { status: 'success' | 'error'; code: string }
     if (res.status === 'success') return true
-    alertError('Akses ditolak')
+    kickToFuturesCopy('Access denied')
   } catch {
-    alertError('Gagal memverifikasi akses')
+    kickToFuturesCopy('Failed to verify access')
   }
-  router.replace('/futures')
   return false
 }
 
@@ -501,6 +571,7 @@ async function loadTrader(slug: string) {
   trader.value = null
   avatarBroken.value = false
   roomClosedWarned.value = false
+  kickedOut.value = false
   try {
     const ok = await ensureAccess(slug)
     if (!ok) return
@@ -510,19 +581,17 @@ async function loadTrader(slug: string) {
 
     // jika draft (jaga-jaga kalau backend suatu saat tak filter)
     if (!t || t.status === 'draft') {
-      alertError('This copy trader is not available.')
-      router.replace('/futures')
+      kickToFuturesCopy('This copy trader is not available.')
       return
     }
 
     trader.value = t
     maybeHandleRoomClosed(t)
-  } catch (e: any) {
-    const msg = String(e?.message || '')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e ?? '')
     if (msg.startsWith('HTTP 404')) {
       // slug ketemu tapi status bukan published (backend sudah filter) => redirect
-      alertError('This copy trader is not available.')
-      router.replace('/futures')
+      kickToFuturesCopy('This copy trader is not available.')
       return
     }
     pageError.value = msg || 'Failed to load data.'
@@ -556,8 +625,9 @@ async function fetchSaldo() {
     if (data.status !== 'success') throw new Error('API status != success')
     saldo.value = Number(data.saldo ?? 0)
     komisi.value = Number(data.komisi ?? 0)
-  } catch (e: any) {
-    alertError(e?.message ?? 'Failed to load balance')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : ''
+    alertError(msg || 'Failed to load balance')
   } finally {
     loadingSaldo.value = false
   }
@@ -648,11 +718,7 @@ function durMsFor(p: PendingTx) {
 function expiresAtFor(p: PendingTx) {
   return startAtFor(p) + durMsFor(p)
 }
-function progressFor(p: PendingTx) {
-  const dur = durMsFor(p)
-  const ratio = (nowTick.value - startAtFor(p)) / dur
-  return Math.max(0, Math.min(1, ratio))
-}
+
 
 /* ==== RANDOM WALK PNL (visual only) ==== */
 function stepRandomWalk(p: PendingTx) {
@@ -687,6 +753,11 @@ function stepRandomWalk(p: PendingTx) {
 function pnlFor(p: PendingTx) {
   return pnlMap.get(p.id) ?? 0
 }
+function roeFor(p: PendingTx) {
+  const amt = Number(p.amount)
+  if (!Number.isFinite(amt) || amt === 0) return 0
+  return (pnlFor(p) / amt) * 100
+}
 function currentTotalFor(p: PendingTx) {
   return p.amount + pnlFor(p)
 }
@@ -696,9 +767,11 @@ async function fetchPending(opts: { silent?: boolean } = {}) {
   const { silent = false } = opts
   try {
     const { json } = await authFetch('/win-lose/pending')
-    const payload = json() as { data: any[] }
+    const payload = json() as { data: unknown[] }
 
-    const list: PendingTx[] = (payload.data || []).map((x): PendingTx => {
+    const list: PendingTx[] = (payload.data || []).map((row): PendingTx => {
+      const x = (row ?? {}) as Record<string, unknown>
+
       const id = Number(x.id)
       const amount = Number(x.amount ?? 0)
       const tp = Number(x.take_profit ?? 0)
@@ -707,7 +780,45 @@ async function fetchPending(opts: { silent?: boolean } = {}) {
       const otRaw = Number(x.order_time_min)
       const orderTimeMin = Number.isFinite(otRaw) && otRaw > 0 ? otRaw : 5
 
-      return { id, amount, tp, sl, createdAtUtc, orderTimeMin }
+      const coinRaw = typeof x.coin === 'string' ? x.coin : ''
+      const symbol = coinRaw ? coinRaw.replace(/\//g, '') : undefined
+
+      const leverageRaw = x.leverage
+      const leverage =
+        typeof leverageRaw === 'number'
+          ? `${leverageRaw}x`
+          : typeof leverageRaw === 'string'
+            ? leverageRaw
+            : undefined
+
+      const sizeRaw = x.size
+      const size = typeof sizeRaw === 'number' && Number.isFinite(sizeRaw) ? sizeRaw : null
+
+      const sideRaw = x.keterangan ?? x.side
+      const sideText = typeof sideRaw === 'string' ? sideRaw.trim().toUpperCase() : ''
+      const sideTextNorm = sideText.replace(/\s+/g, ' ')
+      const parsedSide: Side | undefined =
+        /(^|\b)(SELL|SHORT|S)(\b|$)/.test(sideTextNorm)
+          ? 'SELL'
+          : /(^|\b)(BUY|LONG|B)(\b|$)/.test(sideTextNorm)
+            ? 'BUY'
+            : undefined
+      const side: Side | undefined = parsedSide ?? sideByTxId.get(id)
+
+      return {
+        id,
+        amount,
+        tp,
+        sl,
+        createdAtUtc,
+        orderTimeMin,
+        side,
+        symbol,
+        contractType: typeof x.contractType === 'string' ? x.contractType : undefined,
+        marginMode: typeof x.marginMode === 'string' ? x.marginMode : undefined,
+        leverage,
+        size,
+      }
     })
 
     // sinkronkan PNL map
@@ -718,9 +829,10 @@ async function fetchPending(opts: { silent?: boolean } = {}) {
     for (const t of list) if (!pnlMap.has(t.id)) pnlMap.set(t.id, 0)
 
     pendingList.value = list
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (silent || isIgnorableNetworkError(e)) return
-    alertError(e?.message ?? 'Failed to load pending list')
+    const msg = e instanceof Error ? e.message : ''
+    alertError(msg || 'Failed to load pending list')
   }
 }
 
@@ -738,7 +850,7 @@ async function finalizeWinLose(txId: number) {
     else if (data?.hasil === 2) alertSuccess('Position closed: Lose (SL).')
     else alertSuccess('Position closed.')
     return data
-  } catch (e: any) {
+  } catch (e: unknown) {
     throw e
   }
 }
@@ -749,8 +861,8 @@ async function finalizeIfExpired() {
     if (expiresAtFor(tx) <= now) {
       try {
         await finalizeWinLose(tx.id)
-      } catch (e: any) {
-        const msg = String(e?.message || '')
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e ?? '')
         if (msg.includes('already processed')) continue
         if (msg.includes('Transaction not found')) continue
       }
@@ -763,7 +875,7 @@ const submitError = ref<string | null>(null)
 const submitSuccess = ref<string | null>(null)
 const loadingSubmit = ref(false)
 
-const submitWinLose = async (_evt?: MouseEvent) => {
+const submitWinLose = async () => {
   if (atCapacity.value) return alertError('Full position capacity (5/5). Complete one first.')
   if (!hasPairSelected.value) return alertError('Select Pair Required')
   if (!selectedSide.value) return alertError('Select Buy or Sell')
@@ -793,18 +905,22 @@ const submitWinLose = async (_evt?: MouseEvent) => {
         coin: selectedPair.value,           // contoh: 'BTC/USDT'
       }),
     })
-    json() as { status: 'success'; transaction_id: number }
+    const res = json() as { status: 'success'; transaction_id: number }
+    if (res?.transaction_id && (selectedSide.value === 'BUY' || selectedSide.value === 'SELL')) {
+      sideByTxId.set(res.transaction_id, selectedSide.value)
+    }
     alertSuccess('Order created.')
     amount.value = ''
     await Promise.all([fetchSaldo(), fetchPending({ silent: true })])
-  } catch (e: any) {
-    alertError(e?.message ?? 'Submit failed')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : ''
+    alertError(msg || 'Submit failed')
   } finally {
     loadingSubmit.value = false
   }
 }
-/* ===== Polling MIN BUY (dan beberapa field penting) per 5 detik ===== */
-const MINBUY_POLL_MS = 5000
+/* ===== Polling status/min_buy (dan beberapa field penting) per 10 detik ===== */
+const MINBUY_POLL_MS = 10000
 let traderPollHandle: number | undefined
 let traderPollBusy = false
 
@@ -821,8 +937,7 @@ async function pollTraderMinBuy() {
 
     // kalau server suatu saat kirim status selain published
     if (fresh?.status && fresh.status !== 'published') {
-      alertError('This copy trader is not available.')
-      router.replace('/futures')
+      kickToFuturesCopy('This copy trader is not available.')
       return
     }
 
@@ -850,12 +965,11 @@ async function pollTraderMinBuy() {
     } else {
       trader.value = fresh
     }
-  } catch (e: any) {
-    const msg = String(e?.message || '')
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e ?? '')
     if (msg.startsWith('HTTP 404')) {
       // status berubah jadi draft (endpoint Anda memang filter published)
-      alertError('This copy trader is not available.')
-      router.replace('/futures')
+      kickToFuturesCopy('This copy trader is not available.')
       return
     }
     // error jaringan: diamkan

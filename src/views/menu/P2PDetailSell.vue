@@ -103,7 +103,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 
 const router = useRouter()
@@ -115,7 +115,7 @@ const TOKEN = () => localStorage.getItem('token') || ''
 
 function goBack() {
   if (window.history.length > 1) router.back()
-  else router.push('/sell-p2p')
+  else router.push('/p2p')
 }
 
 type ApiRow = {
@@ -152,6 +152,24 @@ const idParam = computed<number | null>(() => {
 })
 
 const nf0 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+const POLL_MS = 10_000
+let pollTimer: number | null = null
+const kicked = ref(false)
+
+function kickToP2P(message: string) {
+  if (kicked.value) return
+  kicked.value = true
+
+  if (pollTimer != null) {
+    window.clearInterval(pollTimer)
+    pollTimer = null
+  }
+
+  modal.open('Offer unavailable', message, () => {
+    router.replace('/p2p')
+  })
+}
 
 const limitText = computed(() => {
   if (!offer.value) return ''
@@ -204,7 +222,7 @@ async function fetchSaldo(): Promise<number> {
 async function fetchOffer() {
   const token = TOKEN()
   if (!token) throw new Error('Unauthorized.')
-  const res = await fetch(`${API_BASE}/api/p2p-offers/${idParam.value}`, {
+  const res = await fetch(`${API_BASE}/api/p2p-offers/${idParam.value}?view=sell`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   })
   if (!res.ok) {
@@ -215,7 +233,12 @@ async function fetchOffer() {
     } catch {}
     throw new Error(msg)
   }
-  offer.value = (await res.json()) as ApiRow
+
+  const row = (await res.json()) as ApiRow
+  offer.value = row
+  if (row?.status !== 'active') {
+    kickToP2P('This offer is no longer active. Please choose another advertiser.')
+  }
 }
 
 async function onClickMax() {
@@ -366,10 +389,26 @@ onMounted(async () => {
     await fetchOffer()
     // Cek kelengkapan bank & norek saat buka halaman
     await ensureAccountBankFilled()
+
+    pollTimer = window.setInterval(async () => {
+      if (kicked.value) return
+      try {
+        await fetchOffer()
+      } catch {
+        kickToP2P('This offer is no longer available. Please choose another advertiser.')
+      }
+    }, POLL_MS)
   } catch (e) {
     errorMsg.value = e instanceof Error ? e.message : 'Unknown error.'
   } finally {
     loading.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (pollTimer != null) {
+    window.clearInterval(pollTimer)
+    pollTimer = null
   }
 })
 </script>

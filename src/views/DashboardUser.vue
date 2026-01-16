@@ -205,10 +205,10 @@
             </div>
             <div class="text-right">
               <div class="font-bold text-[12px] leading-none">
-                {{ item.price !== null ? item.price : '...' }}
+                {{ item.price !== null ? formatPrice(item.price) : '...' }}
               </div>
               <div class="text-[10px] text-[#9ca3af] mt-0.5">
-                {{ item.price !== null ? '$' + item.price : '...' }}
+                {{ item.price !== null ? '$' + formatPrice(item.price) : '...' }}
               </div>
             </div>
             <div class="text-right">
@@ -720,7 +720,7 @@ const totalValueUsdStr = computed(() =>
   isTotalHidden.value
     ? '••••'
     : totalValue.value !== null
-      ? totalValue.value.toLocaleString('en-US', { minimumFractionDigits: 2 })
+      ? totalValue.value.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : '...',
 )
 
@@ -769,6 +769,12 @@ const signedMoneyId = (nu: number, digits = 2) =>
   (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
 const truncate = (text: string, limit: number): string =>
   text.length > limit ? text.substring(0, limit) + '...' : text
+
+function formatPrice(nu: number): string {
+  if (!Number.isFinite(nu)) return '0.00'
+  const digits = nu >= 1 ? 2 : 6
+  return nu.toFixed(digits)
+}
 
 /** ===== Totals ===== */
 let totalsScheduled = false
@@ -1144,7 +1150,7 @@ onMounted(async () => {
           }
         })
       } else {
-        modal.open('Error', (data as { message?: string })?.message || 'Gagal memuat berita.')
+        modal.open('Error', (data as { message?: string })?.message || 'Failed to load news.')
       }
     } catch (e: unknown) {
       modal.open(

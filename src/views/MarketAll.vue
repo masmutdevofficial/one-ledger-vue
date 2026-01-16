@@ -162,6 +162,14 @@ function onIconError(e: Event) {
   if (el && el.src !== ICON_FALLBACK) el.src = ICON_FALLBACK
 }
 
+function formatPrice(nu: number): string {
+  if (!Number.isFinite(nu)) return '-'
+  // No thousand separators; decimals use dot.
+  // BTC, ETH, dll: 2 decimals. Small altcoin: up to 6 decimals.
+  const digits = nu >= 1 ? 2 : 6
+  return nu.toFixed(digits)
+}
+
 /** ==================== Cache (in-memory + localStorage) ==================== */
 let inMemCache: CacheShape = {}
 let saveTimer: ReturnType<typeof setTimeout> | undefined
@@ -403,7 +411,7 @@ function flushTicks() {
         ? t.close!
         : undefined
     if (typeof priceNum === 'number') {
-      const newText = priceNum.toFixed(6)
+      const newText = formatPrice(priceNum)
       if (row.price !== newText) row.price = newText
       setCache(t.symbol, { price: priceNum })
     }
@@ -551,7 +559,7 @@ function applyCacheToList(cache: CacheShape) {
     const c = cache[row.symbol]
     if (!c) continue
     if (CACHE_TTL_MS && c.ts && now - c.ts > CACHE_TTL_MS) continue
-    if (typeof c.price === 'number') row.price = c.price.toFixed(6)
+    if (typeof c.price === 'number') row.price = formatPrice(c.price)
     if (typeof c.change === 'number') row.change = c.change
     if (typeof c.volume === 'string') row.volume = c.volume
   }

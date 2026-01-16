@@ -171,7 +171,7 @@ async function handleSubmit() {
     const data = await res.json()
 
     if (!res.ok) {
-      modal.open('Error', data.message || 'Gagal mengganti password.')
+      modal.open('Error', data.message || 'Failed to change password.')
       return
     }
 
