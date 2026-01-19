@@ -23,26 +23,10 @@
           class="w-full border border-gray-300 rounded-md py-2 px-3 mb-3 text-sm placeholder-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400"
         />
         <!-- Referral -->
-        <button
-          type="button"
-          class="w-full flex justify-between items-center text-xs text-gray-500 mb-4"
-          @click="showReferral = !showReferral"
-        >
-          <span>Referral Code (Optional)</span>
-          <Icon
-            icon="tabler:chevron-down"
-            :class="[
-              'transition-transform duration-200 inline-block',
-              showReferral ? 'rotate-180' : '',
-            ]"
-            style="font-size: 16px"
-          />
-        </button>
         <input
-          v-if="showReferral"
           v-model="referral"
           type="text"
-          placeholder="Enter Referral Code"
+          placeholder="Referral Code (Required)"
           class="w-full border border-gray-300 rounded-md py-2 px-3 mb-4 text-sm placeholder-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-400"
         />
 
@@ -466,7 +450,6 @@ import { useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import { Icon } from '@iconify/vue'
 
-const showReferral = ref(false)
 const email = ref('')
 const password = ref('')
 const referral = ref('')
@@ -502,6 +485,13 @@ const handleRegister = async () => {
     modal.open('Failed', 'Email is required.')
     return
   }
+
+  const referralNormalized = referral.value.trim().toUpperCase()
+  if (!referralNormalized) {
+    modal.open('Failed', 'Referral code is required.')
+    return
+  }
+
   if (!agreePrivacy.value || !agreeTerms.value) {
     modal.open('Failed', 'You must agree to Privacy Policy and Terms.')
     return
@@ -518,7 +508,7 @@ const handleRegister = async () => {
       body: JSON.stringify({
         email: email.value,
         password: password.value,
-        referral: referral.value || null,
+        referral: referralNormalized,
       }),
     })
 
