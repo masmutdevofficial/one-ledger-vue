@@ -118,6 +118,42 @@
       </div>
     </div>
 
+    <!-- ===== Additional Event Tasks ===== -->
+    <div
+      v-for="t in weeklyTasks"
+      :key="t.code"
+      class="border border-gray-200 rounded-lg mb-3 p-3"
+    >
+      <div class="flex items-center space-x-3 mb-1">
+        <div class="flex justify-center items-center w-8 h-8 rounded-full border border-gray-300 text-teal-500">
+          <Icon icon="tabler:gift" class="w-4 h-4" />
+        </div>
+        <p class="text-gray-700 text-sm leading-5">{{ t.title }}</p>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-gray-400">
+        <span>
+          Progress
+          <span class="text-teal-600 font-semibold">{{ progressText(t) }}</span>
+        </span>
+        <button
+          class="text-white text-xs rounded px-3 py-0.5 transition-colors"
+          :class="[
+            btnClass(t.status),
+            isClaimingWeekly[t.code] ? 'opacity-70 cursor-wait' : '',
+          ]"
+          :disabled="isDisabled(t.status) || isClaimingWeekly[t.code]"
+          @click="onClaimWeekly(t.code, t.status)"
+        >
+          {{ weeklyButtonText(t.code, t.status) }}
+        </button>
+      </div>
+
+      <div class="mt-1 text-xs text-gray-400">
+        Reward <span class="text-teal-500 font-semibold">${{ t.reward.toFixed(2) }}</span>
+      </div>
+    </div>
+
     <p class="text-center text-gray-300 text-xs mt-6 select-none">No more data</p>
 
     <!-- Bottom Nav -->
@@ -153,47 +189,36 @@
         <!-- Body -->
         <div ref="scrollArea" class="max-h-[70dvh] overflow-y-auto px-4 py-3 text-[12px] leading-relaxed text-gray-700"
           @scroll="onScroll">
-          <p class="font-semibold">Terms &amp; Conditions – First-Time User Bonus</p>
+          <p class="font-semibold">Terms &amp; Conditions – Monthly Event Rewards</p>
 
-          <h4 class="mt-3 font-semibold">Eligibility</h4>
+          <h4 class="mt-3 font-semibold">General</h4>
           <ul class="list-disc pl-5 space-y-1">
-            <li>
-              The bonus is available only for users who are registering for the first time on the
-              platform.
-            </li>
-            <li>
-              Users who have previously created an account or have already claimed any bonuses are
-              not eligible.
-            </li>
+            <li>This event is available to eligible users during the event period shown in the app.</li>
+            <li>Progress and eligibility are calculated by the system and may update periodically.</li>
+            <li>Each reward can be claimed once per user per task.</li>
+            <li>Rewards are credited to your balance after a successful claim.</li>
           </ul>
 
-          <h4 class="mt-3 font-semibold">Bonus Claim</h4>
+          <h4 class="mt-3 font-semibold">Task Requirements</h4>
           <ul class="list-disc pl-5 space-y-1">
-            <li>
-              The bonus must be claimed within the specified time frame after registration, as
-              indicated by the platform.
-            </li>
-            <li>Each eligible user can claim the bonus only once.</li>
+            <li>Copy Trade Volume 20,000 USDT: reach a total Copy Trade volume of 20,000 USDT during the event period.</li>
+            <li>Balance 3,000 USDT for 14 Days (No Withdrawal): maintain a balance of at least 3,000 USDT for 14 days; any withdrawal during the counting period may reset the timer.</li>
+            <li>Simple Earn 10,000 USDT for 7 Days: subscribe at least 10,000 USDT and keep it for the required lock/holding period.</li>
+            <li>Simple Earn 30,000 USDT for 14 Days: subscribe at least 30,000 USDT and keep it for the required lock/holding period.</li>
+            <li>Simple Earn 50,000 USDT for 14 Days: subscribe at least 50,000 USDT and keep it for the required lock/holding period.</li>
+            <li>Simple Earn Renew Total 15,000 USDT for 30 Days: reach a total renewed amount of 15,000 USDT and keep it for 30 days to be eligible.</li>
           </ul>
 
           <h4 class="mt-3 font-semibold">Restrictions</h4>
           <ul class="list-disc pl-5 space-y-1">
-            <li>The bonus is non-transferable.</li>
-            <li>
-              Any attempt to create multiple accounts or manipulate eligibility will result in
-              forfeiture of the bonus and may lead to account suspension.
-            </li>
+            <li>Rewards are non-transferable and cannot be exchanged for cash outside the platform.</li>
+            <li>Using multiple accounts or abusing the event may result in disqualification and forfeiture of rewards.</li>
           </ul>
 
-          <h4 class="mt-3 font-semibold">Usage &amp; Terms</h4>
-          <p>
-            The platform reserves the right to modify or terminate the bonus program at any time.
-          </p>
-
-          <h4 class="mt-3 font-semibold">Dispute &amp; Responsibility</h4>
+          <h4 class="mt-3 font-semibold">Changes &amp; Disputes</h4>
           <ul class="list-disc pl-5 space-y-1">
-            <li>Decisions by the platform regarding bonus eligibility and claims are final.</li>
-            <li>Users are responsible for understanding the terms before claiming the bonus.</li>
+            <li>The platform may modify, suspend, or terminate the event at any time.</li>
+            <li>Decisions by the platform regarding eligibility, progress, and claims are final.</li>
           </ul>
 
           <div class="h-2"></div>
@@ -258,6 +283,7 @@ onMounted(() => {
 
   // Load claim data on mount
   void loadClaimData()
+  void loadWeeklyTasks()
 })
 
 onBeforeUnmount(() => {
@@ -342,6 +368,128 @@ async function loadClaimData(): Promise<void> {
     }
   } catch (e: unknown) {
     modal.open('Error', e instanceof Error ? e.message : 'Failed to load claim data.')
+  }
+}
+
+/** ===== Weekly/Monthly Event Tasks ===== */
+type WeeklyTaskCode =
+  | 'copytrade_volume_20000'
+  | 'balance_3000_14d'
+  | 'simple_earn_10000_7d'
+  | 'simple_earn_30000_14d'
+  | 'simple_earn_50000_14d'
+  | 'simple_earn_renew_15000_30d'
+
+type WeeklyTask = {
+  code: WeeklyTaskCode
+  title: string
+  reward: number
+  progress: number
+  target: number
+  unit: 'USDT' | 'DAYS'
+  status: Tri
+}
+
+type WeeklyTasksResp = {
+  success: boolean
+  data: WeeklyTask[]
+  user_id: number
+}
+
+const weeklyTasks = ref<WeeklyTask[]>([])
+
+const isClaimingWeekly = ref<Record<WeeklyTaskCode, boolean>>({
+  copytrade_volume_20000: false,
+  balance_3000_14d: false,
+  simple_earn_10000_7d: false,
+  simple_earn_30000_14d: false,
+  simple_earn_50000_14d: false,
+  simple_earn_renew_15000_30d: false,
+})
+
+function fmtInt(n: number): string {
+  const x = Number(n)
+  if (!Number.isFinite(x)) return '0'
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(x)
+}
+
+function progressText(t: WeeklyTask): string {
+  if (t.unit === 'DAYS') return `${fmtInt(t.progress)}/${fmtInt(t.target)} Days`
+  return `${fmtInt(t.progress)}/${fmtInt(t.target)} USDT`
+}
+
+async function loadWeeklyTasks(): Promise<void> {
+  const token = getToken()
+  if (!token) return
+  try {
+    const res = await fetch(`${API_BASE}/weekly-event`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      credentials: 'include',
+    })
+    if (!res.ok) {
+      const msg = await res.text().catch(() => `HTTP ${res.status}`)
+      throw new Error(msg)
+    }
+    const json = (await res.json()) as WeeklyTasksResp
+    if (!json?.success) throw new Error('Invalid response payload.')
+    weeklyTasks.value = Array.isArray(json.data) ? json.data : []
+  } catch (e: unknown) {
+    // keep page usable even if weekly tasks fail
+    modal.open('Error', e instanceof Error ? e.message : 'Failed to load weekly tasks.')
+    weeklyTasks.value = []
+  }
+}
+
+function weeklyButtonText(code: WeeklyTaskCode, status: Tri): string {
+  if (isClaimingWeekly.value[code]) return 'Claiming...'
+  return labelText(status)
+}
+
+async function onClaimWeekly(code: WeeklyTaskCode, status: Tri): Promise<void> {
+  if (status === 0) {
+    modal.open('Not eligible', 'You have not met the requirements yet.')
+    return
+  }
+  if (status === 2) {
+    modal.open('Already claimed', 'This reward has already been claimed.')
+    return
+  }
+  if (isClaimingWeekly.value[code]) return
+
+  try {
+    isClaimingWeekly.value[code] = true
+    const token = getToken()
+    if (!token) throw new Error('Token not found.')
+
+    const res = await fetch(`${API_BASE}/weekly-event/claim`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ jenis: code }),
+    })
+    const txt = await res.text()
+    const parsed = (txt ? (JSON.parse(txt) as unknown) : null) as
+      | { success?: unknown; message?: unknown; data?: { reward?: unknown } }
+      | null
+
+    const success = Boolean(parsed && typeof parsed === 'object' && parsed.success === true)
+    const message =
+      parsed && typeof parsed === 'object' && typeof parsed.message === 'string' ? parsed.message : ''
+
+    if (!res.ok || !success) throw new Error(message || `HTTP ${res.status}`)
+
+    const rewardNum = Number(parsed && parsed.data ? parsed.data.reward : 0)
+    modal.open('Success', `Claim successful. Reward: $${rewardNum.toFixed(2)}`)
+    await loadWeeklyTasks()
+  } catch (e: unknown) {
+    modal.open('Error', e instanceof Error ? e.message : 'Failed to claim reward.')
+  } finally {
+    isClaimingWeekly.value[code] = false
   }
 }
 
