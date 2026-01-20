@@ -164,10 +164,12 @@ function onIconError(e: Event) {
 
 function formatPrice(nu: number): string {
   if (!Number.isFinite(nu)) return '-'
-  // No thousand separators; decimals use dot.
-  // BTC, ETH, dll: 2 decimals. Small altcoin: up to 6 decimals.
   const digits = nu >= 1 ? 2 : 6
-  return nu.toFixed(digits)
+  // International format: 1,234.56 (comma thousands, dot decimals)
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(nu)
 }
 
 /** ==================== Cache (in-memory + localStorage) ==================== */
