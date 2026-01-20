@@ -31,7 +31,7 @@
               v-model.number="amountUsdt"
               type="number"
               step="0.01"
-              min="0"
+              min="100"
               inputmode="decimal"
               placeholder="100"
               class="bg-transparent outline-none border-b border-gray-300 focus:border-teal-500 text-3xl font-extrabold leading-none w-36"
@@ -90,7 +90,7 @@
       <button
         type="button"
         class="w-full mt-8 bg-teal-500 text-white text-base font-normal py-3 rounded-lg hover:bg-green-700 disabled:opacity-60"
-        :disabled="submitLoading || !amountUsdt || amountUsdt <= 0 || !idParam"
+        :disabled="submitLoading || amountUsdt == null || amountUsdt < MIN_USDT || !idParam"
         @click="placeOrder"
       >
         <span v-if="submitLoading">Processing…</span>
@@ -143,6 +143,8 @@ const offer = ref<ApiRow | null>(null)
 
 const amountUsdt = ref<number | null>(null)
 const submitLoading = ref(false)
+
+const MIN_USDT = 100
 
 const idParam = computed<number | null>(() => {
   const raw = route.query.id
@@ -253,7 +255,11 @@ async function onClickMax() {
       maxUsdt = Math.min(maxUsdt, byLimit)
     }
 
-    amountUsdt.value = Number(maxUsdt.toFixed(2))
+    maxUsdt = Number(maxUsdt.toFixed(2))
+    amountUsdt.value = maxUsdt
+    if (maxUsdt > 0 && maxUsdt < MIN_USDT) {
+      modal.open('Minimum order', `Minimum is ${MIN_USDT} USDT. Your maximum available is ${maxUsdt.toFixed(2)} USDT.`)
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error.'
     modal.open('Gagal mengambil saldo', msg)
@@ -314,6 +320,9 @@ async function placeOrder() {
     if (!idParam.value) throw new Error('Invalid or missing id.')
     if (amountUsdt.value == null || amountUsdt.value <= 0) {
       throw new Error('Amount is required.')
+    }
+    if (amountUsdt.value < MIN_USDT) {
+      throw new Error(`Minimum order is ${MIN_USDT} USDT.`)
     }
 
     // Guard: pastikan bank & norek terisi

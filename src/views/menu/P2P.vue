@@ -54,7 +54,7 @@
         <input
           v-model.number="amountUsdt"
           type="number"
-          min="0"
+          min="100"
           step="0.0001"
           class="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
           placeholder="e.g. 150"
@@ -378,6 +378,9 @@ function toggleLimit() {
   if (showLimit.value) showAmount.value = false
 }
 function applyAmount() {
+  if (amountUsdt.value != null && Number.isFinite(amountUsdt.value) && amountUsdt.value > 0 && amountUsdt.value < 100) {
+    amountUsdt.value = 100
+  }
   showAmount.value = false
 }
 function clearAmount() {
