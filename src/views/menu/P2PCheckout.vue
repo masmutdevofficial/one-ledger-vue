@@ -148,7 +148,7 @@ function formatTime(ms: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
-const nf0 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+const nf0 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 const formattedJumlah = computed(() => {
   if (!invoiceData.value) return '—'
   return `Rp ${nf0.format(invoiceData.value.totalDibayar)}`

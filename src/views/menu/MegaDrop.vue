@@ -49,7 +49,7 @@
         <div class="flex justify-between font-normal">
           <dt>Participants</dt>
           <dd class="text-gray-900 font-semibold">
-            {{ quest.participants.toLocaleString() }}
+            {{ quest.participants.toLocaleString('en-US') }}
           </dd>
         </div>
         <div class="flex justify-between font-normal">

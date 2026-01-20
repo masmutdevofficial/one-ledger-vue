@@ -285,7 +285,7 @@ const amountWithCcy = (amt: unknown, ccy: unknown): string => {
   const n = Number(amt)
   return `${String(ccy)} ${
     Number.isFinite(n)
-      ? n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      ? n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : amt
   }`
 }

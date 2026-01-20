@@ -258,7 +258,7 @@ const limitPreset = ref<LimitPreset>('ALL')
 
 // helpers format lokal
 const nfId = (min = 0, max = 0) =>
-  new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max })
+  new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: max })
 function formatPct(n: number) {
   return nfId(2, 2).format(Number.isFinite(n) ? n : 0) + '%'
 }

@@ -713,14 +713,14 @@ const totalValueUsdtStr = computed(() =>
   isTotalHidden.value
     ? '••••'
     : totalValue.value !== null
-      ? totalValue.value.toLocaleString('id-ID', { minimumFractionDigits: 2 })
+      ? totalValue.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : '...',
 )
 const totalValueUsdStr = computed(() =>
   isTotalHidden.value
     ? '••••'
     : totalValue.value !== null
-      ? totalValue.value.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      ? totalValue.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : '...',
 )
 
@@ -755,7 +755,7 @@ const nfId = (min: number, max: number) => {
   if (!nfIdCache.has(key))
     nfIdCache.set(
       key,
-      new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }),
+      new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: max }),
     )
   return nfIdCache.get(key)!
 }

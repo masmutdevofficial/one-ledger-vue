@@ -178,7 +178,8 @@ const totalValueUsdStr = computed(() => {
 
 function formatNumberThousandsDot(nu: number, digits = 2): string {
   if (!Number.isFinite(nu)) return '0'
-  return new Intl.NumberFormat('id-ID', {
+  // International format: 1,234.56 (comma thousands, dot decimals)
+  return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(nu)
@@ -445,7 +446,7 @@ const nfId = (min: number, max: number) => {
   if (!nfCache.has(k))
     nfCache.set(
       k,
-      new Intl.NumberFormat('id-ID', { minimumFractionDigits: min, maximumFractionDigits: max }),
+      new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: max }),
     )
   return nfCache.get(k)!
 }

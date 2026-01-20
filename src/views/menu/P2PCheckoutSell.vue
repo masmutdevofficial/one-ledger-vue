@@ -56,7 +56,7 @@ const badgeClass = computed(() =>
       : 'bg-yellow-50 text-yellow-700 border-yellow-200',
 )
 
-const nf2 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const nf2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const amountDisplay = computed(() => {
   const n = Number(data.value?.amount ?? 0)
   return nf2.format(Number.isFinite(n) ? n : 0)

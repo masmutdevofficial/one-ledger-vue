@@ -654,7 +654,7 @@ function splitSymbol(sym: string): { base: string; quote: Quote } {
 }
 const formatNumberId = (nu: number, digits = 2) =>
   Number.isFinite(nu)
-    ? nu.toLocaleString('id-ID', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+    ? nu.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
     : '0'
 const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
 const signedPercent = (pct: number) =>
@@ -1444,15 +1444,25 @@ const isEditingAmount = ref(false)
 const dp = computed(() => (activeTab.value === 'buy' ? 2 : 8))
 function formatLocaleDecimal(num: number): string {
   if (!Number.isFinite(num)) return ''
-  return num.toLocaleString('id-ID', {
+  // International format: 1,234.56 (comma thousands, dot decimals)
+  return num.toLocaleString('en-US', {
     minimumFractionDigits: dp.value,
     maximumFractionDigits: dp.value,
   })
 }
 function parseLocaleDecimal(str: string): number {
   if (!str) return NaN
-  const cleaned = str.replace(/\s/g, '').replace(/\./g, '').replace(',', '.')
-  return Number(cleaned)
+  const cleaned = str.replace(/\s/g, '')
+  // Heuristic: treat the last occurring separator ('.' or ',') as decimal separator.
+  const lastDot = cleaned.lastIndexOf('.')
+  const lastComma = cleaned.lastIndexOf(',')
+  if (lastDot === -1 && lastComma === -1) return Number(cleaned)
+
+  const decIsDot = lastDot > lastComma
+  const normalized = decIsDot
+    ? cleaned.replace(/,/g, '')
+    : cleaned.replace(/\./g, '').replace(',', '.')
+  return Number(normalized)
 }
 function onAmountFocus(e: FocusEvent) {
   isEditingAmount.value = true

@@ -56,7 +56,7 @@
         </p>
 
         <p class="text-[10px] text-gray-400 mt-1" v-if="offer">
-          ~ {{ new Intl.NumberFormat('id-ID').format(offer.price_fiat) }} IDR / USDT
+          ~ {{ new Intl.NumberFormat('en-US').format(offer.price_fiat) }} IDR / USDT
         </p>
       </section>
 
@@ -149,7 +149,7 @@ const idParam = computed<number | null>(() => {
   return Number.isInteger(n) && n > 0 ? n : null
 })
 
-const nf0 = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+const nf0 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
 const POLL_MS = 10_000
 let pollTimer: number | null = null
