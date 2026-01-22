@@ -258,7 +258,7 @@
       >
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-1 text-gray-900 font-semibold text-sm">
-            <span class="text-[10px] leading-none">•</span><span>{{ news.date }}</span>
+            <!-- tanggal dihapus sesuai request -->
           </div>
           <div class="font-extrabold text-xs text-black">News</div>
         </div>

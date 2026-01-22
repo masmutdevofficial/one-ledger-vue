@@ -667,7 +667,9 @@ const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
 // ===== Assets (loader) =====
-async function loadAssets() {
+async function loadAssets(opts: { silent?: boolean } = {}) {
+  if (loadingAssets.value) return
+
   loadingAssets.value = true
   errorAssets.value = null
   try {
@@ -710,8 +712,8 @@ async function loadAssets() {
     const msg = e instanceof Error ? e.message : 'Gagal memuat assets.'
     errorAssets.value = msg
     assets.value = []
-    // pakai Pinia alert sesuai aturan proyek
-    modal.open('Error', msg)
+    // Hindari spam alert saat polling background
+    if (!opts.silent) modal.open('Error', msg)
   } finally {
     loadingAssets.value = false
   }
@@ -738,6 +740,26 @@ function rebuildAssetMap() {
 // WS state
 let assetsWs: WebSocket | null = null
 let assetsReconnectTimer: ReturnType<typeof setTimeout> | null = null
+
+// ===== Assets polling (backend) =====
+const ASSETS_POLL_MS = 30_000
+let assetsPollTimer: ReturnType<typeof setInterval> | null = null
+
+function startAssetsPolling() {
+  if (!isBrowser()) return
+  stopAssetsPolling()
+  assetsPollTimer = window.setInterval(() => {
+    // silent = jangan munculin modal tiap 30 detik
+    void loadAssets({ silent: true })
+  }, ASSETS_POLL_MS)
+}
+
+function stopAssetsPolling() {
+  if (assetsPollTimer) {
+    clearInterval(assetsPollTimer)
+    assetsPollTimer = null
+  }
+}
 
 const ASSET_KLINE_PERIODS: KlinePeriod[] = ['1day']
 let assetsSubscribedLower = new Set<string>() // symbols lower yang sudah disubscribe
@@ -1661,6 +1683,7 @@ onMounted(async () => {
   await loadAssets()
   rebuildAssetMap()
   connectAssetsWs()
+  startAssetsPolling()
 })
 watch(
   assets,
@@ -1671,6 +1694,7 @@ watch(
   { deep: true },
 )
 onUnmounted(() => {
+  stopAssetsPolling()
   if (assetsWs) {
     try {
       assetsWs.close()
