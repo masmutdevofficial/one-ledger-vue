@@ -13,6 +13,105 @@
         <Icon icon="tabler:arrow-left" class="w-6 h-6" />
       </button>
 
+      <!-- TOP NAV (copied from FutureClone.vue style) -->
+      <header class="flex items-center justify-between px-4 py-2 border-b border-gray-200 -mx-5 mb-4">
+        <nav class="flex items-center space-x-6 text-gray-600 text-sm font-semibold">
+          <a href="#" class="text-black font-extrabold flex items-center space-x-1" @click.prevent>
+            <span>USD</span>
+            <span class="text-xs font-normal">ⓢ-M</span>
+          </a>
+          <a href="#" class="hover:text-gray-800" @click.prevent>COIN-M</a>
+          <a href="#" class="hover:text-gray-800" @click.prevent>Options</a>
+          <a href="#" class="hover:text-gray-800 flex items-center relative" @click.prevent>
+            <span>Smart Money</span>
+            <span
+              class="absolute -top-3 right-0 text-[10px] font-semibold bg-yellow-300 text-black rounded-full px-[6px] py-[1px] leading-none"
+              >New</span
+            >
+          </a>
+        </nav>
+
+        <button aria-label="Menu" class="text-gray-700" type="button">
+          <Icon icon="tabler:menu-2" class="w-6 h-6" />
+        </button>
+      </header>
+
+      <!-- SYMBOL ROW (pair dropdown + icons) -->
+      <section class="flex items-center justify-between px-4 py-2 pb-0 -mx-5 mb-2">
+        <div class="flex items-center justify-between">
+          <div class="flex flex-row items-center">
+            <div class="relative inline-block">
+              <button
+                type="button"
+                class="flex items-center space-x-1 cursor-pointer"
+                @click="headerDropdownOpen = !headerDropdownOpen"
+                :aria-expanded="headerDropdownOpen"
+                aria-haspopup="listbox"
+              >
+                <span class="font-semibold text-black text-base">{{ headerSelectedPair }}</span>
+                <span class="font-bold text-xs text-gray-800">Perp</span>
+                <Icon icon="tabler:chevron-down" class="text-black text-base" />
+              </button>
+
+              <div
+                v-if="headerDropdownOpen"
+                class="absolute z-50 mt-2 w-44 bg-white border border-gray-200 rounded shadow-md"
+              >
+                <ul class="max-h-64 overflow-auto" role="listbox">
+                  <li
+                    v-for="pair in availablePairs"
+                    :key="pair"
+                    @click="selectHeaderPair(pair)"
+                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
+                    role="option"
+                  >
+                    {{ pair }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-4 text-gray-400">
+          <button aria-label="Gift" class="relative" type="button">
+            <Icon icon="tabler:gift" class="w-5 h-5" />
+            <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
+          </button>
+          <button aria-label="Chart" class="relative" type="button">
+            <Icon icon="tabler:chart-candle" class="w-5 h-5" />
+          </button>
+          <button aria-label="Percentage" class="relative" type="button">
+            <Icon icon="tabler:plus-equal" class="w-5 h-5" />
+          </button>
+          <button aria-label="More options" class="relative" type="button">
+            <Icon icon="tabler:dots" class="w-5 h-5" />
+            <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- PRICE + CHANGE (UI copied from FutureClone.vue; values are UI-only) -->
+      <div class="-mx-5 px-4 mt-1 mb-4">
+        <div class="text-start">
+          <p
+            class="font-semibold text-[20px]"
+            :class="headerPercentChange >= 0 ? 'text-teal-500' : 'text-red-600'"
+          >
+            {{ headerPriceText }}
+          </p>
+          <div class="flex flex-row items-center">
+            <p class="text-[#7F7F7F] text-[10px]">≈ ${{ headerPriceText }}</p>
+            <span
+              class="ml-1 text-[10px] font-semibold"
+              :class="headerPercentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+            >
+              {{ headerPercentChangeText }}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <!-- Profile & title -->
       <div class="flex items-center justify-between mb-1">
         <div class="flex items-center gap-4">
@@ -84,7 +183,7 @@
           <div class="relative no-ios-zoom text-[12px] text-[#a6a6a6]">
             <select id="pair" v-model="selectedPair"
               class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-[12px] font-semibold text-[#a6a6a6] focus:outline-none">
-              <option disabled value="">BTC/USDT</option>
+              <option disabled value="">Select Coin</option>
               <option v-for="p in availablePairs" :key="p" :value="p">{{ p }}</option>
             </select>
           </div>
@@ -203,7 +302,7 @@
                 <div class="min-w-0">
                   <div class="flex items-baseline gap-2 min-w-0">
                     <div class="truncate text-sm font-semibold text-gray-900">
-                      {{ selectedPair || formatPairFromSymbol(tx.symbol) || 'BTC/USDT' }}
+                      {{ formatPairFromSymbol(tx.pair || tx.symbol) || 'BTC/USDT' }}
                     </div>
                     <div class="shrink-0 text-xs text-gray-500">
                       {{ tx.contractType || 'Perpetual' }}
@@ -274,7 +373,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref, computed, watch, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import ChatCard from '@/components/futures/ChatCard.vue'
@@ -290,6 +389,7 @@ const API_BASE = 'https://tech.oneled.io/api'
 type Side = 'BUY' | 'SELL'
 const selectedSide = ref<Side | ''>('')
 const sideByTxId = new Map<number, Side>()
+const pairByTxId = new Map<number, string>()
 
 function selectSide(side: Side) {
   if (loadingSubmit.value || atCapacity.value || !hasPairSelected.value) return
@@ -376,6 +476,72 @@ const availablePairs = ref<string[]>(['BTC/USDT',
   'NAKA/USDT'])
 const selectedPair = ref<string>('') // UI only
 const hasPairSelected = computed(() => availablePairs.value.includes(selectedPair.value))
+
+// header dropdown (UI copied from FutureClone.vue)
+const headerDropdownOpen = ref(false)
+const headerSelectedPair = computed(() => selectedPair.value || 'BTC/USDT')
+function selectHeaderPair(pair: string) {
+  selectedPair.value = pair
+  headerDropdownOpen.value = false
+}
+
+// PRICE + CHANGE header (UI only; no market feed)
+const headerPrice = ref<number>(0)
+const headerOpenPrice = ref<number>(0)
+
+function basePriceForPair(pair: string): number {
+  const p = (pair || '').toUpperCase().trim()
+  const base = p.split('/')[0] || p
+  switch (base) {
+    case 'BTC':
+      return 43000
+    case 'ETH':
+      return 2300
+    case 'BNB':
+      return 300
+    case 'SOL':
+      return 95
+    case 'XRP':
+      return 0.55
+    case 'DOGE':
+      return 0.08
+    default:
+      return 10
+  }
+}
+
+function initHeaderMarket(pair: string) {
+  const base = basePriceForPair(pair)
+  headerPrice.value = base
+  headerOpenPrice.value = base
+}
+
+function stepHeaderMarket() {
+  if (!Number.isFinite(headerPrice.value) || headerPrice.value <= 0) return
+  // random walk kecil supaya UI terasa hidup
+  const vol = headerPrice.value * 0.0012
+  const step = (Math.random() - 0.5) * 2 * vol
+  const drift = (headerOpenPrice.value - headerPrice.value) * 0.002
+  const next = headerPrice.value + step + drift
+  headerPrice.value = Math.max(1e-8, next)
+}
+
+const headerPercentChange = computed(() => {
+  const open = headerOpenPrice.value
+  const cur = headerPrice.value
+  if (!Number.isFinite(open) || open <= 0 || !Number.isFinite(cur)) return 0
+  return ((cur - open) / open) * 100
+})
+
+const headerPriceText = computed(() =>
+  (headerPrice.value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 }),
+)
+
+const headerPercentChangeText = computed(() => {
+  const v = headerPercentChange.value
+  if (!Number.isFinite(v)) return '-'
+  return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
+})
 
 function formatPairFromSymbol(sym?: string): string | null {
   const s = (sym ?? '').trim()
@@ -479,6 +645,7 @@ type PendingTx = {
   side?: Side
 
   // optional display fields (fallbacks are handled in template)
+  pair?: string
   symbol?: string
   contractType?: string
   marginMode?: string
@@ -659,6 +826,14 @@ watch(amount, (val) => {
   else amountError.value = ''
 })
 
+watch(
+  selectedPair,
+  (p) => {
+    initHeaderMarket(p || 'BTC/USDT')
+  },
+  { immediate: true },
+)
+
 const showSummary = computed(() => {
   const raw = (amount.value || '').trim()
   if (!raw) return false
@@ -698,8 +873,8 @@ async function fetchTakeProfit(): Promise<void> {
 const MAX_CONCURRENT = 5
 const pendingList = ref<PendingTx[]>([])
 
-// random-walk PNL per TX (reactive container)
-const pnlMap = reactive(new Map<number, number>())
+// random-walk PNL per TX (UI updates are driven by nowTick)
+const pnlMap = new Map<number, number>()
 
 const nowTick = ref(Date.now())
 let tickHandle: number | undefined
@@ -780,8 +955,18 @@ async function fetchPending(opts: { silent?: boolean } = {}) {
       const otRaw = Number(x.order_time_min)
       const orderTimeMin = Number.isFinite(otRaw) && otRaw > 0 ? otRaw : 5
 
-      const coinRaw = typeof x.coin === 'string' ? x.coin : ''
-      const symbol = coinRaw ? coinRaw.replace(/\//g, '') : undefined
+      const symRaw =
+        typeof x.coin === 'string'
+          ? x.coin
+          : typeof x.symbol === 'string'
+            ? x.symbol
+            : typeof x.pair === 'string'
+              ? x.pair
+              : ''
+
+      // prefer server-provided pair, fallback to locally remembered pair
+      const pair = (symRaw || pairByTxId.get(id) || '').trim() || undefined
+      const symbol = symRaw ? symRaw.replace(/\//g, '') : undefined
 
       const leverageRaw = x.leverage
       const leverage =
@@ -813,6 +998,7 @@ async function fetchPending(opts: { silent?: boolean } = {}) {
         createdAtUtc,
         orderTimeMin,
         side,
+        pair,
         symbol,
         contractType: typeof x.contractType === 'string' ? x.contractType : undefined,
         marginMode: typeof x.marginMode === 'string' ? x.marginMode : undefined,
@@ -824,7 +1010,11 @@ async function fetchPending(opts: { silent?: boolean } = {}) {
     // sinkronkan PNL map
     const newIds = new Set(list.map((t) => t.id))
     for (const id of Array.from(pnlMap.keys())) {
-      if (!newIds.has(id)) pnlMap.delete(id)
+      if (!newIds.has(id)) {
+        pnlMap.delete(id)
+        sideByTxId.delete(id)
+        pairByTxId.delete(id)
+      }
     }
     for (const t of list) if (!pnlMap.has(t.id)) pnlMap.set(t.id, 0)
 
@@ -908,6 +1098,7 @@ const submitWinLose = async () => {
     const res = json() as { status: 'success'; transaction_id: number }
     if (res?.transaction_id && (selectedSide.value === 'BUY' || selectedSide.value === 'SELL')) {
       sideByTxId.set(res.transaction_id, selectedSide.value)
+      if (selectedPair.value) pairByTxId.set(res.transaction_id, selectedPair.value)
     }
     alertSuccess('Order created.')
     amount.value = ''
@@ -1002,6 +1193,7 @@ onMounted(() => {
   tickHandle = window.setInterval(() => {
     nowTick.value = Date.now()
     for (const tx of pendingList.value) stepRandomWalk(tx)
+    stepHeaderMarket()
   }, 1000)
 
   // load awal

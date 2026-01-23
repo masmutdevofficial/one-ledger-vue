@@ -258,11 +258,10 @@
       >
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-1 text-gray-900 font-semibold text-sm">
-            <!-- tanggal dihapus sesuai request -->
+            <span class="text-[10px] leading-none">•</span><span>{{ news.date }}</span>
           </div>
-          <div class="font-extrabold text-xs text-black">News</div>
+          
         </div>
-        <div class="text-gray-400 text-xs font-normal select-none">{{ news.time }}</div>
         <div class="flex items-start space-x-4">
           <img
             v-if="news && news.image"
@@ -713,7 +712,7 @@ const totalValueUsdtStr = computed(() =>
   isTotalHidden.value
     ? '••••'
     : totalValue.value !== null
-      ? totalValue.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      ? totalValue.value.toLocaleString('en-US', { minimumFractionDigits: 2 })
       : '...',
 )
 const totalValueUsdStr = computed(() =>
