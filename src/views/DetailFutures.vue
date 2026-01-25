@@ -30,6 +30,51 @@
         </div>
       </div> -->
 
+      <!-- Profile & title (always visible: chart & non-chart) -->
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-4">
+          <img
+            :alt="`${trader.name} avatar`"
+            class="w-12 h-12 rounded-full object-cover"
+            :src="avatarUrl"
+            @error="onAvatarError"
+          />
+          <div class="flex flex-col items-start">
+            <h1 class="font-extrabold text-lg flex items-center gap-2">
+              <RouterLink
+                to="/profile-copy-trade"
+                class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded"
+              >
+                {{ trader.name }}
+              </RouterLink>
+              <Icon
+                v-if="trader.is_featured"
+                icon="tabler:shield-check"
+                class="w-5 h-5 text-amber-500"
+              />
+            </h1>
+            <div
+              class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 select-none"
+            >
+              <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
+              <span>Profit Sharing 10%</span>
+            </div>
+          </div>
+        </div>
+
+        <router-link
+          v-if="trader && trader.id"
+          :to="`/chats/${trader.id}`"
+          class="ml-4 inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200"
+          aria-label="Open chat"
+          title="Message"
+        >
+          <img src="/img/chat-copy-trader.png" alt="Menu" class="w-4 h-4 object-contain" />
+        </router-link>
+      </div>
+
+      <p class="text-sm mb-2">{{ trader?.description || '' }}</p>
+
         <!-- CHART MODE (full-width) -->
         <div v-if="showChart" class="max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
           <div class="flex items-start justify-between mb-2">
@@ -367,8 +412,8 @@
           <div class="space-y-2 text-sm">
             <!-- Avbl -->
             <div class="flex items-center justify-between">
-              <span class="text-gray-400 text-xs">Avbl</span>
-              <div class="flex items-center space-x-1 text-gray-900 text-xs">
+              <span class="text-gray-400 text-xs font-semibold">Avbl</span>
+              <div class="flex items-center space-x-1 text-gray-900 font-bold text-xs">
                 <span>{{ fmtUSDT(saldo) }} USDT</span>
                 <Icon icon="tabler:arrows-left-right" class="w-4 h-4 text-yellow-400" />
               </div>
@@ -470,28 +515,30 @@
             <fieldset class="space-y-2">
               <legend class="sr-only">Order options</legend>
 
-              <label for="opt-tpsl" class="flex items-center gap-2 cursor-pointer">
-                <input id="opt-tpsl" type="radio" name="orderType" class="h-4 w-4 accent-teal-500" />
-                <span>TP/SL</span>
-              </label>
+              <div class="flex items-center justify-between gap-3">
+                <label for="opt-tpsl" class="flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                  <input id="opt-tpsl" type="radio" name="orderType" class="h-4 w-4 accent-teal-500" />
+                  <span>TP/SL</span>
+                </label>
 
-              <!-- Open Position (pair mengikuti dropdown utama) -->
-              <button
-                class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
-                type="button"
-                :disabled="loadingSubmit || atCapacity || !hasPairSelected"
-                @click="toggleSideChooser"
-              >
-                {{
-                  loadingSubmit
-                    ? 'Processing…'
-                    : atCapacity
-                      ? 'Capacity Reached (5/5)'
-                      : !hasPairSelected
-                        ? 'Select Pair'
-                        : 'Open Position'
-                }}
-              </button>
+                <!-- Open Position (pair mengikuti dropdown utama) -->
+                <button
+                  class="shrink-0 bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
+                  type="button"
+                  :disabled="loadingSubmit || atCapacity || !hasPairSelected"
+                  @click="toggleSideChooser"
+                >
+                  {{
+                    loadingSubmit
+                      ? 'Processing…'
+                      : atCapacity
+                        ? 'Capacity Reached (5/5)'
+                        : !hasPairSelected
+                          ? 'Select Pair'
+                          : 'Open Position'
+                  }}
+                </button>
+              </div>
             </fieldset>
 
             <div v-if="showSideChooser" class="space-x-2">
