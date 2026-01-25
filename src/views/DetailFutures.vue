@@ -35,13 +35,20 @@
         <div class="flex items-center gap-4">
           <img :alt="`${trader.name} avatar`" class="w-12 h-12 rounded-full object-cover" :src="avatarUrl"
             @error="onAvatarError" />
-          <h1 class="font-extrabold text-lg flex items-center gap-2">
-            <RouterLink to="/profile-copy-trade"
-              class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded">
-              {{ trader.name }}
-            </RouterLink>
-            <Icon v-if="trader.is_featured" icon="tabler:shield-check" class="w-5 h-5 text-amber-500" />
-          </h1>
+          <div class="flex flex-col items-center">
+            <h1 class="font-extrabold text-lg flex items-center gap-2">
+              <RouterLink to="/profile-copy-trade"
+                class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded">
+                {{ trader.name }}
+              </RouterLink>
+              <Icon v-if="trader.is_featured" icon="tabler:shield-check" class="w-5 h-5 text-amber-500" />
+            </h1>
+            <div
+              class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1  select-none">
+              <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
+              <span>Profit Sharing 10%</span>
+            </div>
+          </div>
         </div>
 
         <router-link v-if="trader && trader.id" :to="`/chats/${trader.id}`"
@@ -59,12 +66,6 @@
       <div class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
         <!-- LEFT: ORDERBOOK -->
         <div>
-          <div
-            class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1  select-none">
-            <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
-            <span>Profit Sharing 10%</span>
-          </div>
-
           <div class="flex flex-col items-start mb-5">
             <div class="relative inline-block">
               <button
@@ -173,10 +174,10 @@
         <!-- RIGHT: ORDER FORM -->
         <div class="space-y-3">
           <!-- SYMBOL ROW (icons) -->
-          <div class="grid grid-cols-4 w-full gap-2 mb-2 text-gray-400">
+          <div class="flex items-center justify-end w-full gap-2 mb-2 text-gray-400">
             <button
               aria-label="Gift"
-              class="relative w-full h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
+              class="relative w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
               type="button"
             >
               <Icon icon="tabler:gift" class="w-5 h-5" />
@@ -185,7 +186,7 @@
 
             <button
               aria-label="Chart"
-              class="relative w-full h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
+              class="relative w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
               type="button"
             >
               <Icon icon="tabler:chart-candle" class="w-5 h-5" />
@@ -197,7 +198,7 @@
             <div class="flex items-center justify-between">
               <span class="text-gray-400 text-xs">Avbl</span>
               <div class="flex items-center space-x-1 text-gray-900 text-xs">
-                <span>0,00 USDT</span>
+                <span>{{ fmtUSDT(saldo) }} USDT</span>
                 <Icon icon="tabler:arrows-left-right" class="w-4 h-4 text-yellow-400" />
               </div>
             </div>
