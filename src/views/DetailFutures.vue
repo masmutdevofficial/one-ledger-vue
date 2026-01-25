@@ -10,8 +10,8 @@
     <template v-else>
 
       <!-- SYMBOL ROW (pair dropdown + icons) -->
-      <section class="flex items-center justify-between px-4 py-2 pb-0 -mx-5 mb-2">
-        <div class="flex items-center justify-between">
+      <section class="flex items-center justify-between px-4 py-2 pb-0 -mx-5 mb-2 hidden">
+        <div class="flex items-center justify-between hidden">
           <div class="flex flex-row items-center">
             <div class="relative inline-block">
               <button
@@ -65,7 +65,7 @@
       </section>
 
       <!-- PRICE + CHANGE (UI copied from FutureClone.vue; values are UI-only) -->
-      <div class="-mx-5 px-4 mt-1 mb-4">
+      <div class="-mx-5 px-4 mt-1 mb-4 hidden">
         <div class="text-start">
           <p
             class="font-semibold text-[20px]"
