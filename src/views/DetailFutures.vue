@@ -329,7 +329,7 @@
                 class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50 transition-shadow duration-150 shadow-md active:shadow-[0_10px_24px_rgba(255,49,49,0.55)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400"
                 type="button"
                 :style="{ backgroundColor: '#ff3131' }"
-                :disabled="loadingSubmit || atCapacity || !hasPairSelected"
+                :disabled="!canSubmitOrder"
                 :class="{ 'ring-2 ring-offset-2 ring-red-400': selectedSide === 'SELL' }"
                 @click="submitWithSide('SELL')"
               >
@@ -341,7 +341,7 @@
                 class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50 transition-shadow duration-150 shadow-md active:shadow-[0_10px_24px_rgba(28,166,157,0.55)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400"
                 type="button"
                 :style="{ backgroundColor: '#1ca69d' }"
-                :disabled="loadingSubmit || atCapacity || !hasPairSelected"
+                :disabled="!canSubmitOrder"
                 :class="{ 'ring-2 ring-offset-2 ring-teal-400': selectedSide === 'BUY' }"
                 @click="submitWithSide('BUY')"
               >
@@ -527,13 +527,43 @@ const pairByTxId = new Map<number, string>()
 
 const showSideChooser = ref(false)
 
+const amountOk = computed(() => {
+  const normalized = (amount.value || '').replace(',', '.').trim()
+  if (!normalized) return false
+  const n = Number(normalized)
+  if (!Number.isFinite(n) || n <= 0) return false
+  if (amountError.value) return false
+  return true
+})
+
+const stopLossOk = computed(() => {
+  const v = Number(sl.value)
+  return Number.isFinite(v) && v >= 10
+})
+
+const takeProfitOk = computed(() => {
+  const v = Number(tp.value)
+  return Number.isFinite(v) && v >= 1
+})
+
+const canSubmitOrder = computed(() => {
+  return (
+    hasPairSelected.value &&
+    !loadingSubmit.value &&
+    !atCapacity.value &&
+    amountOk.value &&
+    stopLossOk.value &&
+    takeProfitOk.value
+  )
+})
+
 function toggleSideChooser() {
   if (loadingSubmit.value || atCapacity.value || !hasPairSelected.value) return
   showSideChooser.value = !showSideChooser.value
 }
 
 async function submitWithSide(side: Side) {
-  if (loadingSubmit.value || atCapacity.value || !hasPairSelected.value) return
+  if (!canSubmitOrder.value) return
   selectedSide.value = side
   showSideChooser.value = true
   await submitWinLose()
