@@ -10,8 +10,8 @@
     <template v-else>
 
       <!-- SYMBOL ROW (pair dropdown + icons) -->
-      <section class="hidden px-4 py-2 pb-0 -mx-5 mb-2">
-        <div class="hidden">
+      <section class=" px-4 py-2 pb-0 -mx-5 mb-2">
+        <div class="">
           <div class="flex flex-row items-center">
             <div class="relative inline-block">
               <button
