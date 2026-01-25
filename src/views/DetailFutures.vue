@@ -304,21 +304,38 @@
                 <span>TP/SL</span>
               </label>
 
-              <!-- Open Position -->
-              <button
-                class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
-                type="button"
-                :disabled="loadingSubmit || atCapacity || !hasPairSelected"
-                @click="toggleSideChooser"
-              >
-                {{
-                  loadingSubmit
-                    ? 'Processing…'
-                    : atCapacity
-                      ? 'Capacity Reached (5/5)'
-                      : 'Open Position'
-                }}
-              </button>
+              <template v-if="hasPairSelected">
+                <!-- Open Position -->
+                <button
+                  class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
+                  type="button"
+                  :disabled="loadingSubmit || atCapacity"
+                  @click="toggleSideChooser"
+                >
+                  {{
+                    loadingSubmit
+                      ? 'Processing…'
+                      : atCapacity
+                        ? 'Capacity Reached (5/5)'
+                        : 'Open Position'
+                  }}
+                </button>
+              </template>
+
+              <template v-else>
+                <!-- Select Pair (same UI as header dropdown) -->
+                <button
+                  type="button"
+                  class="flex items-center space-x-1 cursor-pointer text-xs text-gray-800"
+                  @click="headerDropdownOpen = !headerDropdownOpen"
+                  :aria-expanded="headerDropdownOpen"
+                  aria-haspopup="listbox"
+                >
+                  <span class="font-semibold text-black">{{ headerSelectedPair }}</span>
+                  <span class="font-bold text-[10px] text-gray-800">Perp</span>
+                  <Icon icon="tabler:chevron-down" class="text-black text-sm" />
+                </button>
+              </template>
             </fieldset>
 
             <div v-if="showSideChooser" class="space-x-2">
@@ -390,102 +407,21 @@
         </div>
       </div>
 
-      <!-- Pair selector (UI only) -->
-      <div class="grid grid-cols-1 gap-4 mb-4">
-        <div>
-          <div class="relative no-ios-zoom text-[12px] text-[#a6a6a6]">
-            <select id="pair" v-model="selectedPair"
-              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-[12px] font-semibold text-[#a6a6a6] focus:outline-none">
-              <option disabled value="">Select Coin</option>
-              <option v-for="p in availablePairs" :key="p" :value="p">{{ p }}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Position Risk -->
-      <div class="flex flex-row justify-between items-start">
-        <h2 class="font-semibold text-base mb-2">Position Risk</h2>
-        <button v-if="trader?.slug" type="button" class="inline-flex items-center text-gray-600 hover:text-black"
-          @click="goHistory" aria-label="Open futures history">
-          <Icon icon="tabler:file-description" class="w-4 h-4" />
-        </button>
-      </div>
-
-      <div class="grid grid-cols-1 gap-4 mb-8">
-        <div>
-          <label for="sl" class="text-gray-400 text-xs mb-1 block">Stop Loss</label>
-          <div class="relative no-ios-zoom">
-            <select id="sl" v-model.number="sl" :disabled="false"
-              class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none">
-              <option disabled value="">Select</option>
-              <option v-for="n in 10" :key="n" :value="n * 10">{{ n * 10 }}%</option>
-            </select>
-            <span
-              class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none">
-              %
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Summary + Open button -->
-      <div class="mb-8" v-if="showSummary">
-        <div class="flex justify-between text-xs text-gray-400 mb-1">
-          <span class="underline">Net Copy Amount</span>
-          <span class="text-black">{{ netCopyAmount }}</span>
-        </div>
-
-        <div class="w-full pb-5">
-          <div class="w-full flex flex-row justify-between items-center mt-3 float-right gap-2">
-            <div class="space-x-2">
-              <!-- Sell / Short -->
-              <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50
-                transition-shadow duration-150 shadow-md
-         active:shadow-[0_10px_24px_rgba(255,49,49,0.55)]
-         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400" type="button"
-                :style="{ backgroundColor: '#ff3131' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
-                :class="{ 'ring-2 ring-offset-2 ring-red-400': selectedSide === 'SELL' }" @click="selectSide('SELL')">
-                Sell / Short
-              </button>
-
-              <!-- Buy / Long -->
-              <button class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50
-                transition-shadow duration-150 shadow-md
-         active:shadow-[0_10px_24px_rgba(28,166,157,0.55)]
-         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400" type="button"
-                :style="{ backgroundColor: '#1ca69d' }" :disabled="loadingSubmit || atCapacity || !hasPairSelected"
-                :class="{ 'ring-2 ring-offset-2 ring-teal-400': selectedSide === 'BUY' }" @click="selectSide('BUY')">
-                Buy / Long
-              </button>
-
-
-
-            </div>
-
-            <!-- Open Position -->
-            <button class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
-              type="button" :disabled="loadingSubmit || atCapacity || !hasPairSelected || !selectedSide"
-              @click="submitWinLose">
-              {{
-                loadingSubmit
-                  ? 'Processing…'
-                  : atCapacity
-                    ? 'Capacity Reached (5/5)'
-                    : 'Open Position'
-              }}
-            </button>
-
-          </div>
-        </div>
-
-        <p v-if="submitError" class="text-red-500 text-xs mt-2">{{ submitError }}</p>
-        <p v-if="submitSuccess" class="text-green-500 text-xs mt-2">{{ submitSuccess }}</p>
-      </div>
-
-
       <!-- === Open Positions List (max 5) === -->
       <section class="mb-8">
+        <div class="flex flex-row justify-between items-center mb-2">
+          <h2 class="font-semibold text-base">Open Positions</h2>
+          <button
+            v-if="trader?.slug"
+            type="button"
+            class="inline-flex items-center text-gray-600 hover:text-black"
+            @click="goHistory"
+            aria-label="Open futures history"
+          >
+            <Icon icon="tabler:file-description" class="w-4 h-4" />
+          </button>
+        </div>
+
         <div v-if="!pendingList.length" class="text-xs text-gray-400">No Data Available.</div>
 
         <ul v-else class="space-y-3">
@@ -617,11 +553,6 @@ async function submitWithSide(side: Side) {
   showSideChooser.value = true
   await submitWinLose()
 }
-
-function selectSide(side: Side) {
-  if (loadingSubmit.value || atCapacity.value || !hasPairSelected.value) return
-  selectedSide.value = side
-}
 const availablePairs = ref<string[]>(['BTC/USDT',
   'ETH/USDT',
   'BNB/USDT',
@@ -702,7 +633,7 @@ const availablePairs = ref<string[]>(['BTC/USDT',
   'SHELL/USDT',
   'NAKA/USDT'])
 const selectedPair = ref<string>('') // UI only
-const hasPairSelected = computed(() => availablePairs.value.includes(selectedPair.value))
+const hasPairSelected = computed(() => !!selectedPair.value)
 
 // header dropdown (UI copied from FutureClone.vue)
 const headerDropdownOpen = ref(false)
@@ -1214,17 +1145,6 @@ async function fetchSaldo() {
 const amount = ref<string>('') // input value
 const amountError = ref<string>('') // input-level error
 
-const netCopyAmount = computed(() => {
-  const raw = (amount.value || '').replace(',', '.').trim()
-  const n = Number(raw)
-  return Number.isFinite(n) && n > 0 ? fmtMoney(n, 4) : '0.0000'
-})
-
-function setMax() {
-  amount.value = saldo.value.toString()
-  amountError.value = ''
-}
-
 watch(amount, (val) => {
   const normalized = (val || '').replace(',', '.').trim()
   if (!normalized) {
@@ -1245,13 +1165,6 @@ watch(
   },
   { immediate: true },
 )
-
-const showSummary = computed(() => {
-  const raw = (amount.value || '').trim()
-  if (!raw) return false
-  const n = Number(raw.replace(',', '.'))
-  return Number.isFinite(n) && n > 0 && !amountError.value && hasPairSelected.value
-})
 
 /* ===== TP / SL ===== */
 const tp = ref<number | null>(null)
@@ -1473,8 +1386,6 @@ async function finalizeIfExpired() {
 }
 
 /* ===== Submit ===== */
-const submitError = ref<string | null>(null)
-const submitSuccess = ref<string | null>(null)
 const loadingSubmit = ref(false)
 
 const submitWinLose = async () => {
@@ -1513,6 +1424,8 @@ const submitWinLose = async () => {
       if (selectedPair.value) pairByTxId.set(res.transaction_id, selectedPair.value)
     }
     alertSuccess('Order created.')
+    showSideChooser.value = false
+    selectedSide.value = ''
     amount.value = ''
     await Promise.all([fetchSaldo(), fetchPending({ silent: true })])
   } catch (e: unknown) {
