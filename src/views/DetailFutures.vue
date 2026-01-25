@@ -308,8 +308,8 @@
               <button
                 class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
                 type="button"
-                :disabled="loadingSubmit || atCapacity || !hasPairSelected || !selectedSide"
-                @click="submitWinLose"
+                :disabled="loadingSubmit || atCapacity || !hasPairSelected"
+                @click="toggleSideChooser"
               >
                 {{
                   loadingSubmit
@@ -321,7 +321,7 @@
               </button>
             </fieldset>
 
-            <div class="space-x-2">
+            <div v-if="showSideChooser" class="space-x-2">
               <!-- Sell / Short -->
               <button
                 class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50 transition-shadow duration-150 shadow-md active:shadow-[0_10px_24px_rgba(255,49,49,0.55)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400"
@@ -329,7 +329,7 @@
                 :style="{ backgroundColor: '#ff3131' }"
                 :disabled="loadingSubmit || atCapacity || !hasPairSelected"
                 :class="{ 'ring-2 ring-offset-2 ring-red-400': selectedSide === 'SELL' }"
-                @click="selectSide('SELL')"
+                @click="submitWithSide('SELL')"
               >
                 Sell / Short
               </button>
@@ -341,7 +341,7 @@
                 :style="{ backgroundColor: '#1ca69d' }"
                 :disabled="loadingSubmit || atCapacity || !hasPairSelected"
                 :class="{ 'ring-2 ring-offset-2 ring-teal-400': selectedSide === 'BUY' }"
-                @click="selectSide('BUY')"
+                @click="submitWithSide('BUY')"
               >
                 Buy / Long
               </button>
@@ -387,42 +387,6 @@
               OK
             </button>
           </div>
-        </div>
-      </div>
-
-      <!-- Fixed Amount -->
-      <h2 class="font-semibold text-base mb-1">Fixed Amount</h2>
-      <label for="copyAmount" class="text-gray-400 text-xs mb-1 block">Copy Amount</label>
-
-      <div class="flex items-center bg-gray-100 rounded-md h-10 mb-1 px-3 no-ios-zoom">
-        <input id="copyAmount" aria-label="Copy Amount input" v-model="amount" type="text" inputmode="decimal"
-          class="bg-transparent w-full text-sm placeholder:text-gray-400 focus:outline-none" placeholder="Enter amount"
-          :disabled="atCapacity" :class="atCapacity ? 'opacity-60 cursor-not-allowed' : ''" />
-        <span class="text-xs font-semibold text-black ml-2">USDT</span>
-        <button class="text-teal-400 text-xs font-semibold ml-3 disabled:opacity-50" type="button" @click="setMax"
-          :disabled="atCapacity">
-          Max
-        </button>
-      </div>
-
-      <small v-show="!!amountError" class="block text-red-500 text-xs mb-2">{{
-        amountError
-      }}</small>
-
-      <!-- Available (left)  |  Min Buy (right) -->
-      <div class="flex justify-between items-center text-[10px] text-gray-400 mb-5">
-        <div class="flex items-center gap-1">
-          <span>Available</span>
-          <span v-if="!loadingSaldo" class="font-normal"> {{ fmtUSDT(saldo) }} USDT </span>
-          <span v-else class="font-normal">...</span>
-          <button aria-label="Add" class="text-[#D6B94D] text-xs font-semibold" type="button" @click.prevent
-            title="Add"></button>
-        </div>
-        <div class="flex items-center gap-1">
-          <span>Min Open Position</span>
-          <span class="font-normal">
-            {{ trader?.min_buy != null ? fmtUSDT(trader.min_buy) : '—' }} USDT
-          </span>
         </div>
       </div>
 
@@ -639,6 +603,20 @@ type Side = 'BUY' | 'SELL'
 const selectedSide = ref<Side | ''>('')
 const sideByTxId = new Map<number, Side>()
 const pairByTxId = new Map<number, string>()
+
+const showSideChooser = ref(false)
+
+function toggleSideChooser() {
+  if (loadingSubmit.value || atCapacity.value || !hasPairSelected.value) return
+  showSideChooser.value = !showSideChooser.value
+}
+
+async function submitWithSide(side: Side) {
+  if (loadingSubmit.value || atCapacity.value || !hasPairSelected.value) return
+  selectedSide.value = side
+  showSideChooser.value = true
+  await submitWinLose()
+}
 
 function selectSide(side: Side) {
   if (loadingSubmit.value || atCapacity.value || !hasPairSelected.value) return
