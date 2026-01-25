@@ -35,7 +35,7 @@
         <div class="flex items-center gap-4">
           <img :alt="`${trader.name} avatar`" class="w-12 h-12 rounded-full object-cover" :src="avatarUrl"
             @error="onAvatarError" />
-          <div class="flex flex-col items-center">
+          <div class="flex flex-col items-start">
             <h1 class="font-extrabold text-lg flex items-center gap-2">
               <RouterLink to="/profile-copy-trade"
                 class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded">
@@ -66,7 +66,7 @@
       <div class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
         <!-- LEFT: ORDERBOOK -->
         <div>
-          <div class="flex flex-col items-start mb-5">
+          <div class="flex flex-col items-start mb-1">
             <div class="relative inline-block">
               <button
                 type="button"
@@ -248,6 +248,16 @@
 
               <div class="flex-1 text-center">
                 <div class="text-[10px] text-gray-400 leading-none">Amount (USDT)</div>
+                <input
+                  aria-label="Order form amount input"
+                  v-model="amount"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                  :disabled="atCapacity"
+                  class="bg-transparent w-full text-center text-[12px] font-semibold text-gray-900 placeholder:text-gray-400 focus:outline-none"
+                  :class="atCapacity ? 'opacity-60 cursor-not-allowed' : ''"
+                />
               </div>
               <Icon icon="tabler:plus" class="w-4 h-4" />
               <div class="flex items-center space-x-2">
@@ -262,33 +272,25 @@
             </div>
           </div>
 
-          <!-- SLIDER -->
-          <div class="w-full">
-            <input
-              type="range"
-              v-model.number="rawPercent"
-              min="0"
-              max="100"
-              step="1"
-              :style="sliderStyle"
-              @input="onInput(($event.target as HTMLInputElement).valueAsNumber)"
-              @change="commitSnap"
-              @pointerdown="isDragging = true"
-              @pointerup="handlePointerUp"
-              class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:mt-[-4px]"
-            />
-
-            <div class="flex justify-between text-xs text-gray-400 mt-1">
-              <button
-                v-for="m in marks"
-                :key="m"
-                type="button"
-                @click="setPercent(m)"
-                class="select-none transition"
-                :class="[amountPercent === m ? 'text-gray-900 font-semibold' : '']"
-              >
-                {{ m }}%
-              </button>
+          <div class="grid grid-cols-1 gap-4">
+            <div>
+              <label for="slForm" class="text-gray-400 text-xs mb-1 block">Stop Loss</label>
+              <div class="relative no-ios-zoom">
+                <select
+                  id="slForm"
+                  v-model.number="sl"
+                  :disabled="false"
+                  class="w-full h-10 bg-gray-100 rounded-md px-3 pr-12 text-xs font-semibold text-black focus:outline-none"
+                >
+                  <option disabled value="">Select</option>
+                  <option v-for="n in 10" :key="n" :value="n * 10">{{ n * 10 }}%</option>
+                </select>
+                <span
+                  class="absolute inset-y-0 right-5 flex items-center text-xs font-semibold text-gray-700 pointer-events-none"
+                >
+                  %
+                </span>
+              </div>
             </div>
           </div>
 
@@ -302,59 +304,46 @@
                 <span>TP/SL</span>
               </label>
 
-              <div class="flex items-center gap-2">
-                <label for="opt-reduce" class="flex items-center gap-2 flex-1 cursor-pointer">
-                  <input
-                    id="opt-reduce"
-                    type="radio"
-                    name="orderType"
-                    class="h-4 w-4 accent-teal-500"
-                  />
-                  <span>Reduce Only</span>
-                </label>
-
-                <label for="tif" class="sr-only">Time in Force</label>
-                <select
-                  id="tif"
-                  name="timeInForce"
-                  class="ml-auto text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-600"
-                >
-                  <option>GTC</option>
-                </select>
-              </div>
+              <!-- Open Position -->
+              <button
+                class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
+                type="button"
+                :disabled="loadingSubmit || atCapacity || !hasPairSelected || !selectedSide"
+                @click="submitWinLose"
+              >
+                {{
+                  loadingSubmit
+                    ? 'Processing…'
+                    : atCapacity
+                      ? 'Capacity Reached (5/5)'
+                      : 'Open Position'
+                }}
+              </button>
             </fieldset>
 
-            <!-- Buy/Long -->
-            <div class="space-y-1">
-              <div class="flex justify-between text-xs text-gray-600">
-                <span>Max</span><span>0,0 USDT</span>
-              </div>
-              <div class="flex justify-between text-xs text-gray-600">
-                <span>Cost</span><span>0 USDT</span>
-              </div>
+            <div class="space-x-2">
+              <!-- Sell / Short -->
               <button
+                class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50 transition-shadow duration-150 shadow-md active:shadow-[0_10px_24px_rgba(255,49,49,0.55)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400"
                 type="button"
-                class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
-                @click.prevent="openRestrict"
+                :style="{ backgroundColor: '#ff3131' }"
+                :disabled="loadingSubmit || atCapacity || !hasPairSelected"
+                :class="{ 'ring-2 ring-offset-2 ring-red-400': selectedSide === 'SELL' }"
+                @click="selectSide('SELL')"
               >
-                Buy
+                Sell / Short
               </button>
-            </div>
 
-            <!-- Sell/Short -->
-            <div class="space-y-1">
-              <div class="flex justify-between text-xs text-gray-600">
-                <span>Max</span><span>0,0 USDT</span>
-              </div>
-              <div class="flex justify-between text-xs text-gray-600">
-                <span>Cost</span><span>0 USDT</span>
-              </div>
+              <!-- Buy / Long -->
               <button
+                class="hover:opacity-90 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50 transition-shadow duration-150 shadow-md active:shadow-[0_10px_24px_rgba(28,166,157,0.55)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-400"
                 type="button"
-                class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-red-500 text-white hover:bg-red-600 transition-colors"
-                @click.prevent="openRestrict"
+                :style="{ backgroundColor: '#1ca69d' }"
+                :disabled="loadingSubmit || atCapacity || !hasPairSelected"
+                :class="{ 'ring-2 ring-offset-2 ring-teal-400': selectedSide === 'BUY' }"
+                @click="selectSide('BUY')"
               >
-                Sell
+                Buy / Long
               </button>
             </div>
           </form>
@@ -976,48 +965,6 @@ function connectAggregatorWS() {
       /* ignore */
     }
   }
-}
-
-// Slider state (UI-only)
-const rawPercent = ref(0)
-const marks: number[] = [0, 25, 50, 75, 100]
-const amountPercent = computed(() => {
-  const v = Math.round(Number(rawPercent.value) || 0)
-  return Math.max(0, Math.min(100, v))
-})
-
-const sliderStyle = computed(() => {
-  const pct = amountPercent.value
-  return {
-    background: `linear-gradient(to right, #0d9488 ${pct}%, #e5e7eb ${pct}%)`,
-  }
-})
-
-function onInput(v: number) {
-  rawPercent.value = Number.isFinite(v) ? v : 0
-}
-function commitSnap() {
-  const v = amountPercent.value
-  let nearest: number = marks[0]
-  let best = Math.abs(v - nearest)
-  for (const m of marks) {
-    const d = Math.abs(v - m)
-    if (d < best) {
-      best = d
-      nearest = m
-    }
-  }
-  rawPercent.value = nearest
-}
-function setPercent(m: number) {
-  rawPercent.value = m
-  commitSnap()
-}
-
-const isDragging = ref(false)
-function handlePointerUp() {
-  isDragging.value = false
-  commitSnap()
 }
 
 // Restrict modal (UI-only)
