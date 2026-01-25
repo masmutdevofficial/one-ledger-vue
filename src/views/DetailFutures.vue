@@ -30,282 +30,313 @@
         </div>
       </div> -->
 
-      <!-- Profile & title -->
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex items-center gap-4">
-          <img :alt="`${trader.name} avatar`" class="w-12 h-12 rounded-full object-cover" :src="avatarUrl"
-            @error="onAvatarError" />
-          <div class="flex flex-col items-start">
-            <h1 class="font-extrabold text-lg flex items-center gap-2">
-              <RouterLink to="/profile-copy-trade"
-                class="hover:underline focus:outline-none focus:ring-2 focus:ring-teal-400 rounded">
-                {{ trader.name }}
-              </RouterLink>
-              <Icon v-if="trader.is_featured" icon="tabler:shield-check" class="w-5 h-5 text-amber-500" />
-            </h1>
-            <div
-              class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1  select-none">
-              <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
-              <span>Profit Sharing 10%</span>
-            </div>
-          </div>
-        </div>
+        <!-- CHART MODE (full-width) -->
+        <div v-if="showChart" class="max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex flex-col items-start">
+              <div class="relative inline-block">
+                <button
+                  type="button"
+                  class="flex items-center space-x-1 cursor-pointer"
+                  @click="headerDropdownOpen = !headerDropdownOpen"
+                  :aria-expanded="headerDropdownOpen"
+                  aria-haspopup="listbox"
+                >
+                  <span class="font-semibold text-black text-base">{{ headerSelectedPair }}</span>
+                  <span class="font-bold text-xs text-gray-800">Perp</span>
+                  <Icon icon="tabler:chevron-down" class="text-black text-base" />
+                </button>
 
-        <router-link v-if="trader && trader.id" :to="`/chats/${trader.id}`"
-          class="ml-4 inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 active:bg-gray-200"
-          aria-label="Open chat" title="Message">
-          <img src="/img/chat-copy-trader.png" alt="Menu" class="w-4 h-4 object-contain" />
-        </router-link>
-      </div>
-
-      <p class="text-sm mb-2">{{ trader?.description || '' }}</p>
-
-
-
-      <!-- ORDERBOOK + FORM (mode tanpa chart) - copied from FutureClone.vue (UI-only) -->
-      <div class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
-        <!-- LEFT: ORDERBOOK -->
-        <div>
-          <div class="flex flex-col items-start mb-1">
-            <div class="relative inline-block">
-              <button
-                type="button"
-                class="flex items-center space-x-1 cursor-pointer"
-                @click="headerDropdownOpen = !headerDropdownOpen"
-                :aria-expanded="headerDropdownOpen"
-                aria-haspopup="listbox"
+                <div
+                  v-if="headerDropdownOpen"
+                  class="absolute z-50 mt-2 w-44 bg-white border border-gray-200 rounded shadow-md"
+                >
+                  <ul class="max-h-64 overflow-auto" role="listbox">
+                    <li
+                      v-for="pair in availablePairs"
+                      :key="pair"
+                      @click="selectHeaderPair(pair)"
+                      class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
+                      role="option"
+                    >
+                      {{ pair }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="ml-1 text-[10px] font-semibold"
+                :class="headerPercentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
               >
-                <span class="font-semibold text-black text-base">{{ headerSelectedPair }}</span>
-                <span class="font-bold text-xs text-gray-800">Perp</span>
-                <Icon icon="tabler:chevron-down" class="text-black text-base" />
+                {{ headerPercentChangeText }}
+              </div>
+            </div>
+
+            <!-- chart mode icons (right side is hidden, so keep controls here) -->
+            <div class="flex items-center justify-end gap-2 text-gray-400">
+              <button
+                aria-label="Gift"
+                class="relative w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
+                type="button"
+                @click="goWeeklyEvent"
+              >
+                <Icon icon="tabler:gift" class="w-5 h-5" />
+                <span class="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
               </button>
 
-              <div
-                v-if="headerDropdownOpen"
-                class="absolute z-50 mt-2 w-44 bg-white border border-gray-200 rounded shadow-md"
+              <button
+                aria-label="Chart"
+                class="relative w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
+                type="button"
+                :aria-pressed="showChart"
+                :title="showChart ? 'Hide chart' : 'Show chart'"
+                @click="toggleChart"
               >
-                <ul class="max-h-64 overflow-auto" role="listbox">
-                  <li
-                    v-for="pair in availablePairs"
-                    :key="pair"
-                    @click="selectHeaderPair(pair)"
-                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
-                    role="option"
-                  >
-                    {{ pair }}
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div
-              class="ml-1 text-[10px] font-semibold"
-              :class="headerPercentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
-            >
-              {{ headerPercentChangeText }}
+                <Icon icon="tabler:chart-candle" class="w-5 h-5" />
+              </button>
             </div>
           </div>
 
-          <!-- CHART (mode chart) - adapted from NewMarketCoin.vue -->
-          <div v-if="showChart" class="mt-2">
-            <div class="grid grid-cols-[44px_1fr] gap-2 items-stretch w-full relative">
-              <aside class="rounded-xl border border-gray-200 p-1.5 bg-white">
-                <div class="flex flex-col gap-2 text-xs">
-                  <button
-                    class="pl-1 px-2 py-1 rounded-lg border transition-colors"
-                    :class="{
-                      'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
-                      'hover:bg-gray-50': kind !== 'candlestick',
-                    }"
-                    :aria-pressed="kind === 'candlestick'"
-                    type="button"
-                    @click="kind = 'candlestick'"
-                  >
-                    <Icon icon="tabler:chart-candle" class="w-5 h-5" />
-                  </button>
-
-                  <button
-                    class="pl-1 px-2 py-1 rounded-lg border transition-colors"
-                    :class="{
-                      'bg-teal-500 text-white border-teal-500': kind === 'line',
-                      'hover:bg-gray-50': kind !== 'line',
-                    }"
-                    :aria-pressed="kind === 'line'"
-                    type="button"
-                    @click="kind = 'line'"
-                  >
-                    <Icon icon="tabler:chart-line" class="w-5 h-5" />
-                  </button>
-
-                  <button
-                    class="pl-1 px-2 py-1 rounded-lg border transition-colors"
-                    :class="{
-                      'bg-teal-500 text-white border-teal-500': kind === 'area',
-                      'hover:bg-gray-50': kind !== 'area',
-                    }"
-                    :aria-pressed="kind === 'area'"
-                    type="button"
-                    @click="kind = 'area'"
-                  >
-                    <Icon icon="tabler:chart-area" class="w-5 h-5" />
-                  </button>
-                </div>
-              </aside>
-
-              <section class="rounded-2xl min-w-0 overflow-hidden bg-white border border-gray-200">
-                <LightChart
-                  :series-type="kind"
-                  :candle-data="dataForChart.candleData"
-                  :data="dataForChart.data"
-                  :options="{ timeScale: { rightOffset: 12, barSpacing: 5 } }"
-                  :fit="false"
-                  :initial-bars="180"
-                  :right-offset="12"
-                  :auto-follow="true"
-                />
-              </section>
-
-              <div class="flex flex-row items-center absolute -top-8.5 right-2 space-x-2">
+          <div class="grid grid-cols-[44px_1fr] gap-2 items-stretch w-full relative">
+            <aside class="rounded-xl border border-gray-200 p-1.5 bg-white">
+              <div class="flex flex-col gap-2 text-xs">
                 <button
-                  v-for="t in tfs"
-                  :key="t"
-                  class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors bg-white"
+                  class="pl-1 px-2 py-1 rounded-lg border transition-colors"
                   :class="{
-                    'bg-teal-500 text-white border-teal-500': tf === t,
-                    'hover:bg-gray-50': tf !== t,
+                    'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
+                    'hover:bg-gray-50': kind !== 'candlestick',
                   }"
-                  :aria-pressed="tf === t"
+                  :aria-pressed="kind === 'candlestick'"
                   type="button"
-                  @click="tf = t"
+                  @click="kind = 'candlestick'"
                 >
-                  {{ t }}
+                  <Icon icon="tabler:chart-candle" class="w-5 h-5" />
+                </button>
+
+                <button
+                  class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+                  :class="{
+                    'bg-teal-500 text-white border-teal-500': kind === 'line',
+                    'hover:bg-gray-50': kind !== 'line',
+                  }"
+                  :aria-pressed="kind === 'line'"
+                  type="button"
+                  @click="kind = 'line'"
+                >
+                  <Icon icon="tabler:chart-line" class="w-5 h-5" />
+                </button>
+
+                <button
+                  class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+                  :class="{
+                    'bg-teal-500 text-white border-teal-500': kind === 'area',
+                    'hover:bg-gray-50': kind !== 'area',
+                  }"
+                  :aria-pressed="kind === 'area'"
+                  type="button"
+                  @click="kind = 'area'"
+                >
+                  <Icon icon="tabler:chart-area" class="w-5 h-5" />
                 </button>
               </div>
+            </aside>
+
+            <section class="rounded-2xl min-w-0 overflow-hidden bg-white border border-gray-200">
+              <LightChart
+                :series-type="kind"
+                :candle-data="dataForChart.candleData"
+                :data="dataForChart.data"
+                :options="{ timeScale: { rightOffset: 12, barSpacing: 5 } }"
+                :fit="false"
+                :initial-bars="180"
+                :right-offset="12"
+                :auto-follow="true"
+              />
+            </section>
+
+            <div class="flex flex-row items-center absolute -top-8.5 right-2 space-x-2">
+              <button
+                v-for="t in tfs"
+                :key="t"
+                class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors bg-white"
+                :class="{
+                  'bg-teal-500 text-white border-teal-500': tf === t,
+                  'hover:bg-gray-50': tf !== t,
+                }"
+                :aria-pressed="tf === t"
+                type="button"
+                @click="tf = t"
+              >
+                {{ t }}
+              </button>
+            </div>
+          </div>
+
+          <!-- MINI ORDERBOOK (di bawah chart) -->
+          <div class="mt-3">
+            <div class="flex flex-row justify-between items-center mb-1">
+              <p class="text-[10px] text-gray-400">Bid</p>
+              <p class="text-[10px] text-gray-400">Ask</p>
+              <div class="w-[40px] flex justify-center items-center bg-gray-100 rounded-sm text-gray-400">
+                <p class="text-[10px] ml-1">12</p>
+                <Icon icon="tabler:chevron-down" class="text-gray-700 w-3 h-3" />
+              </div>
             </div>
 
-            <!-- MINI ORDERBOOK (di bawah chart) -->
-            <div class="mt-3">
-              <div class="flex flex-row justify-between items-center mb-1">
-                <p class="text-[10px] text-gray-400">Bid</p>
-                <p class="text-[10px] text-gray-400">Ask</p>
+            <div class="flex w-full justify-between items-center">
+              <!-- BIDS -->
+              <div class="space-y-1 w-full" v-if="depthData">
                 <div
-                  class="w-[40px] flex justify-center items-center bg-gray-100 rounded-sm text-gray-400"
+                  v-for="bid in top12Bids"
+                  :key="bid[0]"
+                  class="relative flex justify-between overflow-hidden rounded"
+                  style="height: 17.5px"
                 >
-                  <p class="text-[10px] ml-1">12</p>
-                  <Icon icon="tabler:chevron-down" class="text-gray-700 w-3 h-3" />
+                  <div
+                    class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+                    :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+                  />
+                  <p class="text-black text-[10px] z-10 px-2 w-1/2">
+                    {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+                  </p>
+                  <p class="text-[#2DBE87] text-[10px] text-right z-10 px-2 w-1/2">
+                    {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+                  </p>
                 </div>
               </div>
 
-              <div class="flex w-full justify-between items-center">
-                <!-- BIDS -->
-                <div class="space-y-1 w-full" v-if="depthData">
+              <!-- ASKS -->
+              <div class="space-y-1 w-full" v-if="depthData">
+                <div
+                  v-for="ask in top12Asks"
+                  :key="ask[0]"
+                  class="relative flex justify-between overflow-hidden rounded"
+                  style="height: 17.5px"
+                >
                   <div
-                    v-for="bid in top12Bids"
-                    :key="bid[0]"
-                    class="relative flex justify-between overflow-hidden rounded"
-                    style="height: 17.5px"
-                  >
-                    <div
-                      class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
-                      :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
-                    />
-                    <p class="text-black text-[10px] z-10 px-2 w-1/2">
-                      {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
-                    </p>
-                    <p class="text-[#2DBE87] text-[10px] text-right z-10 px-2 w-1/2">
-                      {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
-                    </p>
-                  </div>
-                </div>
-
-                <!-- ASKS -->
-                <div class="space-y-1 w-full" v-if="depthData">
-                  <div
-                    v-for="ask in top12Asks"
-                    :key="ask[0]"
-                    class="relative flex justify-between overflow-hidden rounded"
-                    style="height: 17.5px"
-                  >
-                    <div
-                      class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
-                      :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
-                    />
-                    <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
-                      {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
-                    </p>
-                    <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
-                      {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
-                    </p>
-                  </div>
+                    class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+                    :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+                  />
+                  <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
+                    {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+                  </p>
+                  <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
+                    {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+                  </p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div v-if="!showChart" class="flex justify-between text-gray-400 text-xs pb-1">
-            <span>Price (USDT)</span>
-            <span>Amount ({{ baseAsset }})</span>
-          </div>
-
-          <!-- ASKS -->
-          <div class="space-y-1" v-if="depthData && !showChart">
-            <div
-              v-for="ask in top12Asks"
-              :key="ask[0]"
-              class="relative flex justify-between overflow-hidden rounded"
-              style="height: 17.5px"
-            >
-              <div
-                class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
-                :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
-              />
-              <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
-                {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
-              </p>
-              <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
-                {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
-              </p>
-            </div>
-          </div>
-
-          <!-- MID PRICE -->
-          <div class="text-center my-3" v-if="depthData && !showChart">
-            <p class="text-black font-semibold text-[16px]">
-              {{
-                (depthData.tick.bids[0]?.[0] ?? 0).toLocaleString('en-US', {
-                  maximumFractionDigits: 2,
-                })
-              }}
-            </p>
-            <p class="text-[#7F7F7F] text-[10px]">
-              ≈ ${{
-                (depthData.tick.bids[0]?.[0] ?? 0).toLocaleString('en-US', {
-                  maximumFractionDigits: 2,
-                })
-              }}
-            </p>
-          </div>
-
-          <!-- BIDS -->
-          <div class="space-y-1" v-if="depthData && !showChart">
-            <div
-              v-for="bid in top12Bids"
-              :key="bid[0]"
-              class="relative flex justify-between overflow-hidden rounded"
-              style="height: 17.5px"
-            >
-              <div
-                class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
-                :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
-              />
-              <p class="text-[#2DBE87] text-[10px] z-10 px-2 w-1/2">
-                {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
-              </p>
-              <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
-                {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
-              </p>
             </div>
           </div>
         </div>
+
+        <!-- ORDERBOOK + FORM (mode tanpa chart) - copied from FutureClone.vue (UI-only) -->
+        <div v-else class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
+          <!-- LEFT: ORDERBOOK -->
+          <div>
+            <div class="flex flex-col items-start mb-1">
+              <div class="relative inline-block">
+                <button
+                  type="button"
+                  class="flex items-center space-x-1 cursor-pointer"
+                  @click="headerDropdownOpen = !headerDropdownOpen"
+                  :aria-expanded="headerDropdownOpen"
+                  aria-haspopup="listbox"
+                >
+                  <span class="font-semibold text-black text-base">{{ headerSelectedPair }}</span>
+                  <span class="font-bold text-xs text-gray-800">Perp</span>
+                  <Icon icon="tabler:chevron-down" class="text-black text-base" />
+                </button>
+
+                <div
+                  v-if="headerDropdownOpen"
+                  class="absolute z-50 mt-2 w-44 bg-white border border-gray-200 rounded shadow-md"
+                >
+                  <ul class="max-h-64 overflow-auto" role="listbox">
+                    <li
+                      v-for="pair in availablePairs"
+                      :key="pair"
+                      @click="selectHeaderPair(pair)"
+                      class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
+                      role="option"
+                    >
+                      {{ pair }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                class="ml-1 text-[10px] font-semibold"
+                :class="headerPercentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+              >
+                {{ headerPercentChangeText }}
+              </div>
+            </div>
+
+            <div class="flex justify-between text-gray-400 text-xs pb-1">
+              <span>Price (USDT)</span>
+              <span>Amount ({{ baseAsset }})</span>
+            </div>
+
+            <!-- ASKS -->
+            <div class="space-y-1" v-if="depthData">
+              <div
+                v-for="ask in top12Asks"
+                :key="ask[0]"
+                class="relative flex justify-between overflow-hidden rounded"
+                style="height: 17.5px"
+              >
+                <div
+                  class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+                  :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+                />
+                <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
+                  {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+                </p>
+                <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
+                  {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+                </p>
+              </div>
+            </div>
+
+            <!-- MID PRICE -->
+            <div class="text-center my-3" v-if="depthData">
+              <p class="text-black font-semibold text-[16px]">
+                {{
+                  (depthData.tick.bids[0]?.[0] ?? 0).toLocaleString('en-US', {
+                    maximumFractionDigits: 2,
+                  })
+                }}
+              </p>
+              <p class="text-[#7F7F7F] text-[10px]">
+                ≈ ${{
+                  (depthData.tick.bids[0]?.[0] ?? 0).toLocaleString('en-US', {
+                    maximumFractionDigits: 2,
+                  })
+                }}
+              </p>
+            </div>
+
+            <!-- BIDS -->
+            <div class="space-y-1" v-if="depthData">
+              <div
+                v-for="bid in top12Bids"
+                :key="bid[0]"
+                class="relative flex justify-between overflow-hidden rounded"
+                style="height: 17.5px"
+              >
+                <div
+                  class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+                  :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+                />
+                <p class="text-[#2DBE87] text-[10px] z-10 px-2 w-1/2">
+                  {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+                </p>
+                <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
+                  {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+                </p>
+              </div>
+            </div>
+          </div>
 
         <!-- RIGHT: ORDER FORM -->
         <div class="space-y-3">
