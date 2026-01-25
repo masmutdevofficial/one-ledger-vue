@@ -304,38 +304,23 @@
                 <span>TP/SL</span>
               </label>
 
-              <template v-if="hasPairSelected">
-                <!-- Open Position -->
-                <button
-                  class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
-                  type="button"
-                  :disabled="loadingSubmit || atCapacity"
-                  @click="toggleSideChooser"
-                >
-                  {{
-                    loadingSubmit
-                      ? 'Processing…'
-                      : atCapacity
-                        ? 'Capacity Reached (5/5)'
+              <!-- Open Position (pair mengikuti dropdown utama) -->
+              <button
+                class="bg-teal-400 hover:bg-teal-500 text-white text-xs rounded-md py-1 px-3 disabled:opacity-50"
+                type="button"
+                :disabled="loadingSubmit || atCapacity || !hasPairSelected"
+                @click="toggleSideChooser"
+              >
+                {{
+                  loadingSubmit
+                    ? 'Processing…'
+                    : atCapacity
+                      ? 'Capacity Reached (5/5)'
+                      : !hasPairSelected
+                        ? 'Select Pair'
                         : 'Open Position'
-                  }}
-                </button>
-              </template>
-
-              <template v-else>
-                <!-- Select Pair (same UI as header dropdown) -->
-                <button
-                  type="button"
-                  class="flex items-center space-x-1 cursor-pointer text-xs text-gray-800"
-                  @click="headerDropdownOpen = !headerDropdownOpen"
-                  :aria-expanded="headerDropdownOpen"
-                  aria-haspopup="listbox"
-                >
-                  <span class="font-semibold text-black">{{ headerSelectedPair }}</span>
-                  <span class="font-bold text-[10px] text-gray-800">Perp</span>
-                  <Icon icon="tabler:chevron-down" class="text-black text-sm" />
-                </button>
-              </template>
+                }}
+              </button>
             </fieldset>
 
             <div v-if="showSideChooser" class="space-x-2">
@@ -632,7 +617,7 @@ const availablePairs = ref<string[]>(['BTC/USDT',
   'ORCA/USDT',
   'SHELL/USDT',
   'NAKA/USDT'])
-const selectedPair = ref<string>('') // UI only
+const selectedPair = ref<string>('BTC/USDT') // UI only
 const hasPairSelected = computed(() => !!selectedPair.value)
 
 // header dropdown (UI copied from FutureClone.vue)
