@@ -97,7 +97,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-[44px_1fr] gap-2 items-stretch w-full relative">
+          <div class="grid grid-cols-[44px_1fr] gap-2 items-stretch w-full relative mt-[33px]">
             <aside class="rounded-xl border border-gray-200 p-1.5 bg-white">
               <div class="flex flex-col gap-2 text-xs">
                 <button
@@ -178,7 +178,7 @@
               <p class="text-[10px] text-gray-400">Bid</p>
               <p class="text-[10px] text-gray-400">Ask</p>
               <div class="w-[40px] flex justify-center items-center bg-gray-100 rounded-sm text-gray-400">
-                <p class="text-[10px] ml-1">12</p>
+                <p class="text-[10px] ml-1">5</p>
                 <Icon icon="tabler:chevron-down" class="text-gray-700 w-3 h-3" />
               </div>
             </div>
@@ -947,8 +947,8 @@ function bestAsk(): number {
 
 const marketPrice = computed(() => bestBid() || headerPrice.value || 0)
 
-const top12Bids = computed(() => bidsTop.value)
-const top12Asks = computed(() => asksTop.value)
+const top12Bids = computed(() => bidsTop.value.slice(0, 5))
+const top12Asks = computed(() => asksTop.value.slice(0, 5))
 
 const maxBidAmount = computed(() => Math.max(1, ...top12Bids.value.map((b) => Number(b[1]) || 0)))
 const maxAskAmount = computed(() => Math.max(1, ...top12Asks.value.map((a) => Number(a[1]) || 0)))
@@ -1193,8 +1193,8 @@ function scheduleFlush() {
           bids: bidsDesc.slice(0, 20),
         },
       }
-      asksTop.value = asksAsc.slice(0, 12)
-      bidsTop.value = bidsDesc.slice(0, 12)
+      asksTop.value = asksAsc.slice(0, 5)
+      bidsTop.value = bidsDesc.slice(0, 5)
       pendingDepth = null
     }
     flushTimer = undefined
