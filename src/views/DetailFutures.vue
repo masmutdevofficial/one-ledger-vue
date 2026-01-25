@@ -10,7 +10,7 @@
     <template v-else>
 
       <!-- PRICE + CHANGE (UI copied from FutureClone.vue; values are UI-only) -->
-      <div class="-mx-5 px-4 mt-1 mb-4">
+      <!-- <div class="-mx-5 px-4 mt-1 mb-4">
         <div class="text-start">
           <p
             class="font-semibold text-[20px]"
@@ -28,7 +28,7 @@
             </span>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- Profile & title -->
       <div class="flex items-center justify-between mb-1">
@@ -65,7 +65,7 @@
             <span>Profit Sharing 10%</span>
           </div>
 
-          <div class="flex flex-row items-center mb-5">
+          <div class="flex flex-col items-center mb-5">
             <div class="relative inline-block">
               <button
                 type="button"
@@ -96,14 +96,13 @@
                 </ul>
               </div>
             </div>
-          </div>
-
-            <span
+            <div
               class="ml-1 text-[10px] font-semibold"
               :class="headerPercentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
             >
               {{ headerPercentChangeText }}
-            </span>
+            </div>
+          </div>
 
           <div class="flex justify-between text-gray-400 text-xs pb-1">
             <span>Price (USDT)</span>
@@ -174,7 +173,7 @@
         <!-- RIGHT: ORDER FORM -->
         <div class="space-y-3">
           <!-- SYMBOL ROW (pair dropdown + icons) -->
-          <section class=" px-4 py-2 pb-0 -mx-5 mb-2">
+          <div class="flex items-center px-4 pb-0 -mx-5 mb-2">
 
             <div class="flex items-center space-x-4 text-gray-400">
               <button aria-label="Gift" class="relative" type="button">
@@ -192,7 +191,7 @@
                 <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
               </button>
             </div>
-          </section>
+          </div>
 
           <div class="space-y-2 text-sm">
             <!-- Avbl -->
