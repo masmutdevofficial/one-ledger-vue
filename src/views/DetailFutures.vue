@@ -65,7 +65,7 @@
       </section>
 
       <!-- PRICE + CHANGE (UI copied from FutureClone.vue; values are UI-only) -->
-      <div class="-mx-5 px-4 mt-1 mb-4 hidden">
+      <div class="-mx-5 px-4 mt-1 mb-4">
         <div class="text-start">
           <p
             class="font-semibold text-[20px]"
@@ -108,22 +108,16 @@
 
       <p class="text-sm mb-2">{{ trader?.description || '' }}</p>
 
-      <div
-        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
-        <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
-        <span>Profit Sharing 10%</span>
-      </div>
+
 
       <!-- ORDERBOOK + FORM (mode tanpa chart) - copied from FutureClone.vue (UI-only) -->
       <div class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
         <!-- LEFT: ORDERBOOK -->
         <div>
-          <!-- Funding & Countdown in 2 columns -->
-          <div class="text-[12px] flex flex-col justify-start items-start mb-3">
-            <span class="underline decoration-dotted underline-offset-2 text-gray-400 font-semibold"
-              >Funding / Countdown</span
-            >
-            <span class="text-gray-900 font-semibold">0,0052% / 00:08:44</span>
+          <div
+            class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
+            <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
+            <span>Profit Sharing 10%</span>
           </div>
 
           <div class="flex justify-between text-gray-400 text-xs pb-1">
