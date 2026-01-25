@@ -65,7 +65,7 @@
             <span>Profit Sharing 10%</span>
           </div>
 
-          <div class="flex flex-col items-center mb-5">
+          <div class="flex flex-col items-start mb-5">
             <div class="relative inline-block">
               <button
                 type="button"
@@ -172,25 +172,24 @@
 
         <!-- RIGHT: ORDER FORM -->
         <div class="space-y-3">
-          <!-- SYMBOL ROW (pair dropdown + icons) -->
-          <div class="flex items-center px-4 pb-0 -mx-5 mb-2">
+          <!-- SYMBOL ROW (icons) -->
+          <div class="grid grid-cols-4 w-full gap-2 mb-2 text-gray-400">
+            <button
+              aria-label="Gift"
+              class="relative w-full h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
+              type="button"
+            >
+              <Icon icon="tabler:gift" class="w-5 h-5" />
+              <span class="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
+            </button>
 
-            <div class="flex items-center space-x-4 text-gray-400">
-              <button aria-label="Gift" class="relative" type="button">
-                <Icon icon="tabler:gift" class="w-5 h-5" />
-                <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
-              </button>
-              <button aria-label="Chart" class="relative" type="button">
-                <Icon icon="tabler:chart-candle" class="w-5 h-5" />
-              </button>
-              <button aria-label="Percentage" class="relative" type="button">
-                <Icon icon="tabler:plus-equal" class="w-5 h-5" />
-              </button>
-              <button aria-label="More options" class="relative" type="button">
-                <Icon icon="tabler:dots" class="w-5 h-5" />
-                <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
-              </button>
-            </div>
+            <button
+              aria-label="Chart"
+              class="relative w-full h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
+              type="button"
+            >
+              <Icon icon="tabler:chart-candle" class="w-5 h-5" />
+            </button>
           </div>
 
           <div class="space-y-2 text-sm">
