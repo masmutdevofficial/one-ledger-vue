@@ -108,18 +108,24 @@
 
       <p class="text-sm mb-2">{{ trader?.description || '' }}</p>
 
-
+      <div
+        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
+        <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
+        <span>Profit Sharing 10%</span>
+      </div>
 
       <!-- ORDERBOOK + FORM (mode tanpa chart) - copied from FutureClone.vue (UI-only) -->
       <div class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
         <!-- LEFT: ORDERBOOK -->
         <div>
-          <div
-            class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
-            <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
-            <span>Profit Sharing 10%</span>
+          <!-- Funding & Countdown in 2 columns -->
+          <div class="text-[12px] flex flex-col justify-start items-start mb-3">
+            <span class="underline decoration-dotted underline-offset-2 text-gray-400 font-semibold"
+              >Funding / Countdown</span
+            >
+            <span class="text-gray-900 font-semibold">0,0052% / 00:08:44</span>
           </div>
-          
+
           <div class="flex justify-between text-gray-400 text-xs pb-1">
             <span>Price (USDT)</span>
             <span>Amount ({{ baseAsset }})</span>
@@ -841,7 +847,6 @@ const orderbookPair = computed(() =>
 const depthData = ref<DepthData | null>(null)
 const asksTop = ref<[number, number][]>([])
 const bidsTop = ref<[number, number][]>([])
-const klineDailyOHLC = ref<{ open: number; close: number; ts: number } | null>(null)
 
 const baseAsset = computed(() => {
   const p = (selectedPair.value || 'BTC/USDT').toUpperCase()
@@ -886,22 +891,19 @@ function wsSend(obj: unknown) {
   }
 }
 function subscribe(symLower: string) {
-  // Depth + 1day kline (same payload shape as FutureClone.vue)
   wsSend({
     type: 'subscribe',
-    channels: ['depth', 'kline'],
+    channels: ['depth'],
     symbols: [symLower],
-    periods: ['1day'],
     limit: 300,
   })
-  wsSend({ type: 'snapshot', symbols: [symLower], periods: ['1day'], limit: 300 })
+  wsSend({ type: 'snapshot', symbols: [symLower], limit: 300 })
 }
 function unsubscribe(symLower: string) {
   wsSend({
     type: 'unsubscribe',
-    channels: ['depth', 'kline'],
+    channels: ['depth'],
     symbols: [symLower],
-    periods: ['1day'],
   })
 }
 
@@ -972,12 +974,6 @@ function connectAggregatorWS() {
             const bids = Array.isArray(it.bids) ? (it.bids as [number, number][]) : []
             const asks = Array.isArray(it.asks) ? (it.asks as [number, number][]) : []
             pendingDepth = { ts: Number(it.ts) || Date.now(), asks, bids, sym: symLower }
-          } else if (it.type === 'kline' && it.period === '1day') {
-            const open = Number(it.open)
-            const close = Number(it.close)
-            if (Number.isFinite(open) && Number.isFinite(close)) {
-              klineDailyOHLC.value = { open, close, ts: Number(it.ts) || Date.now() }
-            }
           }
         }
         scheduleFlush()
@@ -994,15 +990,6 @@ function connectAggregatorWS() {
         const asks = Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : []
         pendingDepth = { ts: Number(msg.ts) || Date.now(), asks, bids, sym: symLower }
         scheduleFlush()
-        return
-      }
-
-      if (type === 'kline' && msg.period === '1day') {
-        const open = Number(msg.open)
-        const close = Number(msg.close)
-        if (Number.isFinite(open) && Number.isFinite(close)) {
-          klineDailyOHLC.value = { open, close, ts: Number(msg.ts) || Date.now() }
-        }
         return
       }
     } catch {
