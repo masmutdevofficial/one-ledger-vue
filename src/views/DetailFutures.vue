@@ -105,13 +105,149 @@
             </div>
           </div>
 
-          <div class="flex justify-between text-gray-400 text-xs pb-1">
+          <!-- CHART (mode chart) - adapted from NewMarketCoin.vue -->
+          <div v-if="showChart" class="mt-2">
+            <div class="grid grid-cols-[44px_1fr] gap-2 items-stretch w-full relative">
+              <aside class="rounded-xl border border-gray-200 p-1.5 bg-white">
+                <div class="flex flex-col gap-2 text-xs">
+                  <button
+                    class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+                    :class="{
+                      'bg-teal-500 text-white border-teal-500': kind === 'candlestick',
+                      'hover:bg-gray-50': kind !== 'candlestick',
+                    }"
+                    :aria-pressed="kind === 'candlestick'"
+                    type="button"
+                    @click="kind = 'candlestick'"
+                  >
+                    <Icon icon="tabler:chart-candle" class="w-5 h-5" />
+                  </button>
+
+                  <button
+                    class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+                    :class="{
+                      'bg-teal-500 text-white border-teal-500': kind === 'line',
+                      'hover:bg-gray-50': kind !== 'line',
+                    }"
+                    :aria-pressed="kind === 'line'"
+                    type="button"
+                    @click="kind = 'line'"
+                  >
+                    <Icon icon="tabler:chart-line" class="w-5 h-5" />
+                  </button>
+
+                  <button
+                    class="pl-1 px-2 py-1 rounded-lg border transition-colors"
+                    :class="{
+                      'bg-teal-500 text-white border-teal-500': kind === 'area',
+                      'hover:bg-gray-50': kind !== 'area',
+                    }"
+                    :aria-pressed="kind === 'area'"
+                    type="button"
+                    @click="kind = 'area'"
+                  >
+                    <Icon icon="tabler:chart-area" class="w-5 h-5" />
+                  </button>
+                </div>
+              </aside>
+
+              <section class="rounded-2xl min-w-0 overflow-hidden bg-white border border-gray-200">
+                <LightChart
+                  :series-type="kind"
+                  :candle-data="dataForChart.candleData"
+                  :data="dataForChart.data"
+                  :options="{ timeScale: { rightOffset: 12, barSpacing: 5 } }"
+                  :fit="false"
+                  :initial-bars="180"
+                  :right-offset="12"
+                  :auto-follow="true"
+                />
+              </section>
+
+              <div class="flex flex-row items-center absolute -top-8.5 right-2 space-x-2">
+                <button
+                  v-for="t in tfs"
+                  :key="t"
+                  class="px-1.5 py-1 rounded-md border text-[11px] leading-none transition-colors bg-white"
+                  :class="{
+                    'bg-teal-500 text-white border-teal-500': tf === t,
+                    'hover:bg-gray-50': tf !== t,
+                  }"
+                  :aria-pressed="tf === t"
+                  type="button"
+                  @click="tf = t"
+                >
+                  {{ t }}
+                </button>
+              </div>
+            </div>
+
+            <!-- MINI ORDERBOOK (di bawah chart) -->
+            <div class="mt-3">
+              <div class="flex flex-row justify-between items-center mb-1">
+                <p class="text-[10px] text-gray-400">Bid</p>
+                <p class="text-[10px] text-gray-400">Ask</p>
+                <div
+                  class="w-[40px] flex justify-center items-center bg-gray-100 rounded-sm text-gray-400"
+                >
+                  <p class="text-[10px] ml-1">12</p>
+                  <Icon icon="tabler:chevron-down" class="text-gray-700 w-3 h-3" />
+                </div>
+              </div>
+
+              <div class="flex w-full justify-between items-center">
+                <!-- BIDS -->
+                <div class="space-y-1 w-full" v-if="depthData">
+                  <div
+                    v-for="bid in top12Bids"
+                    :key="bid[0]"
+                    class="relative flex justify-between overflow-hidden rounded"
+                    style="height: 17.5px"
+                  >
+                    <div
+                      class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+                      :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+                    />
+                    <p class="text-black text-[10px] z-10 px-2 w-1/2">
+                      {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+                    </p>
+                    <p class="text-[#2DBE87] text-[10px] text-right z-10 px-2 w-1/2">
+                      {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- ASKS -->
+                <div class="space-y-1 w-full" v-if="depthData">
+                  <div
+                    v-for="ask in top12Asks"
+                    :key="ask[0]"
+                    class="relative flex justify-between overflow-hidden rounded"
+                    style="height: 17.5px"
+                  >
+                    <div
+                      class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+                      :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+                    />
+                    <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
+                      {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+                    </p>
+                    <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
+                      {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="!showChart" class="flex justify-between text-gray-400 text-xs pb-1">
             <span>Price (USDT)</span>
             <span>Amount ({{ baseAsset }})</span>
           </div>
 
           <!-- ASKS -->
-          <div class="space-y-1" v-if="depthData">
+          <div class="space-y-1" v-if="depthData && !showChart">
             <div
               v-for="ask in top12Asks"
               :key="ask[0]"
@@ -132,7 +268,7 @@
           </div>
 
           <!-- MID PRICE -->
-          <div class="text-center my-3" v-if="depthData">
+          <div class="text-center my-3" v-if="depthData && !showChart">
             <p class="text-black font-semibold text-[16px]">
               {{
                 (depthData.tick.bids[0]?.[0] ?? 0).toLocaleString('en-US', {
@@ -150,7 +286,7 @@
           </div>
 
           <!-- BIDS -->
-          <div class="space-y-1" v-if="depthData">
+          <div class="space-y-1" v-if="depthData && !showChart">
             <div
               v-for="bid in top12Bids"
               :key="bid[0]"
@@ -179,6 +315,7 @@
               aria-label="Gift"
               class="relative w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
               type="button"
+              @click="goWeeklyEvent"
             >
               <Icon icon="tabler:gift" class="w-5 h-5" />
               <span class="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
@@ -188,6 +325,9 @@
               aria-label="Chart"
               class="relative w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200"
               type="button"
+              :aria-pressed="showChart"
+              :title="showChart ? 'Hide chart' : 'Show chart'"
+              @click="toggleChart"
             >
               <Icon icon="tabler:chart-candle" class="w-5 h-5" />
             </button>
@@ -511,6 +651,8 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import ChatCard from '@/components/futures/ChatCard.vue'
+import LightChart from '@/components/trade/LightChart.vue'
+import type { AreaData, CandlestickData, LineData, UTCTimestamp } from 'lightweight-charts'
 
 /* ===== ALERT via Pinia store ===== */
 const apiAlert = useApiAlertStore()
@@ -526,6 +668,23 @@ const sideByTxId = new Map<number, Side>()
 const pairByTxId = new Map<number, string>()
 
 const showSideChooser = ref(false)
+
+/* ===== Chart (adapted from NewMarketCoin.vue) ===== */
+const showChart = ref(false)
+type SeriesKind = 'candlestick' | 'line' | 'area'
+const kind = ref<SeriesKind>('candlestick')
+
+type TF = '5m' | '15m' | '1h' | '1d'
+const tfs: TF[] = ['5m', '15m', '1h', '1d']
+const tf = ref<TF>('15m')
+
+function toggleChart() {
+  showChart.value = !showChart.value
+  if (showChart.value) {
+    void loadHistoryForCurrentTF()
+    scheduleResubscribe()
+  }
+}
 
 const amountOk = computed(() => {
   const normalized = (amount.value || '').replace(',', '.').trim()
@@ -763,12 +922,163 @@ const top12Asks = computed(() => asksTop.value)
 const maxBidAmount = computed(() => Math.max(1, ...top12Bids.value.map((b) => Number(b[1]) || 0)))
 const maxAskAmount = computed(() => Math.max(1, ...top12Asks.value.map((a) => Number(a[1]) || 0)))
 
+/* ===== Kline buffers (for chart) ===== */
+type OriginPeriod = '5min' | '15min' | '60min' | '1day'
+function isOriginPeriod(p: string): p is OriginPeriod {
+  return p === '5min' || p === '15min' || p === '60min' || p === '1day'
+}
+
+const WANT_BARS = 300
+
+type CandleBuf = {
+  time: UTCTimestamp
+  open: number
+  high: number
+  low: number
+  close: number
+  vol: number
+}
+const buf5m = new Map<number, CandleBuf>()
+const buf15m = new Map<number, CandleBuf>()
+const buf60m = new Map<number, CandleBuf>()
+const buf1d = new Map<number, CandleBuf>()
+
+function mapForPeriod(p: OriginPeriod) {
+  if (p === '5min') return buf5m
+  if (p === '15min') return buf15m
+  if (p === '60min') return buf60m
+  return buf1d
+}
+function periodMs(p: OriginPeriod) {
+  if (p === '5min') return 300_000
+  if (p === '15min') return 900_000
+  if (p === '60min') return 3_600_000
+  return 86_400_000
+}
+function bucketSec(tsMs: number, p: OriginPeriod) {
+  const ms = periodMs(p)
+  return Math.floor(tsMs / ms) * (ms / 1000)
+}
+function upsertCandleBuffer(
+  p: OriginPeriod,
+  tsMs: number,
+  ohlc: { open: number; high: number; low: number; close: number; vol: number },
+) {
+  const m = mapForPeriod(p)
+  const key = bucketSec(tsMs, p)
+  const prev = m.get(key)
+  if (!prev) {
+    m.set(key, { time: key as UTCTimestamp, ...ohlc })
+  } else {
+    prev.high = Math.max(prev.high, ohlc.high)
+    prev.low = Math.min(prev.low, ohlc.low)
+    prev.close = ohlc.close
+    prev.vol = (prev.vol || 0) + (ohlc.vol || 0)
+  }
+}
+
+function tfPlan(x: TF): { base: OriginPeriod } {
+  if (x === '5m') return { base: '5min' }
+  if (x === '15m') return { base: '15min' }
+  if (x === '1h') return { base: '60min' }
+  return { base: '1day' }
+}
+
+const chartCandles = ref<CandlestickData[]>([])
+const chartLine = ref<LineData[]>([])
+const chartArea = ref<AreaData[]>([])
+let chartFlushTimer: number | undefined
+
+function seriesFromBufferForTF(): CandlestickData[] {
+  const { base } = tfPlan(tf.value)
+  const m = mapForPeriod(base)
+  const keys = Array.from(m.keys()).sort((a, b) => a - b)
+  const data = keys.map((k) => {
+    const c = m.get(k)!
+    return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close }
+  })
+  return data.slice(-WANT_BARS)
+}
+function scheduleChartFlush() {
+  if (chartFlushTimer) return
+  chartFlushTimer = window.setTimeout(() => {
+    const candles = seriesFromBufferForTF()
+    chartCandles.value = candles
+    chartLine.value = candles.map((k) => ({ time: k.time, value: k.close }))
+    chartArea.value = chartLine.value
+    chartFlushTimer = undefined
+  }, 60)
+}
+
+const dataForChart = computed(() => {
+  if (kind.value === 'candlestick') return { candleData: chartCandles.value, data: [] as LineData[] }
+  if (kind.value === 'line') return { candleData: [] as CandlestickData[], data: chartLine.value }
+  return { candleData: [] as CandlestickData[], data: chartArea.value }
+})
+
+function resetChartData() {
+  buf5m.clear()
+  buf15m.clear()
+  buf60m.clear()
+  buf1d.clear()
+  chartCandles.value = []
+  chartLine.value = []
+  chartArea.value = []
+  scheduleChartFlush()
+}
+
+// ===== REST history loader (Huobi) untuk isi awal candle =====
+async function loadHistoryForCurrentTF() {
+  try {
+    const sym = pairToQuery(orderbookPair.value)
+    if (!sym.endsWith('usdt')) return
+
+    let period = ''
+    let origin: OriginPeriod | null = null
+    if (tf.value === '5m') {
+      period = '5min'
+      origin = '5min'
+    } else if (tf.value === '15m') {
+      period = '15min'
+      origin = '15min'
+    } else if (tf.value === '1h') {
+      period = '60min'
+      origin = '60min'
+    } else {
+      period = '1day'
+      origin = '1day'
+    }
+    if (!origin) return
+
+    const url = `https://api.huobi.pro/market/history/kline?symbol=${sym}&period=${period}&size=${WANT_BARS}`
+    const res = await fetch(url)
+    if (!res.ok) return
+    const json = await res.json()
+    if (!json || !Array.isArray(json.data)) return
+
+    for (const k of json.data as any[]) {
+      const tsMs = Number(k.id) * 1000
+      const open = Number(k.open)
+      const close = Number(k.close)
+      const high = Number(k.high)
+      const low = Number(k.low)
+      const vol = Number(k.vol ?? k.amount ?? 0)
+      if (!Number.isFinite(open) || !Number.isFinite(close)) continue
+      upsertCandleBuffer(origin, tsMs, { open, high, low, close, vol })
+    }
+    scheduleChartFlush()
+  } catch {
+    // silent
+  }
+}
+
 /** =========================
- *  WebSocket (same as FutureClone.vue)
+ *  WebSocket (depth + kline)
  *  ========================= */
 const aggWS = ref<WebSocket | null>(null)
 let reconnectTimer: number | undefined
 let flushTimer: number | undefined
+let resubTimer: number | undefined
 let pendingDepth: {
   ts: number
   asks: [number, number][]
@@ -783,31 +1093,58 @@ function wsSend(obj: unknown) {
     } catch {}
   }
 }
-function subscribe(symLower: string) {
-  wsSend({
-    type: 'subscribe',
-    channels: ['depth'],
-    symbols: [symLower],
-    limit: 300,
-  })
-  wsSend({ type: 'snapshot', symbols: [symLower], limit: 300 })
+function subscribeFor(symLower: string, periods: OriginPeriod[], limit: number, withDepth = false) {
+  const channels = withDepth ? ['depth', 'kline'] : ['kline']
+  wsSend({ type: 'subscribe', channels, symbols: [symLower], periods, limit })
 }
-function unsubscribe(symLower: string) {
+function snapshotFor(symLower: string, periods: OriginPeriod[], limit: number) {
+  wsSend({ type: 'snapshot', symbols: [symLower], periods, limit })
+}
+function doUnsubscribe(symLower: string, periods: OriginPeriod[]) {
   wsSend({
     type: 'unsubscribe',
-    channels: ['depth'],
+    channels: ['depth', 'kline'],
     symbols: [symLower],
+    periods,
   })
 }
 
 let subscribedSym: string | null = null
+const subscribedPeriods = new Set<OriginPeriod>()
 function scheduleResubscribe() {
-  const ws = aggWS.value
-  if (!ws || ws.readyState !== WebSocket.OPEN) return
-  const sym = pairToQuery(orderbookPair.value)
-  if (subscribedSym && subscribedSym !== sym) unsubscribe(subscribedSym)
-  subscribe(sym)
-  subscribedSym = sym
+  if (resubTimer) return
+  resubTimer = window.setTimeout(() => {
+    resubTimer = undefined
+    const ws = aggWS.value
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+
+    const sym = pairToQuery(orderbookPair.value)
+    const plan = tfPlan(tf.value)
+    const wantPeriods = new Set<OriginPeriod>([plan.base])
+
+    if (subscribedSym && subscribedSym !== sym) {
+      if (subscribedPeriods.size) doUnsubscribe(subscribedSym, Array.from(subscribedPeriods))
+      subscribedPeriods.clear()
+      resetChartData()
+    } else if (subscribedSym === sym) {
+      const toUnsub: OriginPeriod[] = []
+      subscribedPeriods.forEach((p) => {
+        if (!wantPeriods.has(p)) toUnsub.push(p)
+      })
+      if (toUnsub.length) doUnsubscribe(sym, toUnsub)
+      for (const p of toUnsub) subscribedPeriods.delete(p)
+    }
+
+    const needDepth = !subscribedSym || subscribedSym !== sym || subscribedPeriods.size === 0
+
+    if (!subscribedPeriods.has(plan.base)) {
+      subscribeFor(sym, [plan.base], WANT_BARS, needDepth)
+      snapshotFor(sym, [plan.base], WANT_BARS)
+      subscribedPeriods.add(plan.base)
+    }
+
+    subscribedSym = sym
+  }, 150)
 }
 
 function scheduleFlush() {
@@ -842,6 +1179,7 @@ function connectAggregatorWS() {
 
   aggWS.value.onopen = () => {
     subscribedSym = null
+    subscribedPeriods.clear()
     scheduleResubscribe()
   }
   aggWS.value.onclose = () => {
@@ -867,9 +1205,23 @@ function connectAggregatorWS() {
             const bids = Array.isArray(it.bids) ? (it.bids as [number, number][]) : []
             const asks = Array.isArray(it.asks) ? (it.asks as [number, number][]) : []
             pendingDepth = { ts: Number(it.ts) || Date.now(), asks, bids, sym: symLower }
+          } else if (it.type === 'kline') {
+            const pRaw = String(it.period || '')
+            if (!isOriginPeriod(pRaw)) continue
+            const open = Number(it.open)
+            const close = Number(it.close)
+            const high = Number(it.high)
+            const low = Number(it.low)
+            const vol = Number(it.vol)
+            const ts = Number(it.ts)
+            if (Number.isFinite(open) && Number.isFinite(close)) {
+              upsertCandleBuffer(pRaw, ts, { open, high, low, close, vol })
+              scheduleChartFlush()
+            }
           }
         }
         scheduleFlush()
+        scheduleChartFlush()
         return
       }
 
@@ -883,6 +1235,22 @@ function connectAggregatorWS() {
         const asks = Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : []
         pendingDepth = { ts: Number(msg.ts) || Date.now(), asks, bids, sym: symLower }
         scheduleFlush()
+        return
+      }
+
+      if (type === 'kline') {
+        const pRaw = String(msg.period || '')
+        if (!isOriginPeriod(pRaw)) return
+        const open = Number(msg.open)
+        const close = Number(msg.close)
+        const high = Number(msg.high)
+        const low = Number(msg.low)
+        const vol = Number(msg.vol)
+        const ts = Number(msg.ts)
+        if (Number.isFinite(open) && Number.isFinite(close)) {
+          upsertCandleBuffer(pRaw, ts, { open, high, low, close, vol })
+          scheduleChartFlush()
+        }
         return
       }
     } catch {
@@ -1131,6 +1499,10 @@ function goHistory() {
   router.push({ path: `/futures/${slug}/history` })
 }
 
+function goWeeklyEvent() {
+  router.push('/event')
+}
+
 /* ===== Balance & amount validation ===== */
 interface SaldoApi {
   status: 'success' | 'unauthorized'
@@ -1180,6 +1552,11 @@ watch(
   },
   { immediate: true },
 )
+
+watch(tf, () => {
+  scheduleResubscribe()
+  if (showChart.value) void loadHistoryForCurrentTF()
+})
 
 /* ===== TP / SL ===== */
 const tp = ref<number | null>(null)
@@ -1565,6 +1942,8 @@ onUnmounted(() => {
   if (traderPollHandle) clearInterval(traderPollHandle)
   if (reconnectTimer) clearTimeout(reconnectTimer)
   if (flushTimer) clearTimeout(flushTimer)
+  if (resubTimer) clearTimeout(resubTimer)
+  if (chartFlushTimer) clearTimeout(chartFlushTimer)
   try {
     aggWS.value?.close()
   } catch {}
