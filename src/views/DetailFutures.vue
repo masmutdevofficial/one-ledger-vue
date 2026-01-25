@@ -11,40 +11,6 @@
 
       <!-- SYMBOL ROW (pair dropdown + icons) -->
       <section class=" px-4 py-2 pb-0 -mx-5 mb-2">
-        <div class="">
-          <div class="flex flex-row items-center">
-            <div class="relative inline-block">
-              <button
-                type="button"
-                class="flex items-center space-x-1 cursor-pointer"
-                @click="headerDropdownOpen = !headerDropdownOpen"
-                :aria-expanded="headerDropdownOpen"
-                aria-haspopup="listbox"
-              >
-                <span class="font-semibold text-black text-base">{{ headerSelectedPair }}</span>
-                <span class="font-bold text-xs text-gray-800">Perp</span>
-                <Icon icon="tabler:chevron-down" class="text-black text-base" />
-              </button>
-
-              <div
-                v-if="headerDropdownOpen"
-                class="absolute z-50 mt-2 w-44 bg-white border border-gray-200 rounded shadow-md"
-              >
-                <ul class="max-h-64 overflow-auto" role="listbox">
-                  <li
-                    v-for="pair in availablePairs"
-                    :key="pair"
-                    @click="selectHeaderPair(pair)"
-                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
-                    role="option"
-                  >
-                    {{ pair }}
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <div class="flex items-center space-x-4 text-gray-400">
           <button aria-label="Gift" class="relative" type="button">
@@ -118,6 +84,39 @@
             class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
             <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
             <span>Profit Sharing 10%</span>
+          </div>
+
+          <div class="flex flex-row items-center">
+            <div class="relative inline-block">
+              <button
+                type="button"
+                class="flex items-center space-x-1 cursor-pointer"
+                @click="headerDropdownOpen = !headerDropdownOpen"
+                :aria-expanded="headerDropdownOpen"
+                aria-haspopup="listbox"
+              >
+                <span class="font-semibold text-black text-base">{{ headerSelectedPair }}</span>
+                <span class="font-bold text-xs text-gray-800">Perp</span>
+                <Icon icon="tabler:chevron-down" class="text-black text-base" />
+              </button>
+
+              <div
+                v-if="headerDropdownOpen"
+                class="absolute z-50 mt-2 w-44 bg-white border border-gray-200 rounded shadow-md"
+              >
+                <ul class="max-h-64 overflow-auto" role="listbox">
+                  <li
+                    v-for="pair in availablePairs"
+                    :key="pair"
+                    @click="selectHeaderPair(pair)"
+                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-black"
+                    role="option"
+                  >
+                    {{ pair }}
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
 
           <div class="flex justify-between text-gray-400 text-xs pb-1">
