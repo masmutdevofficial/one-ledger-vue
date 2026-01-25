@@ -8,33 +8,6 @@
 
     <!-- CONTENT -->
     <template v-else>
-      <!-- Back -->
-      <button aria-label="Back" class="mb-4 inline-flex items-center text-black" type="button" @click="goBack">
-        <Icon icon="tabler:arrow-left" class="w-6 h-6" />
-      </button>
-
-      <!-- TOP NAV (copied from FutureClone.vue style) -->
-      <header class="flex items-center justify-between px-4 py-2 border-b border-gray-200 -mx-5 mb-4">
-        <nav class="flex items-center space-x-6 text-gray-600 text-sm font-semibold">
-          <a href="#" class="text-black font-extrabold flex items-center space-x-1" @click.prevent>
-            <span>USD</span>
-            <span class="text-xs font-normal">ⓢ-M</span>
-          </a>
-          <a href="#" class="hover:text-gray-800" @click.prevent>COIN-M</a>
-          <a href="#" class="hover:text-gray-800" @click.prevent>Options</a>
-          <a href="#" class="hover:text-gray-800 flex items-center relative" @click.prevent>
-            <span>Smart Money</span>
-            <span
-              class="absolute -top-3 right-0 text-[10px] font-semibold bg-yellow-300 text-black rounded-full px-[6px] py-[1px] leading-none"
-              >New</span
-            >
-          </a>
-        </nav>
-
-        <button aria-label="Menu" class="text-gray-700" type="button">
-          <Icon icon="tabler:menu-2" class="w-6 h-6" />
-        </button>
-      </header>
 
       <!-- SYMBOL ROW (pair dropdown + icons) -->
       <section class="flex items-center justify-between px-4 py-2 pb-0 -mx-5 mb-2">
