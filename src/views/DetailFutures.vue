@@ -10,8 +10,8 @@
     <template v-else>
 
       <!-- SYMBOL ROW (pair dropdown + icons) -->
-      <section class="flex items-center justify-between px-4 py-2 pb-0 -mx-5 mb-2 hidden">
-        <div class="flex items-center justify-between hidden">
+      <section class="hidden px-4 py-2 pb-0 -mx-5 mb-2">
+        <div class="hidden">
           <div class="flex flex-row items-center">
             <div class="relative inline-block">
               <button
@@ -112,6 +112,313 @@
         class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
         <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
         <span>Profit Sharing 10%</span>
+      </div>
+
+      <!-- ORDERBOOK + FORM (mode tanpa chart) - copied from FutureClone.vue (UI-only) -->
+      <div class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
+        <!-- LEFT: ORDERBOOK -->
+        <div>
+          <!-- Funding & Countdown in 2 columns -->
+          <div class="text-[12px] flex flex-col justify-start items-start mb-3">
+            <span class="underline decoration-dotted underline-offset-2 text-gray-400 font-semibold"
+              >Funding / Countdown</span
+            >
+            <span class="text-gray-900 font-semibold">0,0052% / 00:08:44</span>
+          </div>
+
+          <div class="flex justify-between text-gray-400 text-xs pb-1">
+            <span>Price (USDT)</span>
+            <span>Amount ({{ baseAsset }})</span>
+          </div>
+
+          <!-- ASKS -->
+          <div class="space-y-1" v-if="depthData">
+            <div
+              v-for="ask in top12Asks"
+              :key="ask[0]"
+              class="relative flex justify-between overflow-hidden rounded"
+              style="height: 17.5px"
+            >
+              <div
+                class="absolute left-0 top-0 h-full bg-red-100 z-0 transition-all duration-200"
+                :style="{ width: `${((ask[1] / maxAskAmount) * 100).toFixed(2)}%` }"
+              />
+              <p class="text-pink-400 text-[10px] z-10 px-2 w-1/2">
+                {{ ask[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+              </p>
+              <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
+                {{ ask[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+              </p>
+            </div>
+          </div>
+
+          <!-- MID PRICE -->
+          <div class="text-center my-3" v-if="depthData">
+            <p class="text-black font-semibold text-[16px]">
+              {{
+                (depthData.tick.bids[0]?.[0] ?? 0).toLocaleString('en-US', {
+                  maximumFractionDigits: 2,
+                })
+              }}
+            </p>
+            <p class="text-[#7F7F7F] text-[10px]">
+              ≈ ${{
+                (depthData.tick.bids[0]?.[0] ?? 0).toLocaleString('en-US', {
+                  maximumFractionDigits: 2,
+                })
+              }}
+            </p>
+          </div>
+
+          <!-- BIDS -->
+          <div class="space-y-1" v-if="depthData">
+            <div
+              v-for="bid in top12Bids"
+              :key="bid[0]"
+              class="relative flex justify-between overflow-hidden rounded"
+              style="height: 17.5px"
+            >
+              <div
+                class="absolute right-0 top-0 h-full bg-green-100 z-0 transition-all duration-200"
+                :style="{ width: `${((bid[1] / maxBidAmount) * 100).toFixed(2)}%` }"
+              />
+              <p class="text-[#2DBE87] text-[10px] z-10 px-2 w-1/2">
+                {{ bid[0].toLocaleString('en-US', { maximumFractionDigits: 2 }) }}
+              </p>
+              <p class="text-black text-[10px] text-right z-10 px-2 w-1/2">
+                {{ bid[1].toLocaleString('en-US', { maximumFractionDigits: 5 }) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: ORDER FORM -->
+        <div class="space-y-3">
+          <!-- Mode / Leverage / Side -->
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none"
+            >
+              Isolated
+            </button>
+            <button
+              class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none"
+            >
+              150x
+            </button>
+            <button
+              class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none"
+            >
+              S
+            </button>
+          </div>
+
+          <div class="space-y-2 text-sm">
+            <!-- Avbl -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400 text-xs">Avbl</span>
+              <div class="flex items-center space-x-1 text-gray-900 text-xs">
+                <span>0,00 USDT</span>
+                <Icon icon="tabler:arrows-left-right" class="w-4 h-4 text-yellow-400" />
+              </div>
+            </div>
+
+            <!-- Order type -->
+            <div
+              class="flex items-center justify-between bg-gray-100 rounded-lg px-3 py-2 text-[12px]"
+            >
+              <div class="flex items-center justify-between space-x-2 w-full">
+                <Icon icon="tabler:info-circle-filled" class="w-4 h-4 text-gray-400" />
+                <button type="button" class="flex items-center font-semibold text-gray-900">
+                  Limit
+                </button>
+                <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
+              </div>
+            </div>
+
+            <!-- Price -->
+            <div class="flex items-center justify-between text-[12px] w-full space-x-2">
+              <div
+                class="bg-gray-100 flex-row flex items-center justify-between px-2 rounded-lg w-[97%] py-[4px]"
+              >
+                <Icon icon="tabler:minus" class="w-4 h-4" />
+                <div class="flex-1 text-center">
+                  <div class="text-[10px] text-gray-400 leading-none mb-1">Price (USDT)</div>
+                  <div class="font-semibold text-[12px] text-gray-900 leading-tight">
+                    {{
+                      marketPrice
+                        ? marketPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })
+                        : '-'
+                    }}
+                  </div>
+                </div>
+                <Icon icon="tabler:plus" class="w-4 h-4" />
+              </div>
+
+              <div class="flex items-center space-x-2 bg-gray-100 rounded-lg py-[4px]">
+                <button type="button" class="h-8 px-3 text-gray-900 font-semibold">BBO</button>
+              </div>
+            </div>
+
+            <!-- Amount -->
+            <div
+              class="flex items-center justify-between bg-gray-100 rounded-lg px-2 py-[4px] text-[12px]"
+            >
+              <Icon icon="tabler:minus" class="w-4 h-4" />
+
+              <div class="flex-1 text-center">
+                <div class="text-[10px] text-gray-400 leading-none">Amount (USDT)</div>
+              </div>
+              <Icon icon="tabler:plus" class="w-4 h-4" />
+              <div class="flex items-center space-x-2">
+                <button
+                  type="button"
+                  class="h-8 px-3 rounded-md text-gray-900 font-semibold flex items-center"
+                >
+                  USDT
+                  <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDER -->
+          <div class="w-full">
+            <input
+              type="range"
+              v-model.number="rawPercent"
+              min="0"
+              max="100"
+              step="1"
+              :style="sliderStyle"
+              @input="onInput(($event.target as HTMLInputElement).valueAsNumber)"
+              @change="commitSnap"
+              @pointerdown="isDragging = true"
+              @pointerup="handlePointerUp"
+              class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:mt-[-4px]"
+            />
+
+            <div class="flex justify-between text-xs text-gray-400 mt-1">
+              <button
+                v-for="m in marks"
+                :key="m"
+                type="button"
+                @click="setPercent(m)"
+                class="select-none transition"
+                :class="[amountPercent === m ? 'text-gray-900 font-semibold' : '']"
+              >
+                {{ m }}%
+              </button>
+            </div>
+          </div>
+
+          <form class="space-y-4 text-sm text-gray-800" @submit.prevent>
+            <!-- Options -->
+            <fieldset class="space-y-2">
+              <legend class="sr-only">Order options</legend>
+
+              <label for="opt-tpsl" class="flex items-center gap-2 cursor-pointer">
+                <input id="opt-tpsl" type="radio" name="orderType" class="h-4 w-4 accent-teal-500" />
+                <span>TP/SL</span>
+              </label>
+
+              <div class="flex items-center gap-2">
+                <label for="opt-reduce" class="flex items-center gap-2 flex-1 cursor-pointer">
+                  <input
+                    id="opt-reduce"
+                    type="radio"
+                    name="orderType"
+                    class="h-4 w-4 accent-teal-500"
+                  />
+                  <span>Reduce Only</span>
+                </label>
+
+                <label for="tif" class="sr-only">Time in Force</label>
+                <select
+                  id="tif"
+                  name="timeInForce"
+                  class="ml-auto text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-green-600"
+                >
+                  <option>GTC</option>
+                </select>
+              </div>
+            </fieldset>
+
+            <!-- Buy/Long -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs text-gray-600">
+                <span>Max</span><span>0,0 USDT</span>
+              </div>
+              <div class="flex justify-between text-xs text-gray-600">
+                <span>Cost</span><span>0 USDT</span>
+              </div>
+              <button
+                type="button"
+                class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+                @click.prevent="openRestrict"
+              >
+                Buy
+              </button>
+            </div>
+
+            <!-- Sell/Short -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs text-gray-600">
+                <span>Max</span><span>0,0 USDT</span>
+              </div>
+              <div class="flex justify-between text-xs text-gray-600">
+                <span>Cost</span><span>0 USDT</span>
+              </div>
+              <button
+                type="button"
+                class="w-full flex items-center justify-center gap-1 rounded-lg px-3 py-1.5 bg-red-500 text-white hover:bg-red-600 transition-colors"
+                @click.prevent="openRestrict"
+              >
+                Sell
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div
+        v-if="showRestrict"
+        class="fixed inset-0 z-[1000] flex items-center justify-center"
+        role="dialog"
+        aria-modal="true"
+      >
+        <button
+          type="button"
+          class="absolute inset-0 bg-black/40"
+          aria-label="Close"
+          @click="closeRestrict"
+        />
+
+        <div class="relative mx-4 w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
+          <div class="flex items-start gap-2">
+            <div>
+              <h3 class="font-semibold text-black mb-1">⚠️ Notice</h3>
+              <p class="text-sm text-gray-700">
+                Your account is still new.<br />
+                The Futures Trading feature will be available once your account has been active for
+                a longer period.
+              </p>
+              <p class="text-sm text-gray-500 mt-2">
+                This is to ensure security and provide you with the best trading experience.<br />
+                Thank you for your understanding.
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button
+              type="button"
+              class="px-3 py-1.5 rounded-md border border-gray-300 text-sm"
+              @click="closeRestrict"
+            >
+              OK
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Fixed Amount -->
@@ -516,6 +823,251 @@ const headerPercentChangeText = computed(() => {
   return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
 })
 
+/* ===== Orderbook + Form (UI-only, copied from FutureClone.vue) ===== */
+type DepthTick = {
+  asks: [number, number][]
+  bids: [number, number][]
+}
+type DepthData = {
+  ch?: string
+  ts?: number
+  tick: DepthTick
+}
+
+function pairToQuery(pair: string): string {
+  return pair.replace('/', '').toLowerCase()
+}
+
+const orderbookPair = computed(() =>
+  selectedPair.value && availablePairs.value.includes(selectedPair.value)
+    ? selectedPair.value
+    : 'BTC/USDT',
+)
+
+const depthData = ref<DepthData | null>(null)
+const asksTop = ref<[number, number][]>([])
+const bidsTop = ref<[number, number][]>([])
+const klineDailyOHLC = ref<{ open: number; close: number; ts: number } | null>(null)
+
+const baseAsset = computed(() => {
+  const p = (selectedPair.value || 'BTC/USDT').toUpperCase()
+  return p.includes('/') ? p.split('/')[0] : p.replace(/USDT$/i, '') || 'BTC'
+})
+
+function bestBid(): number {
+  const bids = depthData.value?.tick?.bids
+  return Array.isArray(bids) && bids.length ? Number(bids[0][0]) : 0
+}
+function bestAsk(): number {
+  const asks = depthData.value?.tick?.asks
+  return Array.isArray(asks) && asks.length ? Number(asks[0][0]) : 0
+}
+
+const marketPrice = computed(() => bestBid() || headerPrice.value || 0)
+
+const top12Bids = computed(() => bidsTop.value)
+const top12Asks = computed(() => asksTop.value)
+
+const maxBidAmount = computed(() => Math.max(1, ...top12Bids.value.map((b) => Number(b[1]) || 0)))
+const maxAskAmount = computed(() => Math.max(1, ...top12Asks.value.map((a) => Number(a[1]) || 0)))
+
+/** =========================
+ *  WebSocket (same as FutureClone.vue)
+ *  ========================= */
+const aggWS = ref<WebSocket | null>(null)
+let reconnectTimer: number | undefined
+let flushTimer: number | undefined
+let pendingDepth: {
+  ts: number
+  asks: [number, number][]
+  bids: [number, number][]
+  sym: string
+} | null = null
+
+function wsSend(obj: unknown) {
+  if (aggWS.value && aggWS.value.readyState === WebSocket.OPEN) {
+    try {
+      aggWS.value.send(JSON.stringify(obj))
+    } catch {}
+  }
+}
+function subscribe(symLower: string) {
+  // Depth + 1day kline (same payload shape as FutureClone.vue)
+  wsSend({
+    type: 'subscribe',
+    channels: ['depth', 'kline'],
+    symbols: [symLower],
+    periods: ['1day'],
+    limit: 300,
+  })
+  wsSend({ type: 'snapshot', symbols: [symLower], periods: ['1day'], limit: 300 })
+}
+function unsubscribe(symLower: string) {
+  wsSend({
+    type: 'unsubscribe',
+    channels: ['depth', 'kline'],
+    symbols: [symLower],
+    periods: ['1day'],
+  })
+}
+
+let subscribedSym: string | null = null
+function scheduleResubscribe() {
+  const ws = aggWS.value
+  if (!ws || ws.readyState !== WebSocket.OPEN) return
+  const sym = pairToQuery(orderbookPair.value)
+  if (subscribedSym && subscribedSym !== sym) unsubscribe(subscribedSym)
+  subscribe(sym)
+  subscribedSym = sym
+}
+
+function scheduleFlush() {
+  if (flushTimer) return
+  flushTimer = window.setTimeout(() => {
+    const curPairKey = pairToQuery(orderbookPair.value)
+    if (pendingDepth && pendingDepth.sym === curPairKey) {
+      const asksAsc = [...pendingDepth.asks].sort((a, b) => a[0] - b[0])
+      const bidsDesc = [...pendingDepth.bids].sort((a, b) => b[0] - a[0])
+      depthData.value = {
+        ch: `market.${curPairKey}.depth.step0`,
+        ts: pendingDepth.ts,
+        tick: {
+          asks: asksAsc.slice(0, 20),
+          bids: bidsDesc.slice(0, 20),
+        },
+      }
+      asksTop.value = asksAsc.slice(0, 12)
+      bidsTop.value = bidsDesc.slice(0, 12)
+      pendingDepth = null
+    }
+    flushTimer = undefined
+  }, 80)
+}
+
+function connectAggregatorWS() {
+  if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return
+  try {
+    aggWS.value?.close()
+  } catch {}
+  aggWS.value = new WebSocket('wss://ws.hyper-led.com')
+
+  aggWS.value.onopen = () => {
+    subscribedSym = null
+    scheduleResubscribe()
+  }
+  aggWS.value.onclose = () => {
+    if (reconnectTimer) clearTimeout(reconnectTimer)
+    reconnectTimer = window.setTimeout(connectAggregatorWS, 2000)
+  }
+  aggWS.value.onerror = () => {
+    try {
+      aggWS.value?.close()
+    } catch {}
+  }
+  aggWS.value.onmessage = (e: MessageEvent) => {
+    try {
+      const msg = JSON.parse(e.data as string)
+
+      // Snapshot
+      if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
+        const want = pairToQuery(orderbookPair.value)
+        for (const it of msg.items) {
+          const symLower = String(it.symbol || '').toLowerCase()
+          if (!symLower || symLower !== want) continue
+          if (it.type === 'depth') {
+            const bids = Array.isArray(it.bids) ? (it.bids as [number, number][]) : []
+            const asks = Array.isArray(it.asks) ? (it.asks as [number, number][]) : []
+            pendingDepth = { ts: Number(it.ts) || Date.now(), asks, bids, sym: symLower }
+          } else if (it.type === 'kline' && it.period === '1day') {
+            const open = Number(it.open)
+            const close = Number(it.close)
+            if (Number.isFinite(open) && Number.isFinite(close)) {
+              klineDailyOHLC.value = { open, close, ts: Number(it.ts) || Date.now() }
+            }
+          }
+        }
+        scheduleFlush()
+        return
+      }
+
+      // Stream
+      const type: string | undefined = msg?.type
+      const symLower = String(msg.symbol || '').toLowerCase()
+      if (!type || !symLower || symLower !== pairToQuery(orderbookPair.value)) return
+
+      if (type === 'depth') {
+        const bids = Array.isArray(msg.bids) ? (msg.bids as [number, number][]) : []
+        const asks = Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : []
+        pendingDepth = { ts: Number(msg.ts) || Date.now(), asks, bids, sym: symLower }
+        scheduleFlush()
+        return
+      }
+
+      if (type === 'kline' && msg.period === '1day') {
+        const open = Number(msg.open)
+        const close = Number(msg.close)
+        if (Number.isFinite(open) && Number.isFinite(close)) {
+          klineDailyOHLC.value = { open, close, ts: Number(msg.ts) || Date.now() }
+        }
+        return
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+// Slider state (UI-only)
+const rawPercent = ref(0)
+const marks: number[] = [0, 25, 50, 75, 100]
+const amountPercent = computed(() => {
+  const v = Math.round(Number(rawPercent.value) || 0)
+  return Math.max(0, Math.min(100, v))
+})
+
+const sliderStyle = computed(() => {
+  const pct = amountPercent.value
+  return {
+    background: `linear-gradient(to right, #0d9488 ${pct}%, #e5e7eb ${pct}%)`,
+  }
+})
+
+function onInput(v: number) {
+  rawPercent.value = Number.isFinite(v) ? v : 0
+}
+function commitSnap() {
+  const v = amountPercent.value
+  let nearest: number = marks[0]
+  let best = Math.abs(v - nearest)
+  for (const m of marks) {
+    const d = Math.abs(v - m)
+    if (d < best) {
+      best = d
+      nearest = m
+    }
+  }
+  rawPercent.value = nearest
+}
+function setPercent(m: number) {
+  rawPercent.value = m
+  commitSnap()
+}
+
+const isDragging = ref(false)
+function handlePointerUp() {
+  isDragging.value = false
+  commitSnap()
+}
+
+// Restrict modal (UI-only)
+const showRestrict = ref(false)
+function openRestrict() {
+  showRestrict.value = true
+}
+function closeRestrict() {
+  showRestrict.value = false
+}
+
 function formatPairFromSymbol(sym?: string): string | null {
   const s = (sym ?? '').trim()
   if (!s) return null
@@ -803,6 +1355,7 @@ watch(
   selectedPair,
   (p) => {
     initHeaderMarket(p || 'BTC/USDT')
+    scheduleResubscribe()
   },
   { immediate: true },
 )
@@ -1161,6 +1714,7 @@ watch(
 
 onMounted(() => {
   fetchTakeProfit()
+  connectAggregatorWS()
 
   // 1s ticker: waktu & random-walk animasi
   tickHandle = window.setInterval(() => {
@@ -1195,5 +1749,11 @@ onUnmounted(() => {
   if (tickHandle) clearInterval(tickHandle)
   if (pollHandle) clearInterval(pollHandle)
   if (traderPollHandle) clearInterval(traderPollHandle)
+  if (reconnectTimer) clearTimeout(reconnectTimer)
+  if (flushTimer) clearTimeout(flushTimer)
+  try {
+    aggWS.value?.close()
+  } catch {}
+  aggWS.value = null
 })
 </script>
