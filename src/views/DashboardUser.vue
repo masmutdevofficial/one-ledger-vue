@@ -256,12 +256,6 @@
         :key="index"
         class="bg-white rounded-2xl p-5 flex flex-col space-y-3 hover:bg-gray-50 transition-colors duration-150"
       >
-        <div class="flex justify-between items-center">
-          <div class="flex items-center space-x-1 text-gray-900 font-semibold text-sm">
-            <span class="text-[10px] leading-none">•</span><span>{{ news.date }}</span>
-          </div>
-          
-        </div>
         <div class="flex items-start space-x-4">
           <img
             v-if="news && news.image"

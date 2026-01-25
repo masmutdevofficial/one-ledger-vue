@@ -114,11 +114,12 @@
       <div class="grid grid-cols-2 gap-4 max-w-md md:max-w-4xl mx-auto mt-4 px-0 mb-6">
         <!-- LEFT: ORDERBOOK -->
         <div>
-      <div
-        class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
-        <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
-        <span>Profit Sharing 10%</span>
-      </div>
+          <div
+            class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
+            <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
+            <span>Profit Sharing 10%</span>
+          </div>
+          
           <div class="flex justify-between text-gray-400 text-xs pb-1">
             <span>Price (USDT)</span>
             <span>Amount ({{ baseAsset }})</span>
