@@ -9,27 +9,6 @@
     <!-- CONTENT -->
     <template v-else>
 
-      <!-- SYMBOL ROW (pair dropdown + icons) -->
-      <section class=" px-4 py-2 pb-0 -mx-5 mb-2">
-
-        <div class="flex items-center space-x-4 text-gray-400">
-          <button aria-label="Gift" class="relative" type="button">
-            <Icon icon="tabler:gift" class="w-5 h-5" />
-            <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
-          </button>
-          <button aria-label="Chart" class="relative" type="button">
-            <Icon icon="tabler:chart-candle" class="w-5 h-5" />
-          </button>
-          <button aria-label="Percentage" class="relative" type="button">
-            <Icon icon="tabler:plus-equal" class="w-5 h-5" />
-          </button>
-          <button aria-label="More options" class="relative" type="button">
-            <Icon icon="tabler:dots" class="w-5 h-5" />
-            <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
-          </button>
-        </div>
-      </section>
-
       <!-- PRICE + CHANGE (UI copied from FutureClone.vue; values are UI-only) -->
       <div class="-mx-5 px-4 mt-1 mb-4">
         <div class="text-start">
@@ -81,12 +60,12 @@
         <!-- LEFT: ORDERBOOK -->
         <div>
           <div
-            class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1 mb-5 select-none">
+            class="inline-flex items-center bg-[#FFF4D1] text-[#D6B94D] text-xs font-semibold rounded-md px-2 py-1  select-none">
             <Icon icon="tabler:coins" class="w-4 h-4 mr-1" />
             <span>Profit Sharing 10%</span>
           </div>
 
-          <div class="flex flex-row items-center">
+          <div class="flex flex-row items-center mb-5">
             <div class="relative inline-block">
               <button
                 type="button"
@@ -118,6 +97,13 @@
               </div>
             </div>
           </div>
+
+            <span
+              class="ml-1 text-[10px] font-semibold"
+              :class="headerPercentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+            >
+              {{ headerPercentChangeText }}
+            </span>
 
           <div class="flex justify-between text-gray-400 text-xs pb-1">
             <span>Price (USDT)</span>
@@ -187,24 +173,26 @@
 
         <!-- RIGHT: ORDER FORM -->
         <div class="space-y-3">
-          <!-- Mode / Leverage / Side -->
-          <div class="grid grid-cols-3 gap-2">
-            <button
-              class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none"
-            >
-              Isolated
-            </button>
-            <button
-              class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none"
-            >
-              150x
-            </button>
-            <button
-              class="w-full text-center text-[10px] font-normal border border-gray-300 rounded-md px-2 py-[2px] bg-white cursor-default select-none"
-            >
-              S
-            </button>
-          </div>
+          <!-- SYMBOL ROW (pair dropdown + icons) -->
+          <section class=" px-4 py-2 pb-0 -mx-5 mb-2">
+
+            <div class="flex items-center space-x-4 text-gray-400">
+              <button aria-label="Gift" class="relative" type="button">
+                <Icon icon="tabler:gift" class="w-5 h-5" />
+                <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
+              </button>
+              <button aria-label="Chart" class="relative" type="button">
+                <Icon icon="tabler:chart-candle" class="w-5 h-5" />
+              </button>
+              <button aria-label="Percentage" class="relative" type="button">
+                <Icon icon="tabler:plus-equal" class="w-5 h-5" />
+              </button>
+              <button aria-label="More options" class="relative" type="button">
+                <Icon icon="tabler:dots" class="w-5 h-5" />
+                <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
+              </button>
+            </div>
+          </section>
 
           <div class="space-y-2 text-sm">
             <!-- Avbl -->
