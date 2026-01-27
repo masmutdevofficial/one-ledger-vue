@@ -245,6 +245,27 @@ const WS_BASE = 'wss://ws.hyper-led.com'
 const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
+// Synthetic logos (uploaded via admin)
+const syntheticLogoUrlByBase = ref<Record<string, string>>({})
+async function loadSyntheticLogoMap() {
+  try {
+    const res = await fetch(`${API_BASE}/sim/market/symbols`, { method: 'GET' })
+    if (!res.ok) return
+    const json = await res.json()
+    const rows = Array.isArray(json?.symbols) ? (json.symbols as any[]) : []
+    const map: Record<string, string> = {}
+    for (const r of rows) {
+      const pair = String(r?.symbol_pair || '').toUpperCase()
+      const base = pair.split('/')[0] || ''
+      const url = String(r?.logo_url || '')
+      if (base && url) map[base] = url
+    }
+    syntheticLogoUrlByBase.value = map
+  } catch {
+    // ignore
+  }
+}
+
 const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote }> = {
   BTC: { name: 'Bitcoin', logoUrl: localLogo('btc'), quote: 'USDT' },
   ETH: { name: 'Ethereum', logoUrl: localLogo('eth'), quote: 'USDT' },
@@ -531,7 +552,7 @@ async function loadAssets() {
           symbol: sym,
           base,
           quote: meta.quote,
-          logoUrl: meta.logoUrl,
+          logoUrl: syntheticLogoUrlByBase.value[base] || meta.logoUrl,
           qty,
           avgCost: avg,
           lastPrice: last,
@@ -814,6 +835,7 @@ onMounted(() => {
   // async tasks
   ; (async () => {
     await loadSaldo()
+    await loadSyntheticLogoMap()
     await loadAssets()
     connectAggregatorWs() // connect setelah assets terisi
   })().catch(() => { })

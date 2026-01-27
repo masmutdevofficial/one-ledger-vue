@@ -671,6 +671,27 @@ const signedMoneyId = (nu: number, digits = 2) =>
 const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
+// Synthetic logos (uploaded via admin)
+const syntheticLogoUrlByBase = ref<Record<string, string>>({})
+async function loadSyntheticLogoMap() {
+  try {
+    const res = await fetch(`${API_BASE}/sim/market/symbols`, { method: 'GET' })
+    if (!res.ok) return
+    const json = await res.json()
+    const rows = Array.isArray(json?.symbols) ? (json.symbols as any[]) : []
+    const map: Record<string, string> = {}
+    for (const r of rows) {
+      const pair = String(r?.symbol_pair || '').toUpperCase()
+      const base = pair.split('/')[0] || ''
+      const url = String(r?.logo_url || '')
+      if (base && url) map[base] = url
+    }
+    syntheticLogoUrlByBase.value = map
+  } catch {
+    // ignore
+  }
+}
+
 // ===== Assets (loader) =====
 async function loadAssets(opts: { silent?: boolean } = {}) {
   if (loadingAssets.value) return
@@ -701,7 +722,7 @@ async function loadAssets(opts: { silent?: boolean } = {}) {
           symbol: sym,
           base,
           quote,
-          logoUrl: localLogo(base),
+          logoUrl: syntheticLogoUrlByBase.value[base] || localLogo(base),
           qty,
           avgCost: avg,
           lastPrice: last,
@@ -1590,8 +1611,8 @@ function stopSimPolling() {
 }
 
 /* ===== Derivatives for template ===== */
-const top12Asks = computed(() => asksTop.value)
-const top12Bids = computed(() => bidsTop.value)
+const top12Asks = computed(() => asksTop.value.slice(0, BOOK_TOP_N))
+const top12Bids = computed(() => bidsTop.value.slice(0, BOOK_TOP_N))
 const maxAskAmount = computed(() =>
   top12Asks.value.length ? Math.max(...top12Asks.value.map((a) => a[1])) : 1,
 )
@@ -1917,6 +1938,7 @@ function connectAssetsWs() {
 
 // panggil saat mounted
 onMounted(async () => {
+  await loadSyntheticLogoMap()
   await loadAssets()
   rebuildAssetMap()
   connectAssetsWs()

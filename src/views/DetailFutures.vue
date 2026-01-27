@@ -223,7 +223,7 @@
               <p class="text-[10px] text-gray-400">Bid</p>
               <p class="text-[10px] text-gray-400">Ask</p>
               <div class="w-[40px] flex justify-center items-center bg-gray-100 rounded-sm text-gray-400">
-                <p class="text-[10px] ml-1">5</p>
+                  <p class="text-[10px] ml-1">{{ BOOK_TOP_N }}</p>
                 <Icon icon="tabler:chevron-down" class="text-gray-700 w-3 h-3" />
               </div>
             </div>
@@ -980,6 +980,8 @@ const depthData = ref<DepthData | null>(null)
 const asksTop = ref<[number, number][]>([])
 const bidsTop = ref<[number, number][]>([])
 
+const BOOK_TOP_N = 8
+
 const baseAsset = computed(() => {
   const p = (selectedPair.value || 'BTC/USDT').toUpperCase()
   return p.includes('/') ? p.split('/')[0] : p.replace(/USDT$/i, '') || 'BTC'
@@ -1036,8 +1038,8 @@ function bestAsk(): number {
 
 const marketPrice = computed(() => bestBid() || headerPrice.value || 0)
 
-const top12Bids = computed(() => bidsTop.value.slice(0, 5))
-const top12Asks = computed(() => asksTop.value.slice(0, 5))
+const top12Bids = computed(() => bidsTop.value.slice(0, BOOK_TOP_N))
+const top12Asks = computed(() => asksTop.value.slice(0, BOOK_TOP_N))
 
 const maxBidAmount = computed(() => Math.max(1, ...top12Bids.value.map((b) => Number(b[1]) || 0)))
 const maxAskAmount = computed(() => Math.max(1, ...top12Asks.value.map((a) => Number(a[1]) || 0)))
@@ -1278,8 +1280,8 @@ async function fetchSimSnapshot(opts: { fullReload?: boolean } = {}) {
         bids: bidsDesc.slice(0, 20),
       },
     }
-    asksTop.value = asksAsc.slice(0, 5)
-    bidsTop.value = bidsDesc.slice(0, 5)
+    asksTop.value = asksAsc.slice(0, BOOK_TOP_N)
+    bidsTop.value = bidsDesc.slice(0, BOOK_TOP_N)
 
     // kline
     if (opts.fullReload) {
@@ -1373,8 +1375,8 @@ function scheduleFlush() {
           bids: bidsDesc.slice(0, 20),
         },
       }
-      asksTop.value = asksAsc.slice(0, 5)
-      bidsTop.value = bidsDesc.slice(0, 5)
+      asksTop.value = asksAsc.slice(0, BOOK_TOP_N)
+      bidsTop.value = bidsDesc.slice(0, BOOK_TOP_N)
       pendingDepth = null
 
       // Keep header price consistent with real feed.

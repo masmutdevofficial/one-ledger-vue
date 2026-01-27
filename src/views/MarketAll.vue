@@ -160,7 +160,10 @@ function toUISymbol(fromUp: string) {
   return fromUp.replace(/usdt$/i, '').toUpperCase()
 }
 function iconPath(symbol: string) {
-  return `${BASE}img/crypto/${symbol.toLowerCase()}.svg`
+  const symUI = String(symbol || '').toUpperCase()
+  const maybeRemote = syntheticLogoUrlBySymbol.value[symUI]
+  if (isSyntheticSymbol(symUI) && maybeRemote) return maybeRemote
+  return `${BASE}img/crypto/${symUI.toLowerCase()}.svg`
 }
 function onIconError(e: Event) {
   const el = e.target as HTMLImageElement | null
@@ -179,6 +182,7 @@ function formatPrice(nu: number): string {
 
 /** ==================== Synthetic pairs (backend) ==================== */
 const syntheticSymbols = ref<Set<string>>(new Set())
+const syntheticLogoUrlBySymbol = ref<Record<string, string>>({})
 let synthRefreshTimer: ReturnType<typeof setInterval> | null = null
 
 function pairToUiSymbol(pair: string): string {
@@ -204,6 +208,9 @@ async function loadSyntheticPairsAndMergeList() {
 
     syntheticSymbols.value = new Set(syms)
 
+    // Load symbol metadata (logo_url) so we can render uploaded logos.
+    void loadSyntheticSymbolsMeta()
+
     // Remove synthetic rows that were removed/disabled in admin (only those we labeled as SIM).
     cryptoList.value = cryptoList.value.filter((r) => {
       if (String(r.leverage || '').toUpperCase() !== SIM_LEVERAGE_LABEL) return true
@@ -220,6 +227,27 @@ async function loadSyntheticPairsAndMergeList() {
     if (toAdd.length) {
       cryptoList.value = [...cryptoList.value, ...toAdd]
     }
+  } catch {
+    // ignore
+  }
+}
+
+async function loadSyntheticSymbolsMeta() {
+  try {
+    const res = await fetch(`${API_BASE}/sim/market/symbols`, { method: 'GET' })
+    if (!res.ok) return
+    const json = await res.json()
+    const rows = Array.isArray(json?.symbols) ? (json.symbols as any[]) : []
+
+    const map: Record<string, string> = {}
+    for (const r of rows) {
+      const pair = String(r?.symbol_pair || '')
+      const sym = pairToUiSymbol(pair)
+      if (!sym) continue
+      const url = String(r?.logo_url || '')
+      if (url) map[sym.toUpperCase()] = url
+    }
+    syntheticLogoUrlBySymbol.value = map
   } catch {
     // ignore
   }
