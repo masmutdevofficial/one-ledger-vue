@@ -426,9 +426,8 @@
               <div class="flex items-center justify-between space-x-2 w-full">
                 <Icon icon="tabler:info-circle-filled" class="w-4 h-4 text-gray-400" />
                 <button type="button" class="flex items-center font-semibold text-gray-900">
-                  Limit
+                  Market
                 </button>
-                <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
               </div>
             </div>
 
@@ -482,7 +481,6 @@
                   class="h-8 px-3 rounded-md text-gray-900 font-semibold flex items-center"
                 >
                   USDT
-                  <Icon icon="tabler:chevron-down" class="w-4 h-4 ml-1 text-gray-500" />
                 </button>
               </div>
             </div>
