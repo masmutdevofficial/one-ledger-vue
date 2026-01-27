@@ -805,7 +805,8 @@ async function submitWithSide(side: Side) {
   showSideChooser.value = true
   await submitWinLose()
 }
-const availablePairs = ref<string[]>(['BTC/USDT',
+const defaultPairs = [
+  'BTC/USDT',
   'ETH/USDT',
   'BNB/USDT',
   'SOL/USDT',
@@ -883,7 +884,10 @@ const availablePairs = ref<string[]>(['BTC/USDT',
   'SAGA/USDT',
   'ORCA/USDT',
   'SHELL/USDT',
-  'NAKA/USDT'])
+  'NAKA/USDT',
+]
+
+const availablePairs = ref<string[]>([...defaultPairs])
 const selectedPair = ref<string>('BTC/USDT') // UI only
 const hasPairSelected = computed(() => !!selectedPair.value)
 
@@ -982,6 +986,46 @@ const baseAsset = computed(() => {
   const p = (selectedPair.value || 'BTC/USDT').toUpperCase()
   return p.includes('/') ? p.split('/')[0] : p.replace(/USDT$/i, '') || 'BTC'
 })
+
+function normalizePair(pair: string): string {
+  const p = (pair || '').toUpperCase().trim()
+  if (!p) return 'BTC/USDT'
+  if (p.includes('/')) return p
+  if (p.endsWith('USDT')) return `${p.slice(0, -4)}/USDT`
+  return p
+}
+
+// Synthetic pairs come from admin-configured DB list via backend.
+const syntheticPairs = ref<Set<string>>(new Set())
+const normalizedOrderbookPair = computed(() => normalizePair(orderbookPair.value || 'BTC/USDT'))
+const isSyntheticPair = computed(() => syntheticPairs.value.has(normalizedOrderbookPair.value))
+
+type SimSymbolRow = { symbol_pair: string; symbol_key?: string | null; name?: string | null }
+async function loadSimPairsFromBackend() {
+  try {
+    const res = await fetch(`${API_BASE}/sim/market/symbols`, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    })
+    if (!res.ok) return
+    const json = (await res.json()) as { status?: string; symbols?: SimSymbolRow[] }
+    const rows = Array.isArray(json?.symbols) ? json.symbols : []
+
+    const pairs = rows
+      .map((r) => normalizePair(String(r?.symbol_pair || '')))
+      .filter((p) => p.includes('/') && p.endsWith('/USDT'))
+
+    syntheticPairs.value = new Set(pairs)
+
+    const merged = [...pairs, ...defaultPairs]
+    availablePairs.value = Array.from(new Set(merged))
+  } catch {
+    // Fallback: keep UI working even if backend route isn't available yet.
+    const fallback = ['ABC/USDT']
+    syntheticPairs.value = new Set(fallback)
+    availablePairs.value = Array.from(new Set([...fallback, ...defaultPairs]))
+  }
+}
 
 function bestBid(): number {
   const bids = depthData.value?.tick?.bids
@@ -1107,6 +1151,12 @@ function resetChartData() {
 
 // ===== REST history loader (Huobi) untuk isi awal candle =====
 async function loadHistoryForCurrentTF() {
+  if (isSyntheticPair.value) {
+    // Synthetic: initial fill from simulator snapshot.
+    await fetchSimSnapshot({ fullReload: true })
+    return
+  }
+
   try {
     const sym = pairToQuery(orderbookPair.value)
     if (!sym.endsWith('usdt')) return
@@ -1134,6 +1184,7 @@ async function loadHistoryForCurrentTF() {
     const json = await res.json()
     if (!json || !Array.isArray(json.data)) return
 
+    resetChartData()
     for (const k of json.data as any[]) {
       const tsMs = Number(k.id) * 1000
       const open = Number(k.open)
@@ -1151,7 +1202,112 @@ async function loadHistoryForCurrentTF() {
 }
 
 /** =========================
- *  WebSocket (depth + kline)
+ *  Synthetic simulator feed (depth + kline + trades)
+ *  ========================= */
+type SimCandle = { ts: number; open: number; high: number; low: number; close: number; vol: number }
+type SimSnapshot = {
+  symbol: string
+  ts: number
+  masterPrice: number
+  lastPrice: number
+  depth: { bids: [number, number][]; asks: [number, number][] }
+  kline: SimCandle[]
+}
+
+const simInited = new Set<string>()
+let simPollTimer: number | undefined
+let simBusy = false
+
+function stopSimPolling() {
+  if (simPollTimer) clearInterval(simPollTimer)
+  simPollTimer = undefined
+}
+
+async function ensureSimInitialized() {
+  try {
+    const sym = orderbookPair.value || 'ABC/USDT'
+    if (simInited.has(sym)) return
+    simInited.add(sym)
+    const start = basePriceForPair(sym)
+    await fetch(`${API_BASE}/sim/market/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ symbol: sym, start_price: start }),
+    })
+  } catch {
+    // ignore
+  }
+}
+
+async function fetchSimSnapshot(opts: { fullReload?: boolean } = {}) {
+  if (simBusy) return
+  simBusy = true
+  try {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+
+    await ensureSimInitialized()
+
+    const sym = orderbookPair.value || 'ABC/USDT'
+    const plan = tfPlan(tf.value)
+
+    const url = new URL(`${API_BASE}/sim/market/snapshot`)
+    url.searchParams.set('symbol', sym)
+    url.searchParams.set('period', plan.base)
+    url.searchParams.set('limit', String(WANT_BARS))
+    url.searchParams.set('depth', '20')
+
+    const res = await fetch(url.toString(), { headers: { Accept: 'application/json' }, cache: 'no-store' })
+    if (!res.ok) return
+    const snap = (await res.json()) as SimSnapshot
+
+    // header price uses lastPrice so it follows simulator
+    if (Number.isFinite(snap?.lastPrice)) {
+      headerPrice.value = Number(snap.lastPrice)
+      if (!Number.isFinite(headerOpenPrice.value) || headerOpenPrice.value <= 0) {
+        headerOpenPrice.value = headerPrice.value
+      }
+    }
+
+    // depth
+    const curPairKey = pairToQuery(orderbookPair.value)
+    const asksAsc = [...(snap?.depth?.asks || [])].sort((a, b) => a[0] - b[0])
+    const bidsDesc = [...(snap?.depth?.bids || [])].sort((a, b) => b[0] - a[0])
+    depthData.value = {
+      ch: `sim.${curPairKey}.depth`,
+      ts: Number(snap?.ts) || Date.now(),
+      tick: {
+        asks: asksAsc.slice(0, 20),
+        bids: bidsDesc.slice(0, 20),
+      },
+    }
+    asksTop.value = asksAsc.slice(0, 5)
+    bidsTop.value = bidsDesc.slice(0, 5)
+
+    // kline
+    if (opts.fullReload) {
+      resetChartData()
+    }
+    const origin = plan.base
+    for (const c of snap?.kline || []) {
+      const ts = Number(c.ts)
+      const open = Number(c.open)
+      const close = Number(c.close)
+      const high = Number(c.high)
+      const low = Number(c.low)
+      const vol = Number(c.vol)
+      if (!Number.isFinite(ts) || !Number.isFinite(open) || !Number.isFinite(close)) continue
+      upsertCandleBuffer(origin, ts, { open, high, low, close, vol })
+    }
+    scheduleChartFlush()
+  } catch {
+    // ignore
+  } finally {
+    simBusy = false
+  }
+}
+
+/** =========================
+ *  Real market feed (depth + kline) from aggregator WS
  *  ========================= */
 const aggWS = ref<WebSocket | null>(null)
 let reconnectTimer: number | undefined
@@ -1163,6 +1319,20 @@ let pendingDepth: {
   bids: [number, number][]
   sym: string
 } | null = null
+
+function stopAggregatorWS() {
+  if (reconnectTimer) clearTimeout(reconnectTimer)
+  reconnectTimer = undefined
+  if (flushTimer) clearTimeout(flushTimer)
+  flushTimer = undefined
+  if (resubTimer) clearTimeout(resubTimer)
+  resubTimer = undefined
+  pendingDepth = null
+  try {
+    aggWS.value?.close()
+  } catch {}
+  aggWS.value = null
+}
 
 function wsSend(obj: unknown) {
   if (aggWS.value && aggWS.value.readyState === WebSocket.OPEN) {
@@ -1189,7 +1359,50 @@ function doUnsubscribe(symLower: string, periods: OriginPeriod[]) {
 
 let subscribedSym: string | null = null
 const subscribedPeriods = new Set<OriginPeriod>()
+
+function scheduleFlush() {
+  if (flushTimer) return
+  flushTimer = window.setTimeout(() => {
+    const curPairKey = pairToQuery(orderbookPair.value)
+    if (pendingDepth && pendingDepth.sym === curPairKey) {
+      const asksAsc = [...pendingDepth.asks].sort((a, b) => a[0] - b[0])
+      const bidsDesc = [...pendingDepth.bids].sort((a, b) => b[0] - a[0])
+      depthData.value = {
+        ch: `market.${curPairKey}.depth.step0`,
+        ts: pendingDepth.ts,
+        tick: {
+          asks: asksAsc.slice(0, 20),
+          bids: bidsDesc.slice(0, 20),
+        },
+      }
+      asksTop.value = asksAsc.slice(0, 5)
+      bidsTop.value = bidsDesc.slice(0, 5)
+      pendingDepth = null
+
+      // Keep header price consistent with real feed.
+      const px = bestBid() || bestAsk()
+      if (Number.isFinite(px) && px > 0) {
+        headerPrice.value = px
+        if (!Number.isFinite(headerOpenPrice.value) || headerOpenPrice.value <= 0) {
+          headerOpenPrice.value = px
+        }
+      }
+    }
+    flushTimer = undefined
+  }, 80)
+}
+
 function scheduleResubscribe() {
+  if (isSyntheticPair.value) {
+    // Synthetic: fetch snapshot and rebuild chart.
+    if (resubTimer) return
+    resubTimer = window.setTimeout(() => {
+      resubTimer = undefined
+      void fetchSimSnapshot({ fullReload: true })
+    }, 150)
+    return
+  }
+
   if (resubTimer) return
   resubTimer = window.setTimeout(() => {
     resubTimer = undefined
@@ -1225,34 +1438,27 @@ function scheduleResubscribe() {
   }, 150)
 }
 
-function scheduleFlush() {
-  if (flushTimer) return
-  flushTimer = window.setTimeout(() => {
-    const curPairKey = pairToQuery(orderbookPair.value)
-    if (pendingDepth && pendingDepth.sym === curPairKey) {
-      const asksAsc = [...pendingDepth.asks].sort((a, b) => a[0] - b[0])
-      const bidsDesc = [...pendingDepth.bids].sort((a, b) => b[0] - a[0])
-      depthData.value = {
-        ch: `market.${curPairKey}.depth.step0`,
-        ts: pendingDepth.ts,
-        tick: {
-          asks: asksAsc.slice(0, 20),
-          bids: bidsDesc.slice(0, 20),
-        },
-      }
-      asksTop.value = asksAsc.slice(0, 5)
-      bidsTop.value = bidsDesc.slice(0, 5)
-      pendingDepth = null
-    }
-    flushTimer = undefined
-  }, 80)
-}
-
 function connectAggregatorWS() {
-  if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return
+  if (typeof window === 'undefined') return
+
+  // Switch mode based on selected pair.
+  if (isSyntheticPair.value) {
+    stopAggregatorWS()
+    stopSimPolling()
+    void fetchSimSnapshot({ fullReload: true })
+    simPollTimer = window.setInterval(() => {
+      void fetchSimSnapshot({ fullReload: false })
+    }, 1000)
+    return
+  }
+
+  // Real feed
+  stopSimPolling()
+
   try {
     aggWS.value?.close()
   } catch {}
+
   aggWS.value = new WebSocket('wss://ws.hyper-led.com')
 
   aggWS.value.onopen = () => {
@@ -1626,6 +1832,7 @@ watch(
   selectedPair,
   (p) => {
     initHeaderMarket(p || 'BTC/USDT')
+    connectAggregatorWS()
     scheduleResubscribe()
   },
   { immediate: true },
@@ -1983,13 +2190,21 @@ watch(
 
 onMounted(() => {
   fetchTakeProfit()
-  connectAggregatorWS()
+  void loadSimPairsFromBackend().finally(() => {
+    connectAggregatorWS()
+    scheduleResubscribe()
+  })
 
   // 1s ticker: waktu & random-walk animasi
   tickHandle = window.setInterval(() => {
     nowTick.value = Date.now()
     for (const tx of pendingList.value) stepRandomWalk(tx)
-    stepHeaderMarket()
+    // headerPrice:
+    // - synthetic: di-update saat polling snapshot
+    // - real: di-update saat depth flush; fallback ke random walk kalau belum ada data
+    if (!isSyntheticPair.value) {
+      if (!(bestBid() || bestAsk())) stepHeaderMarket()
+    }
   }, 1000)
 
   // load awal
@@ -2018,13 +2233,9 @@ onUnmounted(() => {
   if (tickHandle) clearInterval(tickHandle)
   if (pollHandle) clearInterval(pollHandle)
   if (traderPollHandle) clearInterval(traderPollHandle)
-  if (reconnectTimer) clearTimeout(reconnectTimer)
-  if (flushTimer) clearTimeout(flushTimer)
   if (resubTimer) clearTimeout(resubTimer)
   if (chartFlushTimer) clearTimeout(chartFlushTimer)
-  try {
-    aggWS.value?.close()
-  } catch {}
-  aggWS.value = null
+  if (simPollTimer) clearInterval(simPollTimer)
+  stopAggregatorWS()
 })
 </script>

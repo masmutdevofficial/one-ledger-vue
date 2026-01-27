@@ -138,6 +138,11 @@ type CacheShape = Record<string, CachedItem>
 const LS_KEY = 'cryptoSnapshot:v1'
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 menit; set 0 kalau tak mau TTL
 const WS_BASE = 'wss://ws.hyper-led.com'
+const API_BASE = 'https://tech.oneled.io/api'
+
+// auto-refresh daftar coin simulasi (biar admin tambah coin langsung muncul)
+const SYNTH_REFRESH_MS = 3 * 60 * 1000 // 3 menit
+const SIM_LEVERAGE_LABEL = 'SIM'
 
 // Path icon dari /public (Vite serve di root).
 const BASE = import.meta.env.BASE_URL || '/'
@@ -170,6 +175,76 @@ function formatPrice(nu: number): string {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(nu)
+}
+
+/** ==================== Synthetic pairs (backend) ==================== */
+const syntheticSymbols = ref<Set<string>>(new Set())
+let synthRefreshTimer: ReturnType<typeof setInterval> | null = null
+
+function pairToUiSymbol(pair: string): string {
+  const s = String(pair || '').trim().toUpperCase()
+  if (!s) return ''
+  if (s.endsWith('/USDT')) return s.slice(0, -5)
+  if (s.endsWith('USDT')) return s.slice(0, -4)
+  return ''
+}
+function isSyntheticSymbol(symUI: string): boolean {
+  return syntheticSymbols.value.has(String(symUI || '').toUpperCase())
+}
+
+async function loadSyntheticPairsAndMergeList() {
+  try {
+    const res = await fetch(`${API_BASE}/sim/market/pairs`, { method: 'GET' })
+    if (!res.ok) return
+    const json = await res.json()
+    const pairs = Array.isArray(json?.pairs) ? (json.pairs as unknown[]) : []
+    const syms = pairs
+      .map((p) => pairToUiSymbol(String(p || '')))
+      .filter((s) => s)
+
+    syntheticSymbols.value = new Set(syms)
+
+    // Remove synthetic rows that were removed/disabled in admin (only those we labeled as SIM).
+    cryptoList.value = cryptoList.value.filter((r) => {
+      if (String(r.leverage || '').toUpperCase() !== SIM_LEVERAGE_LABEL) return true
+      return syntheticSymbols.value.has(String(r.symbol || '').toUpperCase())
+    })
+
+    if (!syms.length) return
+    const existing = new Set(cryptoList.value.map((r) => r.symbol.toUpperCase()))
+    const toAdd: Crypto[] = []
+    for (const s of syms) {
+      if (existing.has(s)) continue
+      toAdd.push({ symbol: s, leverage: SIM_LEVERAGE_LABEL, volume: '-', price: '-', change: 0 })
+    }
+    if (toAdd.length) {
+      cryptoList.value = [...cryptoList.value, ...toAdd]
+    }
+  } catch {
+    // ignore
+  }
+}
+
+async function refreshSyntheticPairs() {
+  await loadSyntheticPairsAndMergeList()
+  updateVisibleList()
+  scheduleResubscribe()
+  startSimPolling()
+}
+
+function startSyntheticPairsAutoRefresh() {
+  if (!isBrowser()) return
+  stopSyntheticPairsAutoRefresh()
+  synthRefreshTimer = setInterval(() => {
+    void refreshSyntheticPairs()
+  }, SYNTH_REFRESH_MS)
+}
+
+function stopSyntheticPairsAutoRefresh() {
+  if (synthRefreshTimer) {
+    clearInterval(synthRefreshTimer)
+    synthRefreshTimer = null
+  }
 }
 
 /** ==================== Cache (in-memory + localStorage) ==================== */
@@ -338,7 +413,14 @@ let subscribed = new Set<string>()
 let resubTimer: ReturnType<typeof setTimeout> | null = null
 
 function currentVisibleUpstreamIds(): string[] {
-  return Array.from(new Set(visibleList.value.map((r) => toUpstreamId(r.symbol))))
+  return Array.from(
+    new Set(
+      visibleList.value
+        .map((r) => r.symbol)
+        .filter((s) => !isSyntheticSymbol(s))
+        .map((s) => toUpstreamId(s)),
+    ),
+  )
 }
 function wsSend(obj: unknown) {
   if (ws && ws.readyState === WebSocket.OPEN) {
@@ -522,6 +604,89 @@ function disconnectWS() {
   }
 }
 
+/** ==================== Synthetic polling (sim market) ==================== */
+type SimSnapshot = {
+  ts: number
+  lastPrice: number
+  kline: Array<{ ts: number; open: number; close: number; vol: number }>
+}
+
+let simPollTimer: ReturnType<typeof setInterval> | null = null
+let simInFlight = false
+const SIM_POLL_MS = 1200
+const SIM_VISIBLE_LIMIT = 20
+
+function currentVisibleSyntheticSymbols(): string[] {
+  const syms = visibleList.value
+    .map((r) => r.symbol)
+    .filter((s) => isSyntheticSymbol(s))
+  return Array.from(new Set(syms)).slice(0, SIM_VISIBLE_LIMIT)
+}
+
+async function fetchSimSnapshot(symUI: string) {
+  const symbolPair = `${String(symUI || '').toUpperCase()}/USDT`
+  const url = new URL(`${API_BASE}/sim/market/snapshot`)
+  url.searchParams.set('symbol', symbolPair)
+  url.searchParams.set('period', '1day')
+  url.searchParams.set('limit', '2')
+  url.searchParams.set('depth', '5')
+  const res = await fetch(url.toString(), { method: 'GET' })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return (await res.json()) as SimSnapshot
+}
+
+async function pollSimOnce() {
+  if (simInFlight) return
+  const list = currentVisibleSyntheticSymbols()
+  if (!list.length) return
+  simInFlight = true
+  try {
+    for (const symUI of list) {
+      try {
+        const snap = await fetchSimSnapshot(symUI)
+        const lastPrice = Number(snap?.lastPrice)
+
+        let changePct = 0
+        let vol: number | undefined
+        const lastCandle = Array.isArray(snap?.kline) && snap.kline.length ? snap.kline[snap.kline.length - 1] : null
+        if (lastCandle) {
+          const open = Number((lastCandle as any).open)
+          const close = Number((lastCandle as any).close)
+          vol = Number((lastCandle as any).vol)
+          if (Number.isFinite(open) && open !== 0 && Number.isFinite(close)) {
+            changePct = ((close - open) / open) * 100
+          }
+        }
+
+        if (Number.isFinite(lastPrice)) {
+          enqueueTick({ symbol: symUI.toUpperCase(), last: lastPrice, vol, changePct })
+        }
+      } catch {
+        // ignore single symbol failure
+      }
+    }
+  } finally {
+    simInFlight = false
+  }
+}
+
+function startSimPolling() {
+  if (!isBrowser()) return
+  stopSimPolling()
+  void pollSimOnce()
+  simPollTimer = setInterval(() => {
+    void pollSimOnce()
+  }, SIM_POLL_MS)
+}
+
+function stopSimPolling() {
+  if (simPollTimer) {
+    clearInterval(simPollTimer)
+    simPollTimer = null
+  }
+  simInFlight = false
+}
+
 /** ==================== Lifecycle ==================== */
 function onVisibilityChange() {
   if (document.hidden) saveCacheDebounced()
@@ -533,7 +698,13 @@ onMounted(() => {
   if (Object.keys(cache).length) applyCacheToList(cache)
   else updateVisibleList()
 
-  connectWS()
+  void loadSyntheticPairsAndMergeList().finally(() => {
+    // refresh visible list (and resubscribe real WS without synthetic)
+    updateVisibleList()
+    connectWS()
+    startSimPolling()
+    startSyntheticPairsAutoRefresh()
+  })
 
   if (isBrowser()) {
     visHandler = onVisibilityChange
@@ -547,6 +718,8 @@ onUnmounted(() => {
     visHandler = null
   }
   disconnectWS()
+  stopSimPolling()
+  stopSyntheticPairsAutoRefresh()
   try {
     if (isBrowser()) localStorage.setItem(LS_KEY, JSON.stringify(inMemCache))
   } catch {}

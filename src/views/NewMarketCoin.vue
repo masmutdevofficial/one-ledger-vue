@@ -607,6 +607,11 @@ import { useApiAlertStore } from '@/stores/apiAlert'
 import LightChart from '@/components/trade/LightChart.vue'
 import type { CandlestickData, LineData, AreaData, UTCTimestamp } from 'lightweight-charts'
 
+const API_BASE = 'https://tech.oneled.io/api'
+
+// auto-refresh daftar coin simulasi (biar admin tambah coin langsung muncul)
+const SYNTH_REFRESH_MS = 3 * 60 * 1000 // 3 menit
+
 const showChart = ref(false)
 
 type SeriesKind = 'candlestick' | 'line' | 'area'
@@ -860,7 +865,7 @@ const activeTab = ref<'buy' | 'sell'>('buy')
 const dropdownOpen = ref(false)
 const selectedPair = ref('BTC/USDT')
 
-const tradingPairs = [
+const defaultPairs = [
   'BTC/USDT',
   'ETH/USDT',
   'BNB/USDT',
@@ -942,6 +947,73 @@ const tradingPairs = [
   'NAKA/USDT',
 ]
 
+const tradingPairs = ref<string[]>(defaultPairs.slice())
+const syntheticPairs = ref<Set<string>>(new Set())
+let synthRefreshTimer: ReturnType<typeof setInterval> | null = null
+
+function normalizePair(pair: string): string {
+  const s = String(pair || '').trim().toUpperCase()
+  if (!s) return ''
+  if (s.includes('/')) return s
+  if (s.endsWith('USDT')) return `${s.slice(0, -4)}/USDT`
+  return ''
+}
+
+function isSyntheticPair(pair: string): boolean {
+  return syntheticPairs.value.has(normalizePair(pair))
+}
+
+async function loadSyntheticPairs() {
+  try {
+    const res = await fetch(`${API_BASE}/sim/market/pairs`, { method: 'GET' })
+    if (!res.ok) return
+    const json = await res.json()
+    const pairs = Array.isArray(json?.pairs) ? (json.pairs as unknown[]) : []
+
+    const normalized = pairs
+      .map((p) => normalizePair(String(p || '')))
+      .filter((p) => p && p.endsWith('/USDT'))
+
+    syntheticPairs.value = new Set(normalized)
+
+    const merged = Array.from(new Set([...defaultPairs, ...normalized]))
+    merged.sort((a, b) => a.localeCompare(b))
+    tradingPairs.value = merged
+  } catch {
+    // ignore
+  }
+}
+
+async function refreshSyntheticPairsAndRebind() {
+  const before = isSyntheticPair(selectedPair.value)
+  await loadSyntheticPairs()
+  const after = isSyntheticPair(selectedPair.value)
+
+  // If status changed (real <-> synthetic), reset and reconnect with the right source.
+  if (before !== after) {
+    resetLocalData()
+  }
+
+  void loadHistoryForCurrentTF()
+  connectAggregatorWS()
+  scheduleResubscribe()
+}
+
+function startSyntheticPairsAutoRefresh() {
+  if (!isBrowser()) return
+  stopSyntheticPairsAutoRefresh()
+  synthRefreshTimer = window.setInterval(() => {
+    void refreshSyntheticPairsAndRebind()
+  }, SYNTH_REFRESH_MS)
+}
+
+function stopSyntheticPairsAutoRefresh() {
+  if (synthRefreshTimer) {
+    clearInterval(synthRefreshTimer)
+    synthRefreshTimer = null
+  }
+}
+
 const route = useRoute()
 const router = useRouter()
 
@@ -951,7 +1023,7 @@ function toPair(input?: string): string {
   if (!v.endsWith('USDT')) return ''
   const base = v.slice(0, -4)
   const pair = `${base}/USDT`
-  return tradingPairs.includes(pair) ? pair : ''
+  return tradingPairs.value.includes(pair) ? pair : ''
 }
 function pairToQuery(pair: string): string {
   return pair.replace('/', '').toLowerCase()
@@ -1031,6 +1103,11 @@ function upsertCandleBuffer(
 // ===== REST history loader (Huobi) untuk isi awal candle supaya tidak putus-putus =====
 async function loadHistoryForCurrentTF() {
   try {
+    if (isSyntheticPair(selectedPair.value)) {
+      await simRefreshNow({ includeDaily: true, resetBuffers: false })
+      return
+    }
+
     const sym = pairToQuery(selectedPair.value)
     if (!sym.endsWith('usdt')) return
 
@@ -1135,6 +1212,12 @@ function scheduleResubscribe() {
   if (resubTimer) return
   resubTimer = window.setTimeout(() => {
     resubTimer = null
+
+    if (isSyntheticPair(selectedPair.value)) {
+      startSimPolling()
+      return
+    }
+
     const ws = aggWS.value
     if (!ws || ws.readyState !== WebSocket.OPEN) return
 
@@ -1258,6 +1341,14 @@ function scheduleChartFlush() {
 
 /* ===== WS Connect & messages ===== */
 function connectAggregatorWS() {
+  if (isSyntheticPair(selectedPair.value)) {
+    stopAggregatorWS()
+    startSimPolling()
+    return
+  }
+
+  stopSimPolling()
+
   try {
     aggWS.value?.close()
   } catch {}
@@ -1269,6 +1360,7 @@ function connectAggregatorWS() {
     scheduleResubscribe()
   }
   aggWS.value.onclose = () => {
+    if (isSyntheticPair(selectedPair.value)) return
     if (reconnectTimer) clearTimeout(reconnectTimer)
     reconnectTimer = window.setTimeout(connectAggregatorWS, 2000)
   }
@@ -1350,6 +1442,150 @@ function connectAggregatorWS() {
       /* ignore */
     }
   }
+}
+
+function stopAggregatorWS() {
+  try {
+    aggWS.value?.close()
+  } catch {}
+  aggWS.value = null
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+  subscribedSym = null
+  subscribedPeriods.clear()
+}
+
+// ===== Synthetic market polling =====
+type SimSnapshot = {
+  symbol: string
+  ts: number
+  lastPrice: number
+  depth: { bids: [number, number][]; asks: [number, number][] }
+  kline: Array<{ ts: number; open: number; high: number; low: number; close: number; vol: number }>
+}
+
+let simPollTimer: ReturnType<typeof setInterval> | null = null
+let simInFlight = false
+
+function tfToSimPeriod(x: TF): OriginPeriod {
+  if (x === '5m') return '5min'
+  if (x === '15m') return '15min'
+  if (x === '1h') return '60min'
+  return '1day'
+}
+
+async function fetchSimSnapshot(symbolPair: string, period: OriginPeriod, limit: number, depth: number) {
+  const url = new URL(`${API_BASE}/sim/market/snapshot`)
+  url.searchParams.set('symbol', symbolPair)
+  url.searchParams.set('period', period)
+  url.searchParams.set('limit', String(limit))
+  url.searchParams.set('depth', String(depth))
+  const res = await fetch(url.toString(), { method: 'GET' })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return (await res.json()) as SimSnapshot
+}
+
+function applySimDepth(pairKeyLower: string, ts: number, depth: { bids: [number, number][]; asks: [number, number][] }) {
+  const asksAsc = [...(depth.asks || [])].sort((a, b) => a[0] - b[0])
+  const bidsDesc = [...(depth.bids || [])].sort((a, b) => b[0] - a[0])
+
+  depthData.value = {
+    ch: `sim.${pairKeyLower}.depth.step0`,
+    ts,
+    tick: {
+      asks: asksAsc.slice(0, DEPTH_TOP_N),
+      bids: bidsDesc.slice(0, DEPTH_TOP_N),
+    },
+  }
+  asksTop.value = depthData.value.tick.asks.slice(0, 12)
+  bidsTop.value = depthData.value.tick.bids.slice(0, 12)
+
+  setObCache(pairKeyLower, {
+    depth: {
+      asks: depthData.value.tick.asks,
+      bids: depthData.value.tick.bids,
+      ts,
+    },
+  })
+}
+
+function applySimKlines(period: OriginPeriod, items: SimSnapshot['kline']) {
+  if (!Array.isArray(items) || !items.length) return
+  for (const c of items) {
+    const tsMs = Number(c.ts)
+    const open = Number(c.open)
+    const close = Number(c.close)
+    const high = Number(c.high)
+    const low = Number(c.low)
+    const vol = Number(c.vol)
+    if (!Number.isFinite(tsMs) || !Number.isFinite(open) || !Number.isFinite(close)) continue
+    upsertCandleBuffer(period, tsMs, {
+      open,
+      high: Number.isFinite(high) ? high : Math.max(open, close),
+      low: Number.isFinite(low) ? low : Math.min(open, close),
+      close,
+      vol: Number.isFinite(vol) ? vol : 0,
+    })
+  }
+}
+
+async function simRefreshNow(opts: { includeDaily?: boolean; resetBuffers?: boolean } = {}) {
+  if (!isSyntheticPair(selectedPair.value)) return
+  if (simInFlight) return
+  simInFlight = true
+
+  try {
+    if (opts.resetBuffers) resetLocalData()
+
+    const pair = normalizePair(selectedPair.value)
+    const pairKeyLower = pairToQuery(pair)
+    const basePeriod = tfToSimPeriod(tf.value)
+
+    const snapBase = await fetchSimSnapshot(pair, basePeriod, WANT_BARS, DEPTH_TOP_N)
+    applySimDepth(pairKeyLower, Number(snapBase.ts) || Date.now(), snapBase.depth)
+    applySimKlines(basePeriod, snapBase.kline)
+
+    if (opts.includeDaily && basePeriod !== '1day') {
+      const snap1d = await fetchSimSnapshot(pair, '1day', WANT_BARS, 5)
+      applySimKlines('1day', snap1d.kline)
+      const last = Array.isArray(snap1d.kline) && snap1d.kline.length ? snap1d.kline[snap1d.kline.length - 1] : null
+      if (last && Number(last.open)) {
+        const open = Number(last.open)
+        const close = Number(last.close)
+        const ts = Number(last.ts)
+        if (Number.isFinite(open) && Number.isFinite(close)) {
+          klineDailyOHLC.value = { open, close, ts }
+          setObCache(pairKeyLower, { k1d: { open, close, ts } })
+        }
+      }
+    }
+
+    scheduleChartFlush()
+  } catch {
+    // ignore
+  } finally {
+    simInFlight = false
+  }
+}
+
+function startSimPolling() {
+  if (!isBrowser()) return
+  if (!isSyntheticPair(selectedPair.value)) return
+  stopSimPolling()
+  void simRefreshNow({ includeDaily: true, resetBuffers: false })
+  simPollTimer = window.setInterval(() => {
+    void simRefreshNow({ includeDaily: true, resetBuffers: false })
+  }, 1000)
+}
+
+function stopSimPolling() {
+  if (simPollTimer) {
+    clearInterval(simPollTimer)
+    simPollTimer = null
+  }
+  simInFlight = false
 }
 
 /* ===== Derivatives for template ===== */
@@ -1720,15 +1956,20 @@ onMounted(() => {
     onUnmounted(() => window.removeEventListener('beforeunload', flush))
   }
 
-  const pairFromUrl = toPair(rawSymbolFromRoute())
-  selectedPair.value = pairFromUrl || 'BTC/USDT'
+  void loadSyntheticPairs().finally(() => {
+    const pairFromUrl = toPair(rawSymbolFromRoute())
+    selectedPair.value = pairFromUrl || 'BTC/USDT'
 
-  hydrateFromCache(selectedPair.value)
-  // isi awal history candle dari REST Huobi supaya chart tidak putus-putus saat load pertama
-  loadHistoryForCurrentTF()
-  connectAggregatorWS()
-  scheduleResubscribe()
-  getAvailable()
+    hydrateFromCache(selectedPair.value)
+    // isi awal history candle dari REST Huobi supaya chart tidak putus-putus saat load pertama
+    void loadHistoryForCurrentTF()
+
+    connectAggregatorWS()
+    scheduleResubscribe()
+    getAvailable()
+
+    startSyntheticPairsAutoRefresh()
+  })
 })
 
 watch([() => route.query.symbol, () => route.query.pairSymbol], ([sym, pairSym]) => {
@@ -1738,12 +1979,14 @@ watch([() => route.query.symbol, () => route.query.pairSymbol], ([sym, pairSym])
     dropdownOpen.value = false
     router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } })
     resetLocalData()
+    void loadHistoryForCurrentTF()
+    connectAggregatorWS()
     scheduleResubscribe()
     getAvailable()
   }
 })
 function selectPair(pair: string) {
-  if (!tradingPairs.includes(pair)) return
+  if (!tradingPairs.value.includes(pair)) return
   if (pair === selectedPair.value) {
     dropdownOpen.value = false
     return
@@ -1752,30 +1995,32 @@ function selectPair(pair: string) {
   dropdownOpen.value = false
   router.replace({ query: { ...route.query, symbol: pairToQuery(pair) } })
   resetLocalData()
+  void loadHistoryForCurrentTF()
+  connectAggregatorWS()
   scheduleResubscribe()
   getAvailable()
 }
 watch(tf, () => {
+  if (isSyntheticPair(selectedPair.value)) {
+    void simRefreshNow({ includeDaily: true, resetBuffers: true })
+    return
+  }
+
   scheduleResubscribe()
   scheduleChartFlush()
   // ketika user ganti TF, ambil ulang history untuk TF baru
-  loadHistoryForCurrentTF()
+  void loadHistoryForCurrentTF()
 })
 
 onUnmounted(() => {
-  try {
-    aggWS.value?.close()
-  } catch {}
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer)
-    reconnectTimer = null
-  }
+  stopSimPolling()
+  stopAggregatorWS()
+  stopSyntheticPairsAutoRefresh()
 })
 
 /* ===== Order submit (tetap) ===== */
 const submitting = ref(false)
 const submitError = ref<string>('')
-const API_BASE = 'https://tech.oneled.io/api'
 function bestBid(): number {
   const bids = depthData.value?.tick?.bids
   return Array.isArray(bids) && bids.length ? Number(bids[0][0]) : 0
