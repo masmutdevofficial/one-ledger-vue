@@ -194,7 +194,7 @@
       <p class="text-[10px] text-gray-400">Bid</p>
       <p class="text-[10px] text-gray-400">Ask</p>
       <div class="w-[40px] flex justify-center items-center bg-gray-100 rounded-sm text-gray-400">
-        <p class="text-[10px] ml-1">12</p>
+        <p class="text-[10px] ml-1">{{ BOOK_TOP_N }}</p>
         <Icon icon="tabler:chevron-down" class="text-gray-700 w-3 h-3" />
       </div>
     </div>
@@ -797,6 +797,7 @@ const OB_LS_KEY = 'obCache:v1'
 const DEPTH_CACHE_TTL = 10_000
 const KLINE_CACHE_TTL = 5 * 60_000
 const DEPTH_TOP_N = 20
+const BOOK_TOP_N = 8
 const WANT_BARS = 300
 
 let obCache: ObCache = {}
@@ -845,8 +846,8 @@ function hydrateFromCache(pair: string) {
         asks: [...(entry.depth.asks || [])].slice(0, DEPTH_TOP_N).sort((a, b) => a[0] - b[0]),
       },
     }
-    asksTop.value = depthData.value.tick.asks.slice(0, 12)
-    bidsTop.value = depthData.value.tick.bids.slice(0, 12)
+    asksTop.value = depthData.value.tick.asks.slice(0, BOOK_TOP_N)
+    bidsTop.value = depthData.value.tick.bids.slice(0, BOOK_TOP_N)
   }
   if (entry.k1d && now - entry.k1d.ts <= KLINE_CACHE_TTL) {
     klineDailyOHLC.value = { open: entry.k1d.open, close: entry.k1d.close, ts: entry.k1d.ts }
@@ -1273,8 +1274,8 @@ function scheduleFlush() {
           bids: bidsDesc.slice(0, DEPTH_TOP_N),
         },
       }
-      asksTop.value = asksAsc.slice(0, 12)
-      bidsTop.value = bidsDesc.slice(0, 12)
+      asksTop.value = asksAsc.slice(0, BOOK_TOP_N)
+      bidsTop.value = bidsDesc.slice(0, BOOK_TOP_N)
 
       setObCache(curPairKey, {
         depth: {
@@ -1499,8 +1500,8 @@ function applySimDepth(pairKeyLower: string, ts: number, depth: { bids: [number,
       bids: bidsDesc.slice(0, DEPTH_TOP_N),
     },
   }
-  asksTop.value = depthData.value.tick.asks.slice(0, 12)
-  bidsTop.value = depthData.value.tick.bids.slice(0, 12)
+  asksTop.value = depthData.value.tick.asks.slice(0, BOOK_TOP_N)
+  bidsTop.value = depthData.value.tick.bids.slice(0, BOOK_TOP_N)
 
   setObCache(pairKeyLower, {
     depth: {
