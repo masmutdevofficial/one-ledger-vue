@@ -980,7 +980,7 @@ const depthData = ref<DepthData | null>(null)
 const asksTop = ref<[number, number][]>([])
 const bidsTop = ref<[number, number][]>([])
 
-const BOOK_TOP_N = 8
+const BOOK_TOP_N = 5
 
 const baseAsset = computed(() => {
   const p = (selectedPair.value || 'BTC/USDT').toUpperCase()
