@@ -1038,8 +1038,9 @@ function bestAsk(): number {
 
 const marketPrice = computed(() => bestBid() || headerPrice.value || 0)
 
-const top12Bids = computed(() => bidsTop.value.slice(0, BOOK_TOP_N))
-const top12Asks = computed(() => asksTop.value.slice(0, BOOK_TOP_N))
+// Always render exactly BOOK_TOP_N rows from the latest depth.
+const top12Bids = computed(() => (depthData.value?.tick?.bids ?? []).slice(0, BOOK_TOP_N))
+const top12Asks = computed(() => (depthData.value?.tick?.asks ?? []).slice(0, BOOK_TOP_N))
 
 const maxBidAmount = computed(() => Math.max(1, ...top12Bids.value.map((b) => Number(b[1]) || 0)))
 const maxAskAmount = computed(() => Math.max(1, ...top12Asks.value.map((a) => Number(a[1]) || 0)))
