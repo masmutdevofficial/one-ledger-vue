@@ -1229,12 +1229,7 @@ async function ensureSimInitialized() {
     const sym = orderbookPair.value || 'ABC/USDT'
     if (simInited.has(sym)) return
     simInited.add(sym)
-    const start = basePriceForPair(sym)
-    await fetch(`${API_BASE}/sim/market/reset`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ symbol: sym, start_price: start }),
-    })
+    // No-op: backend snapshot will init state from DB + cache.
   } catch {
     // ignore
   }
