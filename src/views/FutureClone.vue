@@ -786,8 +786,10 @@ const asksTop = ref<[number, number][]>([])
 const bidsTop = ref<[number, number][]>([])
 const klineDailyOHLC = ref<{ open: number; close: number; ts: number } | null>(null)
 
-const top12Asks = computed(() => asksTop.value)
-const top12Bids = computed(() => bidsTop.value)
+const BOOK_TOP_N = 8
+
+const top12Asks = computed(() => asksTop.value.slice(0, BOOK_TOP_N))
+const top12Bids = computed(() => bidsTop.value.slice(0, BOOK_TOP_N))
 const maxAskAmount = computed(() =>
   top12Asks.value.length ? Math.max(...top12Asks.value.map((a) => a[1])) : 1,
 )
@@ -876,8 +878,8 @@ function scheduleFlush() {
           bids: bidsDesc.slice(0, 20),
         },
       }
-      asksTop.value = asksAsc.slice(0, 12)
-      bidsTop.value = bidsDesc.slice(0, 12)
+      asksTop.value = asksAsc.slice(0, BOOK_TOP_N)
+      bidsTop.value = bidsDesc.slice(0, BOOK_TOP_N)
       pendingDepth = null
     }
     flushTimer = null
