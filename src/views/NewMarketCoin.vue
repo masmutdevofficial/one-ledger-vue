@@ -673,6 +673,7 @@ const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
 // Synthetic logos (uploaded via admin)
 const syntheticLogoUrlByBase = ref<Record<string, string>>({})
+const syntheticSymbolsLower = ref<Set<string>>(new Set())
 async function loadSyntheticLogoMap() {
   try {
     const res = await fetch(`${API_BASE}/sim/market/symbols`, { method: 'GET' })
@@ -680,16 +681,24 @@ async function loadSyntheticLogoMap() {
     const json = await res.json()
     const rows = Array.isArray(json?.symbols) ? (json.symbols as any[]) : []
     const map: Record<string, string> = {}
+    const synth = new Set<string>()
     for (const r of rows) {
       const pair = String(r?.symbol_pair || '').toUpperCase()
       const base = pair.split('/')[0] || ''
       const url = String(r?.logo_url || '')
       if (base && url) map[base] = url
+      if (pair) synth.add(pair.replace('/', '').toLowerCase())
     }
     syntheticLogoUrlByBase.value = map
+    syntheticSymbolsLower.value = synth
   } catch {
     // ignore
   }
+}
+
+function isSyntheticSymbol(sym: string): boolean {
+  const s = String(sym || '').toLowerCase().replace('/', '')
+  return syntheticSymbolsLower.value.has(s)
 }
 
 // ===== Assets (loader) =====
@@ -1770,7 +1779,10 @@ function onAmountBlur() {
 }
 
 function assetSymbolsLower(): string[] {
-  return Array.from(new Set(assets.value.map((a) => a.symbol.toLowerCase())))
+  // Subscribe WS only for real symbols; synthetic gets its own polling ticker.
+  return Array.from(new Set(assets.value.map((a) => a.symbol.toLowerCase()))).filter(
+    (s) => !isSyntheticSymbol(s),
+  )
 }
 
 function assetsWsSend(obj: unknown) {
@@ -1936,6 +1948,51 @@ function connectAssetsWs() {
   }
 }
 
+/** ===== Synthetic ticker polling (assets needs lastPrice for PnL) ===== */
+let synthAssetsTimer: ReturnType<typeof setInterval> | null = null
+const SYNTH_ASSETS_TICK_MS = 2000
+
+function stopSyntheticAssetsTicker() {
+  if (synthAssetsTimer) {
+    clearInterval(synthAssetsTimer)
+    synthAssetsTimer = null
+  }
+}
+
+async function pollSyntheticAssetsTickersOnce() {
+  const synthAssets = assets.value.filter((a) => isSyntheticSymbol(a.symbol))
+  if (!synthAssets.length) return
+
+  try {
+    const reqs = synthAssets.map(async (a) => {
+      const symLower = a.symbol.toLowerCase()
+      const res = await fetch(`${API_BASE}/sim/market/ticker?symbol=${encodeURIComponent(symLower)}`)
+      if (!res.ok) return
+      const j = await res.json().catch(() => null)
+      const last = Number(j?.lastPrice)
+      if (!Number.isFinite(last) || last <= 0) return
+
+      a.lastPrice = last
+      a.valueUsd = a.qty * a.lastPrice
+      a.uPnlAbs = (a.lastPrice - a.avgCost) * a.qty
+      a.uPnlPct = a.avgCost > 0 ? ((a.lastPrice - a.avgCost) / a.avgCost) * 100 : 0
+    })
+
+    await Promise.all(reqs)
+  } catch {
+    /* ignore */
+  }
+}
+
+function startSyntheticAssetsTicker() {
+  if (!isBrowser()) return
+  stopSyntheticAssetsTicker()
+  synthAssetsTimer = setInterval(() => {
+    void pollSyntheticAssetsTickersOnce()
+  }, SYNTH_ASSETS_TICK_MS)
+  void pollSyntheticAssetsTickersOnce()
+}
+
 // panggil saat mounted
 onMounted(async () => {
   await loadSyntheticLogoMap()
@@ -1943,6 +2000,7 @@ onMounted(async () => {
   rebuildAssetMap()
   connectAssetsWs()
   startAssetsPolling()
+  startSyntheticAssetsTicker()
 })
 watch(
   assets,
@@ -1954,6 +2012,7 @@ watch(
 )
 onUnmounted(() => {
   stopAssetsPolling()
+  stopSyntheticAssetsTicker()
   if (assetsWs) {
     try {
       assetsWs.close()
