@@ -709,7 +709,11 @@ function persistSyntheticEverToStorage() {
 function isDeletedSyntheticSymbol(sym: string): boolean {
   const key = symbolToLowerKey(sym)
   if (!key) return false
-  return syntheticSymbolsEverLower.value.has(key) && !syntheticSymbolsLower.value.has(key)
+  // Use /sim/market/pairs as source of truth for whether a synthetic market is still active.
+  if (!syntheticPairsLoaded.value) return false
+  const pair = normalizePair(String(sym || ''))
+  const active = pair ? syntheticPairs.value.has(pair) : false
+  return syntheticSymbolsEverLower.value.has(key) && !active
 }
 
 function purgeDeletedSyntheticAssets() {
@@ -726,7 +730,8 @@ function startSyntheticSymbolsWatcher() {
   if (!isBrowser()) return
   stopSyntheticSymbolsWatcher()
   synthSymbolsTimer = window.setInterval(async () => {
-    await loadSyntheticLogoMap()
+    // If admin deletes a synthetic pair, it disappears from /sim/market/pairs.
+    await loadSyntheticPairs()
     purgeDeletedSyntheticAssets()
   }, SYNTH_CHECK_MS)
 }
@@ -1050,6 +1055,7 @@ const defaultPairs = [
 
 const tradingPairs = ref<string[]>(defaultPairs.slice())
 const syntheticPairs = ref<Set<string>>(new Set())
+const syntheticPairsLoaded = ref(false)
 let synthRefreshTimer: ReturnType<typeof setInterval> | null = null
 
 function normalizePair(pair: string): string {
@@ -1076,6 +1082,7 @@ async function loadSyntheticPairs() {
       .filter((p) => p && p.endsWith('/USDT'))
 
     syntheticPairs.value = new Set(normalized)
+    syntheticPairsLoaded.value = true
 
     const merged = Array.from(new Set([...defaultPairs, ...normalized]))
     merged.sort((a, b) => a.localeCompare(b))
@@ -1104,13 +1111,13 @@ async function refreshSyntheticPairsAndRebind() {
   const after = isSyntheticPair(selectedPair.value)
 
   // If status changed (real <-> synthetic) or pair changed, reset and reconnect with the right source.
-  if (before !== after || prevSelected !== selectedPair.value) {
+  const needsRebind = before !== after || prevSelected !== selectedPair.value
+  if (needsRebind) {
     resetLocalData()
+    void loadHistoryForCurrentTF()
+    connectAggregatorWS()
+    scheduleResubscribe()
   }
-
-  void loadHistoryForCurrentTF()
-  connectAggregatorWS()
-  scheduleResubscribe()
 }
 
 function startSyntheticPairsAutoRefresh() {

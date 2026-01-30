@@ -254,6 +254,39 @@ const syntheticLogoUrlByBase = ref<Record<string, string>>({})
 const syntheticSymbolsLower = ref<Set<string>>(new Set())
 const syntheticSymbolsEverLower = ref<Set<string>>(new Set())
 
+// Active synthetic market pairs (source of truth for deletion)
+const syntheticPairsLower = ref<Set<string>>(new Set())
+const syntheticPairsLoaded = ref(false)
+
+function pairToLowerKey(pair: unknown): string {
+  const s = String(pair || '').trim().toUpperCase()
+  if (!s) return ''
+  const normalized = s.includes('/') ? s : s.endsWith('USDT') ? `${s.slice(0, -4)}/USDT` : s
+  if (!normalized.endsWith('/USDT')) return ''
+  return normalized.replace('/', '').toLowerCase()
+}
+
+async function loadSyntheticPairs() {
+  try {
+    const res = await fetch(`${API_BASE}/sim/market/pairs`, { method: 'GET' })
+    if (!res.ok) return
+    const json = await res.json()
+    const pairs = Array.isArray(json?.pairs) ? (json.pairs as unknown[]) : []
+
+    const keys = pairs.map(pairToLowerKey).filter(Boolean)
+    syntheticPairsLower.value = new Set(keys)
+    syntheticPairsLoaded.value = true
+
+    // Ensure ever-seen includes any synthetic that is currently active.
+    if (keys.length) {
+      syntheticSymbolsEverLower.value = new Set([...syntheticSymbolsEverLower.value, ...keys])
+      persistSyntheticEverToStorage()
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function symbolToLowerKey(sym: string): string {
   return String(sym || '').toLowerCase().replace('/', '')
 }
@@ -284,7 +317,8 @@ function persistSyntheticEverToStorage() {
 function isDeletedSyntheticSymbol(sym: string): boolean {
   const key = symbolToLowerKey(sym)
   if (!key) return false
-  return syntheticSymbolsEverLower.value.has(key) && !syntheticSymbolsLower.value.has(key)
+  if (!syntheticPairsLoaded.value) return false
+  return syntheticSymbolsEverLower.value.has(key) && !syntheticPairsLower.value.has(key)
 }
 
 function purgeDeletedSyntheticAssets() {
@@ -302,7 +336,7 @@ function startSyntheticSymbolsWatcher() {
   if (!isBrowser()) return
   stopSyntheticSymbolsWatcher()
   synthSymbolsTimer = window.setInterval(async () => {
-    await loadSyntheticLogoMap()
+    await loadSyntheticPairs()
     purgeDeletedSyntheticAssets()
   }, SYNTH_CHECK_MS)
 }
@@ -966,6 +1000,7 @@ onMounted(() => {
   ; (async () => {
     await loadSaldo()
     await loadSyntheticLogoMap()
+    await loadSyntheticPairs()
     await loadAssets()
     connectAggregatorWs() // connect setelah assets terisi
     startSyntheticTicker()
