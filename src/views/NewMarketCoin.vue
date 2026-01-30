@@ -611,8 +611,6 @@ const API_BASE = 'https://tech.oneled.io/api'
 
 // auto-refresh daftar coin simulasi (biar admin tambah coin langsung muncul)
 const SYNTH_REFRESH_MS = 3 * 60 * 1000 // 3 menit
-// Re-check synthetic symbols periodically so deleted ones disappear from assets.
-const SYNTH_CHECK_MS = 10_000
 
 const showChart = ref(false)
 
@@ -674,13 +672,25 @@ const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
 // Synthetic logos (uploaded via admin)
-const SYNTH_EVER_LS_KEY = 'syntheticSymbolsEver:v1'
 const syntheticLogoUrlByBase = ref<Record<string, string>>({})
 const syntheticSymbolsLower = ref<Set<string>>(new Set())
+
+// Hide deleted synthetic coins from user assets.
+const SYNTH_CHECK_MS = 10_000
+const SYNTH_EVER_LS_KEY = 'syntheticSymbolsEver:v1'
 const syntheticSymbolsEverLower = ref<Set<string>>(new Set())
+const syntheticPairsLower = ref<Set<string>>(new Set())
+const syntheticPairsLoaded = ref(false)
 
 function symbolToLowerKey(sym: string): string {
   return String(sym || '').toLowerCase().replace('/', '')
+}
+
+function pairToLowerKey(pair: unknown): string {
+  const normalized = normalizePair(String(pair || ''))
+  if (!normalized) return ''
+  if (!normalized.endsWith('/USDT')) return ''
+  return normalized.replace('/', '').toLowerCase()
 }
 
 function hydrateSyntheticEverFromStorage() {
@@ -709,11 +719,8 @@ function persistSyntheticEverToStorage() {
 function isDeletedSyntheticSymbol(sym: string): boolean {
   const key = symbolToLowerKey(sym)
   if (!key) return false
-  // Use /sim/market/pairs as source of truth for whether a synthetic market is still active.
   if (!syntheticPairsLoaded.value) return false
-  const pair = normalizePair(String(sym || ''))
-  const active = pair ? syntheticPairs.value.has(pair) : false
-  return syntheticSymbolsEverLower.value.has(key) && !active
+  return syntheticSymbolsEverLower.value.has(key) && !syntheticPairsLower.value.has(key)
 }
 
 function purgeDeletedSyntheticAssets() {
@@ -730,11 +737,11 @@ function startSyntheticSymbolsWatcher() {
   if (!isBrowser()) return
   stopSyntheticSymbolsWatcher()
   synthSymbolsTimer = window.setInterval(async () => {
-    // If admin deletes a synthetic pair, it disappears from /sim/market/pairs.
     await loadSyntheticPairs()
     purgeDeletedSyntheticAssets()
   }, SYNTH_CHECK_MS)
 }
+
 function stopSyntheticSymbolsWatcher() {
   if (synthSymbolsTimer) {
     clearInterval(synthSymbolsTimer)
@@ -761,8 +768,8 @@ async function loadSyntheticLogoMap() {
     syntheticLogoUrlByBase.value = map
     syntheticSymbolsLower.value = synth
 
-    // Track synthetic symbols ever seen so we can hide positions for synthetic coins
-    // that were deleted in backend.
+    // Keep track of synthetic symbols ever seen. If backend deletes a synthetic symbol,
+    // positions that reference it can be hidden from assets list.
     syntheticSymbolsEverLower.value = new Set([...syntheticSymbolsEverLower.value, ...synth])
     persistSyntheticEverToStorage()
   } catch {
@@ -795,7 +802,7 @@ async function loadAssets(opts: { silent?: boolean } = {}) {
 
     const mapped: AssetItem[] = rows
       .filter((r) => Number(r.qty) > 0)
-      .filter((r) => !isDeletedSyntheticSymbol(String(r.symbol || '')))
+      .filter((r) => !isDeletedSyntheticSymbol(String(r.symbol)))
       .map((r) => {
         const sym = String(r.symbol).toUpperCase()
         const { base, quote } = splitSymbol(sym)
@@ -1055,7 +1062,6 @@ const defaultPairs = [
 
 const tradingPairs = ref<string[]>(defaultPairs.slice())
 const syntheticPairs = ref<Set<string>>(new Set())
-const syntheticPairsLoaded = ref(false)
 let synthRefreshTimer: ReturnType<typeof setInterval> | null = null
 
 function normalizePair(pair: string): string {
@@ -1082,7 +1088,16 @@ async function loadSyntheticPairs() {
       .filter((p) => p && p.endsWith('/USDT'))
 
     syntheticPairs.value = new Set(normalized)
+
+    const keys = normalized.map(pairToLowerKey).filter(Boolean)
+    syntheticPairsLower.value = new Set(keys)
     syntheticPairsLoaded.value = true
+
+    // Ensure ever-seen includes any synthetic that is currently active.
+    if (keys.length) {
+      syntheticSymbolsEverLower.value = new Set([...syntheticSymbolsEverLower.value, ...keys])
+      persistSyntheticEverToStorage()
+    }
 
     const merged = Array.from(new Set([...defaultPairs, ...normalized]))
     merged.sort((a, b) => a.localeCompare(b))
@@ -1093,31 +1108,18 @@ async function loadSyntheticPairs() {
 }
 
 async function refreshSyntheticPairsAndRebind() {
-  const prevSelected = selectedPair.value
-  const before = isSyntheticPair(prevSelected)
+  const before = isSyntheticPair(selectedPair.value)
   await loadSyntheticPairs()
-
-  // If the currently selected pair was deleted in backend (synthetic removed),
-  // make sure it disappears from UI by switching to a valid fallback.
-  if (!tradingPairs.value.includes(prevSelected)) {
-    const fallback = tradingPairs.value.includes('BTC/USDT')
-      ? 'BTC/USDT'
-      : tradingPairs.value[0] || 'BTC/USDT'
-    selectedPair.value = fallback
-    dropdownOpen.value = false
-    router.replace({ query: { ...route.query, symbol: pairToQuery(fallback) } })
-  }
-
   const after = isSyntheticPair(selectedPair.value)
 
-  // If status changed (real <-> synthetic) or pair changed, reset and reconnect with the right source.
-  const needsRebind = before !== after || prevSelected !== selectedPair.value
-  if (needsRebind) {
+  // If status changed (real <-> synthetic), reset and reconnect with the right source.
+  if (before !== after) {
     resetLocalData()
-    void loadHistoryForCurrentTF()
-    connectAggregatorWS()
-    scheduleResubscribe()
   }
+
+  void loadHistoryForCurrentTF()
+  connectAggregatorWS()
+  scheduleResubscribe()
 }
 
 function startSyntheticPairsAutoRefresh() {
@@ -2086,7 +2088,9 @@ function startSyntheticAssetsTicker() {
 // panggil saat mounted
 onMounted(async () => {
   await loadSyntheticLogoMap()
+  await loadSyntheticPairs()
   await loadAssets()
+  purgeDeletedSyntheticAssets()
   rebuildAssetMap()
   connectAssetsWs()
   startAssetsPolling()
@@ -2190,7 +2194,6 @@ onUnmounted(() => {
   stopSimPolling()
   stopAggregatorWS()
   stopSyntheticPairsAutoRefresh()
-  stopSyntheticSymbolsWatcher()
 })
 
 /* ===== Order submit (tetap) ===== */
