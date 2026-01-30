@@ -672,9 +672,46 @@ const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
 // Synthetic logos (uploaded via admin)
+const SYNTH_EVER_LS_KEY = 'syntheticSymbolsEver:v1'
 const syntheticLogoUrlByBase = ref<Record<string, string>>({})
 const syntheticSymbolsLower = ref<Set<string>>(new Set())
+const syntheticSymbolsEverLower = ref<Set<string>>(new Set())
+
+function symbolToLowerKey(sym: string): string {
+  return String(sym || '').toLowerCase().replace('/', '')
+}
+
+function hydrateSyntheticEverFromStorage() {
+  if (!isBrowser()) return
+  try {
+    const raw = JSON.parse(localStorage.getItem(SYNTH_EVER_LS_KEY) || '[]')
+    if (Array.isArray(raw)) {
+      syntheticSymbolsEverLower.value = new Set(
+        raw.map((x) => symbolToLowerKey(String(x || ''))).filter(Boolean),
+      )
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function persistSyntheticEverToStorage() {
+  if (!isBrowser()) return
+  try {
+    localStorage.setItem(SYNTH_EVER_LS_KEY, JSON.stringify(Array.from(syntheticSymbolsEverLower.value)))
+  } catch {
+    // ignore
+  }
+}
+
+function isDeletedSyntheticSymbol(sym: string): boolean {
+  const key = symbolToLowerKey(sym)
+  if (!key) return false
+  return syntheticSymbolsEverLower.value.has(key) && !syntheticSymbolsLower.value.has(key)
+}
+
 async function loadSyntheticLogoMap() {
+  hydrateSyntheticEverFromStorage()
   try {
     const res = await fetch(`${API_BASE}/sim/market/symbols`, { method: 'GET' })
     if (!res.ok) return
@@ -691,6 +728,11 @@ async function loadSyntheticLogoMap() {
     }
     syntheticLogoUrlByBase.value = map
     syntheticSymbolsLower.value = synth
+
+    // Track synthetic symbols ever seen so we can hide positions for synthetic coins
+    // that were deleted in backend.
+    syntheticSymbolsEverLower.value = new Set([...syntheticSymbolsEverLower.value, ...synth])
+    persistSyntheticEverToStorage()
   } catch {
     // ignore
   }
@@ -721,6 +763,7 @@ async function loadAssets(opts: { silent?: boolean } = {}) {
 
     const mapped: AssetItem[] = rows
       .filter((r) => Number(r.qty) > 0)
+      .filter((r) => !isDeletedSyntheticSymbol(String(r.symbol || '')))
       .map((r) => {
         const sym = String(r.symbol).toUpperCase()
         const { base, quote } = splitSymbol(sym)
@@ -1016,12 +1059,25 @@ async function loadSyntheticPairs() {
 }
 
 async function refreshSyntheticPairsAndRebind() {
-  const before = isSyntheticPair(selectedPair.value)
+  const prevSelected = selectedPair.value
+  const before = isSyntheticPair(prevSelected)
   await loadSyntheticPairs()
+
+  // If the currently selected pair was deleted in backend (synthetic removed),
+  // make sure it disappears from UI by switching to a valid fallback.
+  if (!tradingPairs.value.includes(prevSelected)) {
+    const fallback = tradingPairs.value.includes('BTC/USDT')
+      ? 'BTC/USDT'
+      : tradingPairs.value[0] || 'BTC/USDT'
+    selectedPair.value = fallback
+    dropdownOpen.value = false
+    router.replace({ query: { ...route.query, symbol: pairToQuery(fallback) } })
+  }
+
   const after = isSyntheticPair(selectedPair.value)
 
-  // If status changed (real <-> synthetic), reset and reconnect with the right source.
-  if (before !== after) {
+  // If status changed (real <-> synthetic) or pair changed, reset and reconnect with the right source.
+  if (before !== after || prevSelected !== selectedPair.value) {
     resetLocalData()
   }
 

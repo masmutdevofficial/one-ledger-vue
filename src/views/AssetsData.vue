@@ -246,9 +246,46 @@ const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
 // Synthetic logos (uploaded via admin)
+const SYNTH_EVER_LS_KEY = 'syntheticSymbolsEver:v1'
 const syntheticLogoUrlByBase = ref<Record<string, string>>({})
 const syntheticSymbolsLower = ref<Set<string>>(new Set())
+const syntheticSymbolsEverLower = ref<Set<string>>(new Set())
+
+function symbolToLowerKey(sym: string): string {
+  return String(sym || '').toLowerCase().replace('/', '')
+}
+
+function hydrateSyntheticEverFromStorage() {
+  if (!isBrowser()) return
+  try {
+    const raw = JSON.parse(localStorage.getItem(SYNTH_EVER_LS_KEY) || '[]')
+    if (Array.isArray(raw)) {
+      syntheticSymbolsEverLower.value = new Set(
+        raw.map((x) => symbolToLowerKey(String(x || ''))).filter(Boolean),
+      )
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function persistSyntheticEverToStorage() {
+  if (!isBrowser()) return
+  try {
+    localStorage.setItem(SYNTH_EVER_LS_KEY, JSON.stringify(Array.from(syntheticSymbolsEverLower.value)))
+  } catch {
+    // ignore
+  }
+}
+
+function isDeletedSyntheticSymbol(sym: string): boolean {
+  const key = symbolToLowerKey(sym)
+  if (!key) return false
+  return syntheticSymbolsEverLower.value.has(key) && !syntheticSymbolsLower.value.has(key)
+}
+
 async function loadSyntheticLogoMap() {
+  hydrateSyntheticEverFromStorage()
   try {
     const res = await fetch(`${API_BASE}/sim/market/symbols`, { method: 'GET' })
     if (!res.ok) return
@@ -265,6 +302,11 @@ async function loadSyntheticLogoMap() {
     }
     syntheticLogoUrlByBase.value = map
     syntheticSymbolsLower.value = synth
+
+    // Keep track of synthetic symbols ever seen. If backend deletes a synthetic symbol,
+    // positions that reference it can be hidden from assets list.
+    syntheticSymbolsEverLower.value = new Set([...syntheticSymbolsEverLower.value, ...synth])
+    persistSyntheticEverToStorage()
   } catch {
     // ignore
   }
@@ -550,6 +592,7 @@ async function loadAssets() {
 
     const mapped: AssetItem[] = rows
       .filter((r) => normalizeNum(r.qty) > 0)
+      .filter((r) => !isDeletedSyntheticSymbol(String(r.symbol || '')))
       .map((r) => {
         const sym = String(r.symbol).toUpperCase()
         const { base, quote } = splitSymbol(sym)
