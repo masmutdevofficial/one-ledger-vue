@@ -245,6 +245,9 @@ const WS_BASE = 'wss://ws.hyper-led.com'
 const BASE = import.meta.env.BASE_URL || '/'
 const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
+// Re-check synthetic coins periodically so deleted ones disappear from assets.
+const SYNTH_CHECK_MS = 10_000
+
 // Synthetic logos (uploaded via admin)
 const SYNTH_EVER_LS_KEY = 'syntheticSymbolsEver:v1'
 const syntheticLogoUrlByBase = ref<Record<string, string>>({})
@@ -282,6 +285,32 @@ function isDeletedSyntheticSymbol(sym: string): boolean {
   const key = symbolToLowerKey(sym)
   if (!key) return false
   return syntheticSymbolsEverLower.value.has(key) && !syntheticSymbolsLower.value.has(key)
+}
+
+function purgeDeletedSyntheticAssets() {
+  const before = assets.value.length
+  if (!before) return
+  const filtered = assets.value.filter((a) => !isDeletedSyntheticSymbol(a.symbol))
+  if (filtered.length === before) return
+  assets.value = filtered
+  rebuildAssetMap()
+  recomputeTotals()
+}
+
+let synthSymbolsTimer: ReturnType<typeof setInterval> | null = null
+function startSyntheticSymbolsWatcher() {
+  if (!isBrowser()) return
+  stopSyntheticSymbolsWatcher()
+  synthSymbolsTimer = window.setInterval(async () => {
+    await loadSyntheticLogoMap()
+    purgeDeletedSyntheticAssets()
+  }, SYNTH_CHECK_MS)
+}
+function stopSyntheticSymbolsWatcher() {
+  if (synthSymbolsTimer) {
+    clearInterval(synthSymbolsTimer)
+    synthSymbolsTimer = null
+  }
 }
 
 async function loadSyntheticLogoMap() {
@@ -940,6 +969,7 @@ onMounted(() => {
     await loadAssets()
     connectAggregatorWs() // connect setelah assets terisi
     startSyntheticTicker()
+    startSyntheticSymbolsWatcher()
   })().catch(() => { })
 })
 
@@ -955,6 +985,7 @@ watch(
 )
 
 onUnmounted(() => {
+  stopSyntheticSymbolsWatcher()
   if (removeBeforeUnload) {
     removeBeforeUnload()
     removeBeforeUnload = null

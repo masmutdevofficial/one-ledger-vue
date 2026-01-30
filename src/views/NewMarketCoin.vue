@@ -611,6 +611,8 @@ const API_BASE = 'https://tech.oneled.io/api'
 
 // auto-refresh daftar coin simulasi (biar admin tambah coin langsung muncul)
 const SYNTH_REFRESH_MS = 3 * 60 * 1000 // 3 menit
+// Re-check synthetic symbols periodically so deleted ones disappear from assets.
+const SYNTH_CHECK_MS = 10_000
 
 const showChart = ref(false)
 
@@ -708,6 +710,31 @@ function isDeletedSyntheticSymbol(sym: string): boolean {
   const key = symbolToLowerKey(sym)
   if (!key) return false
   return syntheticSymbolsEverLower.value.has(key) && !syntheticSymbolsLower.value.has(key)
+}
+
+function purgeDeletedSyntheticAssets() {
+  const before = assets.value.length
+  if (!before) return
+  const filtered = assets.value.filter((a) => !isDeletedSyntheticSymbol(a.symbol))
+  if (filtered.length === before) return
+  assets.value = filtered
+  rebuildAssetMap()
+}
+
+let synthSymbolsTimer: ReturnType<typeof setInterval> | null = null
+function startSyntheticSymbolsWatcher() {
+  if (!isBrowser()) return
+  stopSyntheticSymbolsWatcher()
+  synthSymbolsTimer = window.setInterval(async () => {
+    await loadSyntheticLogoMap()
+    purgeDeletedSyntheticAssets()
+  }, SYNTH_CHECK_MS)
+}
+function stopSyntheticSymbolsWatcher() {
+  if (synthSymbolsTimer) {
+    clearInterval(synthSymbolsTimer)
+    synthSymbolsTimer = null
+  }
 }
 
 async function loadSyntheticLogoMap() {
@@ -2057,6 +2084,7 @@ onMounted(async () => {
   connectAssetsWs()
   startAssetsPolling()
   startSyntheticAssetsTicker()
+  startSyntheticSymbolsWatcher()
 })
 watch(
   assets,
@@ -2069,6 +2097,7 @@ watch(
 onUnmounted(() => {
   stopAssetsPolling()
   stopSyntheticAssetsTicker()
+  stopSyntheticSymbolsWatcher()
   if (assetsWs) {
     try {
       assetsWs.close()
@@ -2154,6 +2183,7 @@ onUnmounted(() => {
   stopSimPolling()
   stopAggregatorWS()
   stopSyntheticPairsAutoRefresh()
+  stopSyntheticSymbolsWatcher()
 })
 
 /* ===== Order submit (tetap) ===== */
