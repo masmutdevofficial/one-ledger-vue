@@ -111,7 +111,11 @@
               </div>
               <div
                 class="ml-1 text-[10px] font-semibold"
-                :class="headerPercentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+                :class="
+                  headerPercentChange !== null && headerPercentChange >= 0
+                    ? 'text-teal-600'
+                    : 'text-red-600'
+                "
               >
                 {{ headerPercentChangeText }}
               </div>
@@ -311,7 +315,11 @@
               </div>
               <div
                 class="ml-1 text-[10px] font-semibold"
-                :class="headerPercentChange >= 0 ? 'text-teal-600' : 'text-red-600'"
+                :class="
+                  headerPercentChange !== null && headerPercentChange >= 0
+                    ? 'text-teal-600'
+                    : 'text-red-600'
+                "
               >
                 {{ headerPercentChangeText }}
               </div>
@@ -901,6 +909,9 @@ function selectHeaderPair(pair: string) {
 const headerPrice = ref<number>(0)
 const headerOpenPrice = ref<number>(0)
 
+// 1-day OHLC used for header % change (match websocket logic like NewMarketCoin.vue)
+const headerDailyOHLC = ref<{ open: number; close: number; ts: number } | null>(null)
+
 function basePriceForPair(pair: string): number {
   const p = (pair || '').toUpperCase().trim()
   const base = p.split('/')[0] || p
@@ -938,11 +949,12 @@ function stepHeaderMarket() {
   headerPrice.value = Math.max(1e-8, next)
 }
 
-const headerPercentChange = computed(() => {
-  const open = headerOpenPrice.value
-  const cur = headerPrice.value
-  if (!Number.isFinite(open) || open <= 0 || !Number.isFinite(cur)) return 0
-  return ((cur - open) / open) * 100
+const headerPercentChange = computed<number | null>(() => {
+  const k = headerDailyOHLC.value
+  const open = Number(k?.open)
+  const close = Number(k?.close)
+  if (!Number.isFinite(open) || open <= 0 || !Number.isFinite(close)) return null
+  return ((close - open) / open) * 100
 })
 
 const headerPriceText = computed(() =>
@@ -951,7 +963,7 @@ const headerPriceText = computed(() =>
 
 const headerPercentChangeText = computed(() => {
   const v = headerPercentChange.value
-  if (!Number.isFinite(v)) return '-'
+  if (v === null || !Number.isFinite(v)) return '-'
   return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
 })
 
@@ -1097,6 +1109,14 @@ function upsertCandleBuffer(
     prev.low = Math.min(prev.low, ohlc.low)
     prev.close = ohlc.close
     prev.vol = (prev.vol || 0) + (ohlc.vol || 0)
+  }
+
+  // Keep latest 1day candle for header % (open/close)
+  if (p === '1day') {
+    const c = m.get(key)
+    if (c && Number.isFinite(c.open) && Number.isFinite(c.close)) {
+      headerDailyOHLC.value = { open: c.open, close: c.close, ts: tsMs }
+    }
   }
 }
 
@@ -1407,7 +1427,8 @@ function scheduleResubscribe() {
 
     const sym = pairToQuery(orderbookPair.value)
     const plan = tfPlan(tf.value)
-    const wantPeriods = new Set<OriginPeriod>([plan.base])
+    // Always keep 1day for header % change (matches websocket display in NewMarketCoin.vue)
+    const wantPeriods = new Set<OriginPeriod>([plan.base, '1day'])
 
     if (subscribedSym && subscribedSym !== sym) {
       if (subscribedPeriods.size) doUnsubscribe(subscribedSym, Array.from(subscribedPeriods))
@@ -1428,6 +1449,12 @@ function scheduleResubscribe() {
       subscribeFor(sym, [plan.base], WANT_BARS, needDepth)
       snapshotFor(sym, [plan.base], WANT_BARS)
       subscribedPeriods.add(plan.base)
+    }
+
+    if (plan.base !== '1day' && !subscribedPeriods.has('1day')) {
+      subscribeFor(sym, ['1day'], WANT_BARS, false)
+      snapshotFor(sym, ['1day'], WANT_BARS)
+      subscribedPeriods.add('1day')
     }
 
     subscribedSym = sym

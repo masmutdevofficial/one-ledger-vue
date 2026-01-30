@@ -75,11 +75,11 @@
     <div class="mb-20">
       <div v-if="loadingAssets" class="text-sm text-gray-500 px-5 py-3">Loading assets…</div>
       <div v-else-if="errorAssets" class="text-sm text-red-500 px-5 py-3">{{ errorAssets }}</div>
-      <div v-else-if="assets.length === 0" class="text-sm text-center text-gray-500 px-5 py-3">
+      <div v-else-if="visibleAssets.length === 0" class="text-sm text-center text-gray-500 px-5 py-3">
         No Data Available
       </div>
 
-      <section v-else v-for="a in assets" :key="a.symbol"
+      <section v-else v-for="a in visibleAssets" :key="a.symbol"
         class="space-y-4 w-full rounded-2xl p-5 drop-shadow-md bg-white cursor-pointer hover:ring-2 hover:ring-teal-200 transition"
         @click="goAsset(a)">
         <div class="flex justify-between items-center">
@@ -568,6 +568,7 @@ const portfolioUpnlPct = ref<number>(0)
 
 /** ===== State assets ===== */
 const assets = ref<AssetItem[]>([])
+const visibleAssets = computed(() => assets.value.filter((a) => !isDeletedSyntheticSymbol(a.symbol)))
 const assetMap = new Map<string, AssetItem>() // UPPER symbol -> AssetItem
 function rebuildAssetMap() {
   assetMap.clear()
@@ -1001,6 +1002,7 @@ onMounted(() => {
     await loadSaldo()
     await loadSyntheticLogoMap()
     await loadSyntheticPairs()
+    purgeDeletedSyntheticAssets()
     await loadAssets()
     connectAggregatorWs() // connect setelah assets terisi
     startSyntheticTicker()
