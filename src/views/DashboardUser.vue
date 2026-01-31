@@ -722,6 +722,178 @@ type PositionRow = { symbol: string; qty: string | number; avg_cost: string | nu
 const positions = ref<PositionRow[]>([])
 const priceMap = reactive<Record<string, number>>({})
 
+/** ===== Synthetic symbols (match AssetsData PnL logic) ===== */
+const SYNTH_CHECK_MS = 10_000
+const SYNTH_TICK_MS = 2000
+const SYNTH_EVER_LS_KEY = 'dashSyntheticSymbolsEver:v1'
+
+const syntheticSymbolsLower = ref<Set<string>>(new Set())
+const syntheticSymbolsEverLower = ref<Set<string>>(new Set())
+const syntheticPairsLower = ref<Set<string>>(new Set())
+const syntheticPairsLoaded = ref(false)
+
+function symbolToLowerKey(sym: unknown): string {
+  return String(sym || '').toLowerCase().replace('/', '')
+}
+function pairToLowerKey(pair: unknown): string {
+  const s = String(pair || '').trim().toUpperCase()
+  if (!s) return ''
+  const normalized = s.includes('/') ? s : s.endsWith('USDT') ? `${s.slice(0, -4)}/USDT` : s
+  if (!normalized.endsWith('/USDT')) return ''
+  return normalized.replace('/', '').toLowerCase()
+}
+
+function hydrateSyntheticEverFromStorage() {
+  if (!isBrowser()) return
+  try {
+    const raw = JSON.parse(localStorage.getItem(SYNTH_EVER_LS_KEY) || '[]')
+    if (Array.isArray(raw)) {
+      syntheticSymbolsEverLower.value = new Set(raw.map(symbolToLowerKey).filter(Boolean))
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function persistSyntheticEverToStorage() {
+  if (!isBrowser()) return
+  try {
+    localStorage.setItem(
+      SYNTH_EVER_LS_KEY,
+      JSON.stringify(Array.from(syntheticSymbolsEverLower.value)),
+    )
+  } catch {
+    // ignore
+  }
+}
+
+async function loadSyntheticSymbols() {
+  hydrateSyntheticEverFromStorage()
+  try {
+    const res = await fetch(`${API_BASE}/sim/market/symbols`, { method: 'GET' })
+    if (!res.ok) return
+    const json = await res.json().catch(() => null)
+    const rows = Array.isArray((json as any)?.symbols) ? ((json as any).symbols as any[]) : []
+    const synth = new Set<string>()
+    for (const r of rows) {
+      const pair = String(r?.symbol_pair || '').toUpperCase()
+      if (pair) synth.add(pair.replace('/', '').toLowerCase())
+    }
+    syntheticSymbolsLower.value = synth
+    syntheticSymbolsEverLower.value = new Set([...syntheticSymbolsEverLower.value, ...synth])
+    persistSyntheticEverToStorage()
+  } catch {
+    // ignore
+  }
+}
+
+async function loadSyntheticPairs() {
+  try {
+    const res = await fetch(`${API_BASE}/sim/market/pairs`, { method: 'GET' })
+    if (!res.ok) return
+    const json = await res.json().catch(() => null)
+    const pairs = Array.isArray((json as any)?.pairs) ? ((json as any).pairs as unknown[]) : []
+    const keys = pairs.map(pairToLowerKey).filter(Boolean)
+    syntheticPairsLower.value = new Set(keys)
+    syntheticPairsLoaded.value = true
+
+    if (keys.length) {
+      syntheticSymbolsEverLower.value = new Set([...syntheticSymbolsEverLower.value, ...keys])
+      persistSyntheticEverToStorage()
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function isSyntheticSymbol(sym: unknown): boolean {
+  const key = symbolToLowerKey(sym)
+  return !!key && syntheticSymbolsLower.value.has(key)
+}
+
+function isDeletedSyntheticSymbol(sym: unknown): boolean {
+  const key = symbolToLowerKey(sym)
+  if (!key) return false
+  if (!syntheticPairsLoaded.value) return false
+  return syntheticSymbolsEverLower.value.has(key) && !syntheticPairsLower.value.has(key)
+}
+
+function purgeDeletedSyntheticPositions() {
+  const before = positions.value.length
+  if (!before) return
+  const filtered = positions.value.filter((p) => !isDeletedSyntheticSymbol(p.symbol))
+  if (filtered.length === before) return
+  positions.value = filtered
+  const mini: PosMini[] = filtered.map((r) => ({
+    symbol: String(r.symbol).toUpperCase(),
+    qty: n(r.qty, 0),
+    avgCost: n(r.avg_cost, 0),
+  }))
+  upsertPositionsCache(mini)
+  recomputeTotals()
+}
+
+let synthPairsTimer: ReturnType<typeof setInterval> | null = null
+function startSyntheticPairsWatcher() {
+  if (!isBrowser()) return
+  stopSyntheticPairsWatcher()
+  synthPairsTimer = window.setInterval(async () => {
+    await loadSyntheticPairs()
+    purgeDeletedSyntheticPositions()
+  }, SYNTH_CHECK_MS)
+}
+function stopSyntheticPairsWatcher() {
+  if (synthPairsTimer) {
+    clearInterval(synthPairsTimer)
+    synthPairsTimer = null
+  }
+}
+
+let synthTickerTimer: ReturnType<typeof setInterval> | null = null
+function stopSyntheticTicker() {
+  if (synthTickerTimer) {
+    clearInterval(synthTickerTimer)
+    synthTickerTimer = null
+  }
+}
+
+async function pollSyntheticTickersOnce() {
+  const synthPos = positions.value.filter(
+    (p) => isSyntheticSymbol(p.symbol) && !isDeletedSyntheticSymbol(p.symbol),
+  )
+  if (!synthPos.length) return
+
+  try {
+    const reqs = synthPos.map(async (p) => {
+      const symLower = String(p.symbol || '').toLowerCase()
+      if (!symLower) return
+      const res = await fetch(`${API_BASE}/sim/market/ticker?symbol=${encodeURIComponent(symLower)}`)
+      if (!res.ok) return
+      const j = await res.json().catch(() => null)
+      const last = Number((j as any)?.lastPrice)
+      if (!Number.isFinite(last) || last <= 0) return
+
+      const symUp = symLower.toUpperCase()
+      priceMap[symUp] = last
+      upsertPriceCache(symLower, last)
+    })
+
+    await Promise.all(reqs)
+    recomputeTotals()
+  } catch {
+    // ignore
+  }
+}
+
+function startSyntheticTicker() {
+  if (!isBrowser()) return
+  stopSyntheticTicker()
+  synthTickerTimer = window.setInterval(() => {
+    void pollSyntheticTickersOnce()
+  }, SYNTH_TICK_MS)
+  void pollSyntheticTickersOnce()
+}
+
 /** ===== Market small table ===== */
 interface MarketItem {
   name: string
@@ -779,6 +951,7 @@ function recomputeTotals() {
       sumUpnl = 0,
       sumCost = 0
     for (const p of positions.value) {
+      if (isDeletedSyntheticSymbol(p.symbol)) continue
       const sym = String(p.symbol).toUpperCase()
       const last = n(priceMap[sym], 0)
       const qty = n(p.qty, 0)
@@ -874,7 +1047,9 @@ async function loadPositions() {
     credentials: 'include',
   })
   const rows: PositionRow[] = res.ok ? await res.json().catch(() => []) : []
-  const filtered = rows.filter((r) => n(r.qty, 0) > 0)
+  const filtered = rows
+    .filter((r) => n(r.qty, 0) > 0)
+    .filter((r) => !isDeletedSyntheticSymbol(r.symbol))
   positions.value = filtered
   const mini: PosMini[] = filtered.map((r) => ({
     symbol: String(r.symbol).toUpperCase(),
@@ -888,7 +1063,10 @@ async function loadPositions() {
 let activeLower = new Set<string>()
 function rebuildActiveLower() {
   const s = new Set<string>()
-  for (const p of positions.value) s.add(String(p.symbol).toLowerCase())
+  for (const p of positions.value) {
+    if (isDeletedSyntheticSymbol(p.symbol)) continue
+    s.add(String(p.symbol).toLowerCase())
+  }
   for (const c of displayedCoins) s.add(symbolMap[c] + 'usdt')
   activeLower = s
 }
@@ -1105,7 +1283,9 @@ const visHandler = () => {
 onMounted(async () => {
   loadDashCache()
   hydrateFromCache()
-  await Promise.all([loadSaldo(), loadPositions()])
+  await Promise.all([loadSaldo(), loadSyntheticSymbols(), loadSyntheticPairs()])
+  await loadPositions()
+  purgeDeletedSyntheticPositions()
   for (const p of positions.value) {
     const key = String(p.symbol).toUpperCase()
     priceMap[key] = priceMap[key] ?? 0
@@ -1113,6 +1293,8 @@ onMounted(async () => {
   rebuildActiveLower()
   recomputeTotals()
   connectAggregator()
+  startSyntheticPairsWatcher()
+  startSyntheticTicker()
   window.addEventListener('scroll', onScroll, { passive: true })
   requestAnimationFrame(() => onScroll())
   const token = getToken()
@@ -1160,6 +1342,8 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
   if (isBrowser()) document.removeEventListener('visibilitychange', visHandler)
+  stopSyntheticPairsWatcher()
+  stopSyntheticTicker()
   if (wsAgg) {
     try {
       wsAgg.close()
