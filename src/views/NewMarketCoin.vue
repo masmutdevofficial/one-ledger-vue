@@ -74,13 +74,13 @@
       <div class="text-start" v-if="depthData && showChart">
         <p class="text-teal-500 font-semibold text-[20px]">
           {{
-            (depthData.tick.bids[0]?.[0] ?? 0).toLocaleString('en-US', { maximumFractionDigits: 2 })
+            headerLastPrice.toLocaleString('en-US', { maximumFractionDigits: 2 })
           }}
         </p>
         <div class="flex flex-row items-center">
           <p class="text-[#7F7F7F] text-[10px]">
             ≈ ${{
-              (depthData.tick.bids[0]?.[0] ?? 0).toLocaleString('en-US', {
+              headerLastPrice.toLocaleString('en-US', {
                 maximumFractionDigits: 2,
               })
             }}
@@ -1224,9 +1224,64 @@ function upsertCandleBuffer(
 }
 
 // ===== REST history loader (Huobi) untuk isi awal candle supaya tidak putus-putus =====
+function isXauSyntheticChartOverride(pair: string): boolean {
+  // Admin creates synthetic pair XAU/USDT, but chart should follow real Huobi XAUT/USDT.
+  return isSyntheticPair(pair) && normalizePair(pair) === 'XAU/USDT'
+}
+
+const XAU_WS_SYMBOL = 'xautusdt'
+
+function chartWsSymbolLower(): string {
+  // For synthetic XAU/USDT we still trade on sim market,
+  // but chart comes from WS aggregator symbol xautusdt.
+  if (isXauSyntheticChartOverride(selectedPair.value)) return XAU_WS_SYMBOL
+  return pairToQuery(normalizePair(selectedPair.value))
+}
+
+async function loadHuobiHistory(symbolLower: string, origin: OriginPeriod) {
+  const sym = String(symbolLower || '').toLowerCase()
+  if (!sym.endsWith('usdt')) return
+
+  // map OriginPeriod → Huobi period string
+  const period =
+    origin === '5min'
+      ? '5min'
+      : origin === '15min'
+        ? '15min'
+        : origin === '60min'
+          ? '60min'
+          : '1day'
+
+  const url = `https://api.huobi.pro/market/history/kline?symbol=${sym}&period=${period}&size=${WANT_BARS}`
+  const res = await fetch(url)
+  if (!res.ok) return
+  const json = await res.json().catch(() => null)
+  if (!json || !Array.isArray((json as any).data)) return
+
+  // Huobi kline: [{ id, open, close, low, high, vol, amount, ... }]
+  for (const k of (json as any).data as any[]) {
+    const tsMs = Number(k.id) * 1000
+    const open = Number(k.open)
+    const close = Number(k.close)
+    const high = Number(k.high)
+    const low = Number(k.low)
+    const vol = Number(k.vol ?? k.amount ?? 0)
+    if (!Number.isFinite(open) || !Number.isFinite(close)) continue
+    upsertCandleBuffer(origin, tsMs, { open, high, low, close, vol })
+  }
+}
+
 async function loadHistoryForCurrentTF() {
   try {
+    // Synthetic market: normally load from sim snapshot.
+    // Special-case XAU/USDT: chart should use WS aggregator symbol xautusdt.
     if (isSyntheticPair(selectedPair.value)) {
+      if (isXauSyntheticChartOverride(selectedPair.value)) {
+        // WS aggregator will provide snapshot + live kline; just ensure subscription is scheduled.
+        scheduleResubscribe()
+        return
+      }
+
       await simRefreshNow({ includeDaily: true, resetBuffers: false })
       return
     }
@@ -1252,23 +1307,7 @@ async function loadHistoryForCurrentTF() {
     }
     if (!origin) return
 
-    const url = `https://api.huobi.pro/market/history/kline?symbol=${sym}&period=${period}&size=${WANT_BARS}`
-    const res = await fetch(url)
-    if (!res.ok) return
-    const json = await res.json()
-    if (!json || !Array.isArray(json.data)) return
-
-    // Huobi kline: [{ id, open, close, low, high, vol, amount, ... }]
-    for (const k of json.data as any[]) {
-      const tsMs = Number(k.id) * 1000
-      const open = Number(k.open)
-      const close = Number(k.close)
-      const high = Number(k.high)
-      const low = Number(k.low)
-      const vol = Number(k.vol ?? k.amount ?? 0)
-      if (!Number.isFinite(open) || !Number.isFinite(close)) continue
-      upsertCandleBuffer(origin, tsMs, { open, high, low, close, vol })
-    }
+    await loadHuobiHistory(sym, origin)
 
     // karena API Huobi mengembalikan urutan terbaru → lama, kita tetap flush buffer yg sudah dibucket
     scheduleChartFlush()
@@ -1312,6 +1351,9 @@ function subscribeFor(
   const channels = withBookTicker ? ['depth', 'ticker', 'kline'] : ['kline']
   wsSend({ type: 'subscribe', channels, symbols: [symLower], periods, limit })
 }
+function subscribeTickerKline(symLower: string, periods: OriginPeriod[], limit: number) {
+  wsSend({ type: 'subscribe', channels: ['ticker', 'kline'], symbols: [symLower], periods, limit })
+}
 function snapshotFor(symLower: string, periods: OriginPeriod[], limit: number) {
   wsSend({ type: 'snapshot', symbols: [symLower], periods, limit })
 }
@@ -1338,13 +1380,14 @@ function scheduleResubscribe() {
 
     if (isSyntheticPair(selectedPair.value)) {
       startSimPolling()
-      return
+      // For XAU/USDT synthetic, keep sim polling for depth/trading, but still subscribe chart via WS.
+      if (!isXauSyntheticChartOverride(selectedPair.value)) return
     }
 
     const ws = aggWS.value
     if (!ws || ws.readyState !== WebSocket.OPEN) return
 
-    const sym = pairToQuery(selectedPair.value)
+    const sym = chartWsSymbolLower()
     const plan = tfPlan(tf.value)
     const wantPeriods = new Set<OriginPeriod>(needPeriodsForTF(tf.value))
 
@@ -1362,9 +1405,13 @@ function scheduleResubscribe() {
 
     const needBook = !subscribedSym || subscribedSym !== sym || subscribedPeriods.size === 0
 
-    // SUB base
+    // SUB base (for XAU override: only kline)
     if (!subscribedPeriods.has(plan.base)) {
-      subscribeFor(sym, [plan.base], plan.baseLimit, needBook)
+      if (isXauSyntheticChartOverride(selectedPair.value)) {
+        subscribeTickerKline(sym, [plan.base], plan.baseLimit)
+      } else {
+        subscribeFor(sym, [plan.base], plan.baseLimit, needBook)
+      }
       snapshotFor(sym, [plan.base], plan.baseLimit)
       subscribedPeriods.add(plan.base)
     }
@@ -1465,12 +1512,17 @@ function scheduleChartFlush() {
 /* ===== WS Connect & messages ===== */
 function connectAggregatorWS() {
   if (isSyntheticPair(selectedPair.value)) {
-    stopAggregatorWS()
+    // For synthetic markets we generally poll sim snapshot.
+    // Special-case XAU/USDT: still connect WS for chart (xautusdt), while sim polling provides depth.
+    if (!isXauSyntheticChartOverride(selectedPair.value)) {
+      stopAggregatorWS()
+      startSimPolling()
+      return
+    }
     startSimPolling()
-    return
+  } else {
+    stopSimPolling()
   }
-
-  stopSimPolling()
 
   try {
     aggWS.value?.close()
@@ -1498,7 +1550,7 @@ function connectAggregatorWS() {
       const msg = JSON.parse(e.data as string)
 
       if (msg?.type === 'snapshot' && Array.isArray(msg.items)) {
-        const want = pairToQuery(selectedPair.value)
+        const want = chartWsSymbolLower()
         for (const it of msg.items) {
           const symLower = String(it.symbol || '').toLowerCase()
           if (!symLower || symLower !== want) continue
@@ -1522,6 +1574,8 @@ function connectAggregatorWS() {
                 setObCache(want, { k1d: { open, close, ts: Number(it.ts) } })
               }
             }
+          } else if (it.type === 'ticker' && Number.isFinite(Number(it.last))) {
+            wsLastPrice.value = Number(it.last)
           }
         }
         scheduleFlush()
@@ -1531,13 +1585,18 @@ function connectAggregatorWS() {
 
       const type: string | undefined = msg?.type
       const symLower = String(msg.symbol || '').toLowerCase()
-      if (!type || !symLower || symLower !== pairToQuery(selectedPair.value)) return
+      if (!type || !symLower || symLower !== chartWsSymbolLower()) return
 
       if (type === 'depth') {
         const bids = Array.isArray(msg.bids) ? (msg.bids as [number, number][]) : []
         const asks = Array.isArray(msg.asks) ? (msg.asks as [number, number][]) : []
         pendingDepth = { ts: Number(msg.ts), asks, bids, sym: symLower }
         scheduleFlush()
+        return
+      }
+
+      if (type === 'ticker' && Number.isFinite(Number(msg.last))) {
+        wsLastPrice.value = Number(msg.last)
         return
       }
 
@@ -1666,21 +1725,28 @@ async function simRefreshNow(opts: { includeDaily?: boolean; resetBuffers?: bool
     const pairKeyLower = pairToQuery(pair)
     const basePeriod = tfToSimPeriod(tf.value)
 
+    const xauChartOverride = normalizePair(pair) === 'XAU/USDT'
+
     const snapBase = await fetchSimSnapshot(pair, basePeriod, WANT_BARS, DEPTH_TOP_N)
     applySimDepth(pairKeyLower, Number(snapBase.ts) || Date.now(), snapBase.depth)
-    applySimKlines(basePeriod, snapBase.kline)
+    if (!xauChartOverride) applySimKlines(basePeriod, snapBase.kline)
 
     if (opts.includeDaily && basePeriod !== '1day') {
       const snap1d = await fetchSimSnapshot(pair, '1day', WANT_BARS, 5)
-      applySimKlines('1day', snap1d.kline)
-      const last = Array.isArray(snap1d.kline) && snap1d.kline.length ? snap1d.kline[snap1d.kline.length - 1] : null
-      if (last && Number(last.open)) {
-        const open = Number(last.open)
-        const close = Number(last.close)
-        const ts = Number(last.ts)
-        if (Number.isFinite(open) && Number.isFinite(close)) {
-          klineDailyOHLC.value = { open, close, ts }
-          setObCache(pairKeyLower, { k1d: { open, close, ts } })
+      if (!xauChartOverride) {
+        applySimKlines('1day', snap1d.kline)
+        const last =
+          Array.isArray(snap1d.kline) && snap1d.kline.length
+            ? snap1d.kline[snap1d.kline.length - 1]
+            : null
+        if (last && Number(last.open)) {
+          const open = Number(last.open)
+          const close = Number(last.close)
+          const ts = Number(last.ts)
+          if (Number.isFinite(open) && Number.isFinite(close)) {
+            klineDailyOHLC.value = { open, close, ts }
+            setObCache(pairKeyLower, { k1d: { open, close, ts } })
+          }
         }
       }
     }
@@ -1726,12 +1792,19 @@ const percentChange = computed(() => {
   return ((k.close - k.open) / k.open) * 100
 })
 
+const wsLastPrice = ref<number>(0)
+const headerLastPrice = computed(() => {
+  if (isXauSyntheticChartOverride(selectedPair.value) && wsLastPrice.value > 0) return wsLastPrice.value
+  return depthData.value?.tick?.bids?.[0]?.[0] ?? 0
+})
+
 function resetLocalData() {
   depthData.value = null
   asksTop.value = []
   bidsTop.value = []
   pendingDepth = null
   klineDailyOHLC.value = null
+  wsLastPrice.value = 0
   buf5m.clear()
   buf15m.clear()
   buf30m.clear()
@@ -2180,6 +2253,13 @@ function selectPair(pair: string) {
 }
 watch(tf, () => {
   if (isSyntheticPair(selectedPair.value)) {
+    if (isXauSyntheticChartOverride(selectedPair.value)) {
+      resetLocalData()
+      void loadHistoryForCurrentTF()
+      startSimPolling()
+      return
+    }
+
     void simRefreshNow({ includeDaily: true, resetBuffers: true })
     return
   }

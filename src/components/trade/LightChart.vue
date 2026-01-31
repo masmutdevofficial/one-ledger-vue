@@ -130,16 +130,19 @@ function createSeries(kind: SeriesKind) {
 
 function applyInitialRange() {
   if (!chart) return
-  const end = lastIndex()
+  // geser ke paling kanan dulu (anggap realtime)
+  chart.timeScale().scrollToRealTime()
+
+  // ambil logical range saat ini untuk dapat “to”
+  const lr = chart.timeScale().getVisibleLogicalRange()
+  if (!lr) return
+  const to = lr.to ?? lastIndex()
   const width = Math.max(10, props.initialBars) // batas minimal
-  const right = props.rightOffset ?? 0
   viewWidthBars = width
 
-  // Untuk history yang pendek (mis: XAU baru ada beberapa bar),
-  // jangan biarkan `from` menjadi negatif karena bisa membuat chart terlihat kosong.
   chart.timeScale().setVisibleLogicalRange({
-    from: Math.max(0, end - width),
-    to: end + right,
+    from: to - (width + (props.rightOffset ?? 0)),
+    to: to + (props.rightOffset ?? 0),
   })
   lastLogicalRange = chart.timeScale().getVisibleLogicalRange()
   followingLatest = true
@@ -151,7 +154,7 @@ function applyFollowIfNeeded() {
   const end = lastIndex()
   // jendela dipertahankan (viewWidthBars), ditambah rightOffset
   chart.timeScale().setVisibleLogicalRange({
-    from: Math.max(0, end - viewWidthBars),
+    from: end - viewWidthBars,
     to: end + (props.rightOffset ?? 0),
   })
   lastLogicalRange = chart.timeScale().getVisibleLogicalRange()

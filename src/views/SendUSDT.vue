@@ -9,6 +9,14 @@
       <div class="w-6"></div>
     </div>
 
+    <!-- Withdrawal locked notice -->
+    <div
+      v-if="withdrawLocked"
+      class="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700 whitespace-pre-line"
+    >
+      {{ withdrawLockMessage }}
+    </div>
+
     <!-- Address -->
     <div class="mb-4 no-ios-zoom">
       <label for="address" class="block text-xs font-normal text-gray-600 mb-1">Address</label>
@@ -110,7 +118,7 @@
       </div>
       <button
         type="button"
-        :disabled="submitting"
+        :disabled="submitting || withdrawLocked"
         @click="submitWithdraw"
         class="bg-cyan-300 text-white text-sm font-semibold rounded-lg px-10 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -135,6 +143,8 @@ const modal = useApiAlertStore()
 const amount = ref<string>('')
 const address = ref<string>('') // v-model address
 const submitting = ref(false)
+const withdrawLocked = ref(false)
+const withdrawLockMessage = ref('')
 
 const networks = [
   { label: 'Tron (TRC20)', value: 'trc20' },
@@ -234,6 +244,29 @@ onMounted(async () => {
 
   // Cek akun (sekali saat halaman dibuka)
   await ensureAccountBankFilled()
+
+  // Cek ketersediaan withdraw (lock WD)
+  try {
+    const token = TOKEN()
+    if (token) {
+      const res = await fetch(`${API_BASE}/api/withdraw-availability`, {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        cache: 'no-store',
+      })
+      const data = (await res.json()) as { available?: boolean; message?: string }
+      if (res.ok && data && data.available === false) {
+        withdrawLocked.value = true
+        withdrawLockMessage.value =
+          data.message ||
+          'Withdrawal is temporarily unavailable.\nYour account is still active in the CopyTrade'
+      }
+    }
+  } catch {
+    // ignore
+  }
 })
 
 // Fungsi Max
@@ -248,6 +281,16 @@ function setMax() {
 // Fungsi submit withdraw
 async function submitWithdraw() {
   if (submitting.value) return
+
+  if (withdrawLocked.value) {
+    // keep UI consistent even if user bypasses disabled state
+    modal.open(
+      'Withdrawal Unavailable',
+      withdrawLockMessage.value ||
+        'Withdrawal is temporarily unavailable.\nYour account is still active in the CopyTrade',
+    )
+    return
+  }
 
   // Guard: pastikan bank & norek terisi (cek lagi saat submit)
   const okAccount = await ensureAccountBankFilled()
@@ -299,7 +342,8 @@ async function submitWithdraw() {
       body: JSON.stringify({
         network: selectedNetwork.value,
         network_address: address.value.trim(),
-        jumlah: sendAmount,
+        // jumlah = gross amount (before fee); backend will store net & deduct gross
+        jumlah: rawAmount,
       }),
     })
     const data = await res.json()
@@ -309,7 +353,13 @@ async function submitWithdraw() {
       address.value = ''
       router.back()
     } else {
-      modal.open('Error', data.message || 'Failed to submit withdraw')
+      const msg = data?.message || 'Failed to submit withdraw'
+      // If locked, also show banner message
+      if (res.status === 423) {
+        withdrawLocked.value = true
+        withdrawLockMessage.value = msg
+      }
+      modal.open('Error', msg)
     }
   } catch {
     modal.open('Error', 'Server error')
