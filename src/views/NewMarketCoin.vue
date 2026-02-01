@@ -1224,17 +1224,16 @@ function upsertCandleBuffer(
 }
 
 // ===== REST history loader (Huobi) untuk isi awal candle supaya tidak putus-putus =====
-function isXauSyntheticChartOverride(pair: string): boolean {
-  // Admin creates synthetic pair XAU/USDT, but chart should follow real Huobi XAUT/USDT.
-  return isSyntheticPair(pair) && normalizePair(pair) === 'XAU/USDT'
+function isXauPair(pair: string): boolean {
+  // XAU pair exists in UI, but WS aggregator uses symbol alias: xautusdt
+  return normalizePair(pair) === 'XAU/USDT'
 }
 
 const XAU_WS_SYMBOL = 'xautusdt'
 
 function chartWsSymbolLower(): string {
-  // For synthetic XAU/USDT we still trade on sim market,
-  // but chart comes from WS aggregator symbol xautusdt.
-  if (isXauSyntheticChartOverride(selectedPair.value)) return XAU_WS_SYMBOL
+  // XAU/USDT chart must use WS aggregator symbol xautusdt (alias).
+  if (isXauPair(selectedPair.value)) return XAU_WS_SYMBOL
   return pairToQuery(normalizePair(selectedPair.value))
 }
 
@@ -1273,15 +1272,15 @@ async function loadHuobiHistory(symbolLower: string, origin: OriginPeriod) {
 
 async function loadHistoryForCurrentTF() {
   try {
-    // Synthetic market: normally load from sim snapshot.
-    // Special-case XAU/USDT: chart should use WS aggregator symbol xautusdt.
-    if (isSyntheticPair(selectedPair.value)) {
-      if (isXauSyntheticChartOverride(selectedPair.value)) {
-        // WS aggregator will provide snapshot + live kline; just ensure subscription is scheduled.
-        scheduleResubscribe()
-        return
-      }
+    // XAU chart always comes from WS aggregator symbol xautusdt.
+    // (WS snapshot + live kline will fill buffers)
+    if (isXauPair(selectedPair.value)) {
+      scheduleResubscribe()
+      return
+    }
 
+    // Synthetic market: normally load from sim snapshot.
+    if (isSyntheticPair(selectedPair.value)) {
       await simRefreshNow({ includeDaily: true, resetBuffers: false })
       return
     }
@@ -1381,7 +1380,7 @@ function scheduleResubscribe() {
     if (isSyntheticPair(selectedPair.value)) {
       startSimPolling()
       // For XAU/USDT synthetic, keep sim polling for depth/trading, but still subscribe chart via WS.
-      if (!isXauSyntheticChartOverride(selectedPair.value)) return
+      if (!isXauPair(selectedPair.value)) return
     }
 
     const ws = aggWS.value
@@ -1405,9 +1404,9 @@ function scheduleResubscribe() {
 
     const needBook = !subscribedSym || subscribedSym !== sym || subscribedPeriods.size === 0
 
-    // SUB base (for XAU override: only kline)
+    // SUB base (for synthetic XAU: only ticker+kline; real pairs keep depth+ticker+kline)
     if (!subscribedPeriods.has(plan.base)) {
-      if (isXauSyntheticChartOverride(selectedPair.value)) {
+      if (isSyntheticPair(selectedPair.value) && isXauPair(selectedPair.value)) {
         subscribeTickerKline(sym, [plan.base], plan.baseLimit)
       } else {
         subscribeFor(sym, [plan.base], plan.baseLimit, needBook)
@@ -1430,7 +1429,8 @@ function scheduleResubscribe() {
 function scheduleFlush() {
   if (flushTimer) return
   flushTimer = window.setTimeout(() => {
-    const curPairKey = pairToQuery(selectedPair.value)
+    // Use the WS symbol key for matching incoming depth/ticker (XAU uses alias xautusdt)
+    const curPairKey = chartWsSymbolLower()
     if (pendingDepth && pendingDepth.sym === curPairKey) {
       const asksAsc = [...pendingDepth.asks].sort((a, b) => a[0] - b[0])
       const bidsDesc = [...pendingDepth.bids].sort((a, b) => b[0] - a[0])
@@ -1514,7 +1514,7 @@ function connectAggregatorWS() {
   if (isSyntheticPair(selectedPair.value)) {
     // For synthetic markets we generally poll sim snapshot.
     // Special-case XAU/USDT: still connect WS for chart (xautusdt), while sim polling provides depth.
-    if (!isXauSyntheticChartOverride(selectedPair.value)) {
+    if (!isXauPair(selectedPair.value)) {
       stopAggregatorWS()
       startSimPolling()
       return
@@ -1794,7 +1794,7 @@ const percentChange = computed(() => {
 
 const wsLastPrice = ref<number>(0)
 const headerLastPrice = computed(() => {
-  if (isXauSyntheticChartOverride(selectedPair.value) && wsLastPrice.value > 0) return wsLastPrice.value
+  if (isXauPair(selectedPair.value) && wsLastPrice.value > 0) return wsLastPrice.value
   return depthData.value?.tick?.bids?.[0]?.[0] ?? 0
 })
 
@@ -2253,7 +2253,7 @@ function selectPair(pair: string) {
 }
 watch(tf, () => {
   if (isSyntheticPair(selectedPair.value)) {
-    if (isXauSyntheticChartOverride(selectedPair.value)) {
+    if (isXauPair(selectedPair.value)) {
       resetLocalData()
       void loadHistoryForCurrentTF()
       startSimPolling()
