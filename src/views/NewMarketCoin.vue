@@ -1272,9 +1272,17 @@ async function loadHuobiHistory(symbolLower: string, origin: OriginPeriod) {
 
 async function loadHistoryForCurrentTF() {
   try {
-    // XAU chart always comes from WS aggregator symbol xautusdt.
-    // (WS snapshot + live kline will fill buffers)
+    // XAU chart uses WS symbol alias xautusdt, but WS history may be limited.
+    // Backfill from Huobi so chart has enough bars, then keep live updates via WS.
     if (isXauPair(selectedPair.value)) {
+      let origin: OriginPeriod | null = null
+      if (tf.value === '5m') origin = '5min'
+      else if (tf.value === '15m') origin = '15min'
+      else if (tf.value === '1h') origin = '60min'
+      else origin = '1day'
+
+      await loadHuobiHistory(XAU_WS_SYMBOL, origin)
+      scheduleChartFlush()
       scheduleResubscribe()
       return
     }
