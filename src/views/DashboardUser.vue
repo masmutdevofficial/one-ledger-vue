@@ -706,7 +706,10 @@ const totalValueUsdtStr = computed(() =>
   isTotalHidden.value
     ? '••••'
     : totalValue.value !== null
-      ? totalValue.value.toLocaleString('en-US', { minimumFractionDigits: 2 })
+      ? totalValue.value.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
       : '...',
 )
 const totalValueUsdStr = computed(() =>
@@ -1330,7 +1333,7 @@ onMounted(async () => {
     } catch (e: unknown) {
       modal.open(
         'Error',
-        `Gagal terhubung ke server. ${e instanceof Error ? e.message : JSON.stringify(e)}`,
+        `The system is temporarily unavailable due to maintenance`,
       )
     } finally {
       loading.value = false

@@ -111,7 +111,7 @@ async function login() {
     localStorage.setItem('token', data.token)
     router.push('/dashboard')
   } catch (error: unknown) {
-    let msg = 'Gagal terhubung ke server.'
+    let msg = 'The system is temporarily unavailable due to maintenance.'
     if (error instanceof Error) {
       msg += ' ' + error.message
     } else if (typeof error === 'string') {

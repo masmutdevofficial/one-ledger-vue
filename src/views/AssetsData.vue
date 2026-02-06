@@ -178,11 +178,13 @@ const totalValueUsdStr = computed(() => {
 
 function formatNumberThousandsDot(nu: number, digits = 2): string {
   if (!Number.isFinite(nu)) return '0'
+  const d = Number.isFinite(digits) ? Math.max(0, Math.min(8, Math.trunc(digits))) : 2
+  const rounded = Number(nu.toFixed(d))
   // International format: 1,234.56 (comma thousands, dot decimals)
   return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(nu)
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
+  }).format(rounded)
 }
 
 /** ===== Utils ===== */
