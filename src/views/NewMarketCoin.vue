@@ -193,7 +193,7 @@
     <div v-if="showChart" class="flex flex-row justify-between items-center mx-4 mb-1">
       <p class="text-[10px] text-gray-400">Bid</p>
       <p class="text-[10px] text-gray-400">Ask</p>
-      <div class="w-[40px] flex justify-center items-center bg-gray-100 rounded-sm text-gray-400">
+      <div class="w-10 flex justify-center items-center bg-gray-100 rounded-sm text-gray-400">
         <p class="text-[10px] ml-1">{{ BOOK_TOP_N }}</p>
         <Icon icon="tabler:chevron-down" class="text-gray-700 w-3 h-3" />
       </div>
@@ -347,7 +347,7 @@
         <!-- Price -->
         <div class="flex items-center justify-between text-[12px] w-full space-x-2">
           <div
-            class="bg-gray-100 flex-row flex items-center justify-between px-2 rounded-lg w-[97%] py-[4px]"
+            class="bg-gray-100 flex-row flex items-center justify-between px-2 rounded-lg w-[97%] py-1"
           >
             <Icon icon="tabler:minus" class="w-4 h-4" />
             <div class="flex-1 text-center">
@@ -363,7 +363,7 @@
             <Icon icon="tabler:plus" class="w-4 h-4" />
           </div>
 
-          <div class="flex items-center space-x-2 bg-gray-100 rounded-lg py-[4px]">
+          <div class="flex items-center space-x-2 bg-gray-100 rounded-lg py-1">
             <button type="button" class="h-8 px-3 text-gray-900 font-semibold">BBO</button>
           </div>
         </div>
@@ -389,7 +389,7 @@
         </div>
 
         <!-- Amount -->
-        <div class="flex items-center bg-gray-100 rounded-lg px-2 py-[4px] text-[12px] gap-2">
+        <div class="flex items-center bg-gray-100 rounded-lg px-2 py-1 text-[12px] gap-2">
           <Icon icon="tabler:minus" class="w-4 h-4 shrink-0" />
 
           <div class="text-center">
@@ -433,7 +433,7 @@
             @change="commitSnap"
             @pointerdown="isDragging = true"
             @pointerup="handlePointerUp"
-            class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:mt-[-4px] disabled:cursor-not-allowed disabled:[&::-webkit-slider-thumb]:bg-gray-300"
+            class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-teal-600 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-600 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:-mt-1 disabled:cursor-not-allowed disabled:[&::-webkit-slider-thumb]:bg-gray-300"
           />
 
           <div class="flex justify-between text-xs text-gray-400 mt-1">
@@ -606,8 +606,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import LightChart from '@/components/trade/LightChart.vue'
 import type { CandlestickData, LineData, AreaData, UTCTimestamp } from 'lightweight-charts'
+import { config } from '@/lib/config'
+import { isBrowser, splitSymbol } from '@/lib/helpers'
+import type { Quote } from '@/lib/helpers'
+import { formatNumberId, moneyId, signedPercent, signedMoneyId } from '@/lib/format'
+import { localLogo } from '@/lib/constants/symbols'
 
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 
 // auto-refresh daftar coin simulasi (biar admin tambah coin langsung muncul)
 const SYNTH_REFRESH_MS = 3 * 60 * 1000 // 3 menit
@@ -624,9 +629,7 @@ type TF = (typeof tfs)[number]
 const tf = ref<TF>('15m')
 
 const modal = useApiAlertStore()
-const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 // ===== Assets (state) =====
-type Quote = 'USDT' | 'USDC' | 'USD'
 type PositionRow = {
   symbol: string
   qty: string | number
@@ -649,27 +652,8 @@ const assets = ref<AssetItem[]>([])
 const loadingAssets = ref(false)
 const errorAssets = ref<string | null>(null)
 
-// ===== Assets (utils) =====
-function splitSymbol(sym: string): { base: string; quote: Quote } {
-  const s = sym.toUpperCase()
-  if (s.endsWith('USDT')) return { base: s.slice(0, -4), quote: 'USDT' }
-  if (s.endsWith('USDC')) return { base: s.slice(0, -4), quote: 'USDC' }
-  if (s.endsWith('USD')) return { base: s.slice(0, -3), quote: 'USD' }
-  return { base: s, quote: 'USDT' }
-}
-const formatNumberId = (nu: number, digits = 2) =>
-  Number.isFinite(nu)
-    ? nu.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
-    : '0'
-const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
-const signedPercent = (pct: number) =>
-  (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
-const signedMoneyId = (nu: number, digits = 2) =>
-  (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
-
 // local logo helper
 const BASE = import.meta.env.BASE_URL || '/'
-const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
 
 // Synthetic logos (uploaded via admin)
 const syntheticLogoUrlByBase = ref<Record<string, string>>({})
@@ -845,7 +829,7 @@ function goAsset(a: { symbol: string }) {
 
 // ====== Assets realtime WS (ticker + kline 1day) ======
 type KlinePeriod = '1day'
-const ASSETS_WS_URL = 'wss://ws.hyper-led.com'
+const ASSETS_WS_URL = config.wsUrl
 
 // fast lookup untuk update harga
 const assetMap = new Map<string, AssetItem>()
@@ -1535,7 +1519,7 @@ function connectAggregatorWS() {
   try {
     aggWS.value?.close()
   } catch {}
-  aggWS.value = new WebSocket('wss://ws.hyper-led.com')
+  aggWS.value = new WebSocket(config.wsUrl)
 
   aggWS.value.onopen = () => {
     subscribedSym = null

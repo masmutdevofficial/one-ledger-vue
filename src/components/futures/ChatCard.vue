@@ -29,7 +29,7 @@
             <span class="shrink-0 font-medium" :style="{ color: userColor(m.user) }">
               {{ m.user }}:
             </span>
-            <p class="whitespace-pre-wrap break-words">
+            <p class="whitespace-pre-wrap break-all">
               {{ m.text }}
               <span
                 v-if="m.streaming"
@@ -110,8 +110,9 @@ import { ref, nextTick, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 
 type ChatMessage = {
   id: number

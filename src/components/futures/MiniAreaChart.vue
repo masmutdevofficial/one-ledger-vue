@@ -55,6 +55,6 @@ const chartOptions = {
     type="area"
     height="40"
     width="88"
-    class="rounded object-cover flex-shrink-0"
+    class="rounded object-cover shrink-0"
   />
 </template>

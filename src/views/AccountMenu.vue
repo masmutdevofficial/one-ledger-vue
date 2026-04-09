@@ -9,7 +9,7 @@
         class="flex items-center bg-white border border-gray-300 rounded-xl p-4 mb-6"
         style="box-shadow: 0 0 0 1px #d1eaea"
       >
-        <div class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+        <div class="shrink-0 w-12 h-12 rounded-full flex items-center justify-center mr-4">
           <img src="/img/menu/user.png" alt="User icon" class="w-12 h-12" width="40" height="40" />
         </div>
         <p class="text-gray-400 text-sm font-semibold select-none">{{ username }}</p>
@@ -30,7 +30,7 @@
       <!-- Modal Edit Username -->
       <div
         v-if="showModal"
-        class="fixed inset-0 bg-black/30 z-[100] flex items-center justify-center"
+        class="fixed inset-0 bg-black/30 z-100 flex items-center justify-center"
       >
         <div
           class="bg-white p-6 rounded-xl w-[90vw] max-w-xs mx-auto shadow-lg text-center relative"
@@ -83,7 +83,7 @@
     <!-- Modal Confirm Logout -->
     <div
       v-if="showLogoutModal"
-      class="fixed inset-0 bg-black/30 z-[100] flex items-center justify-center"
+      class="fixed inset-0 bg-black/30 z-100 flex items-center justify-center"
     >
       <div class="bg-white p-6 rounded-xl w-[90vw] max-w-xs mx-auto shadow-lg text-center relative">
         <button
@@ -123,6 +123,7 @@
 import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 import { useRouter } from 'vue-router'
 import LanguageSelector from '@/components/menu/LanguageSelector.vue'
 
@@ -177,7 +178,7 @@ onMounted(async () => {
       return
     }
 
-    const res = await fetch('https://tech.oneled.io/api/get-account-data', {
+    const res = await fetch(`${config.apiUrl}/get-account-data`, {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
@@ -205,7 +206,7 @@ const updateUsername = async () => {
       return
     }
 
-    const res = await fetch('https://tech.oneled.io/api/update-account-data', {
+    const res = await fetch(`${config.apiUrl}/update-account-data`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

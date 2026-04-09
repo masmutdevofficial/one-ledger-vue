@@ -77,6 +77,7 @@
 import { onMounted, reactive, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { config } from '@/lib/config'
 
 type NewsItem = {
   id: number
@@ -95,7 +96,7 @@ type LoadState = 'loading' | 'success' | 'error'
 const route = useRoute()
 const router = useRouter()
 
-const apiBase = import.meta.env.VITE_API_BASE ?? 'https://tech.oneled.io/api' // contoh: https://api.domain.com
+const apiBase = config.apiUrl
 
 const stateRef = reactive<{
   state: LoadState

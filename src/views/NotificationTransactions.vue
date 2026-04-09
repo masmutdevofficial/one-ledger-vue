@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { config } from '@/lib/config'
 
 /** === Types dari API === */
 type DepositRow = {
@@ -71,7 +72,7 @@ onMounted(async () => {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('Unauthorized')
 
-    const base = 'https://tech.oneled.io/api/wallet'
+    const base = config.apiUrl + '/wallet'
     const [dRes, wRes, tRes] = await Promise.allSettled([
       fetchJson<DepositRow[]>(`${base}/deposits`, token),
       fetchJson<WithdrawRow[]>(`${base}/withdraws`, token),

@@ -476,12 +476,12 @@ onBeforeUnmount(() => {
     </header>
 
     <!-- ERROR PAGE -->
-    <div v-if="pageError" class="flex-grow px-5 pt-10">
+    <div v-if="pageError" class="grow px-5 pt-10">
       <h1 class="text-center text-[#d9d9d9] font-bold">{{ pageError }}</h1>
     </div>
 
     <!-- NORMAL PAGE -->
-    <main v-else class="flex-grow px-5 pt-5">
+    <main v-else class="grow px-5 pt-5">
       <!-- Payment method (advertiser_name) -->
       <input
         type="text"
@@ -519,7 +519,7 @@ onBeforeUnmount(() => {
         <!-- Modal konfirmasi upload -->
         <div
           v-if="showUploadModal"
-          class="fixed inset-0 z-[60] flex items-center justify-center"
+          class="fixed inset-0 z-60 flex items-center justify-center"
           role="dialog"
           aria-modal="true"
         >

@@ -4,7 +4,7 @@
     <div class="flex justify-between items-start mb-4">
       <div class="flex flex-col items-start space-x-4">
         <div
-          class="w-16 h-16 rounded-full border border-[#a3b13f] overflow-hidden flex-shrink-0 mb-4"
+          class="w-16 h-16 rounded-full border border-[#a3b13f] overflow-hidden shrink-0 mb-4"
         >
           <img
             :alt="`${name} profile photo`"

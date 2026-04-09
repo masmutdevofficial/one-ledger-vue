@@ -86,7 +86,7 @@
             <div class="w-6 h-6 rounded-full bg-[#0071bc] flex items-center justify-center text-white text-xs">
               <Icon icon="tabler:arrow-down" />
             </div>
-            <div class="w-[2px] bg-[#0071bc] flex-1 mt-1"></div>
+            <div class="w-0.5 bg-[#0071bc] flex-1 mt-1"></div>
           </div>
 
           <div class="bg-gray-100 px-4 ml-3 py-3 rounded text-xs font-semibold text-gray-700 uppercase">
@@ -123,7 +123,7 @@
             <div class="w-6 h-6 rounded-full bg-[#0071bc] flex items-center justify-center text-white text-xs">
               <Icon icon="tabler:arrow-down" />
             </div>
-            <div class="w-[2px] bg-[#0071bc] flex-1 mt-1"></div>
+            <div class="w-0.5 bg-[#0071bc] flex-1 mt-1"></div>
           </div>
 
           <div class="bg-gray-100 px-4 ml-3 py-3 rounded text-xs font-semibold text-gray-700 uppercase">
@@ -217,8 +217,9 @@
 import { ref, computed, onMounted, type Ref, type ComputedRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { config } from '@/lib/config'
 
-const API_BASE = 'https://tech.oneled.io/api' as const
+const API_BASE = config.apiUrl
 
 type Status = 'Pending' | 'InProgress' | 'Completed' | 'Cancelled' | 'Failed'
 

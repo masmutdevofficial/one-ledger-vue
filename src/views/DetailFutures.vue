@@ -1,6 +1,6 @@
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <template>
-  <main class="px-5 flex-grow mb-20">
+  <main class="px-5 grow mb-20">
     <!-- STATES (page-level) -->
     <div v-if="loading" class="py-10 text-center text-sm text-gray-500">Loading…</div>
     <div v-else-if="pageError" class="py-10 text-center text-sm text-red-500">{{ pageError }}</div>
@@ -578,7 +578,7 @@
 
       <div
         v-if="showRestrict"
-        class="fixed inset-0 z-[1000] flex items-center justify-center"
+        class="fixed inset-0 z-1000 flex items-center justify-center"
         role="dialog"
         aria-modal="true"
       >
@@ -737,6 +737,7 @@ import { useApiAlertStore } from '@/stores/apiAlert'
 import ChatCard from '@/components/futures/ChatCard.vue'
 import LightChart from '@/components/trade/LightChart.vue'
 import type { AreaData, CandlestickData, LineData, UTCTimestamp } from 'lightweight-charts'
+import { config } from '@/lib/config'
 
 /* ===== ALERT via Pinia store ===== */
 const apiAlert = useApiAlertStore()
@@ -744,7 +745,7 @@ const alertSuccess = (msg: string, onClose?: () => void) => apiAlert.open('Succe
 const alertError = (msg: string, onClose?: () => void) => apiAlert.open('Error', msg, onClose)
 
 /* ===== Helpers API ===== */
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 
 type Side = 'BUY' | 'SELL'
 const selectedSide = ref<Side | ''>('')
@@ -1482,7 +1483,7 @@ function connectAggregatorWS() {
     aggWS.value?.close()
   } catch {}
 
-  aggWS.value = new WebSocket('wss://ws.hyper-led.com')
+  aggWS.value = new WebSocket(config.wsUrl)
 
   aggWS.value.onopen = () => {
     subscribedSym = null

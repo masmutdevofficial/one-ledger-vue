@@ -67,6 +67,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 const modal = useApiAlertStore()
 import { Icon } from '@iconify/vue'
 
@@ -112,7 +113,7 @@ async function submitCode() {
   }
   loading.value = true
   try {
-    const res = await fetch('https://tech.oneled.io/api/verify-otp', {
+    const res = await fetch(`${config.apiUrl}/verify-otp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

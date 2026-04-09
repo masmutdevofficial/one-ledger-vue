@@ -76,7 +76,7 @@
   <!-- ALERT lokal -->
   <div
     v-if="alert.open"
-    class="fixed z-[60] top-4 left-1/2 -translate-x-1/2 max-w-md w-[92%]"
+    class="fixed z-60 top-4 left-1/2 -translate-x-1/2 max-w-md w-[92%]"
     role="alert"
     aria-live="assertive"
   >
@@ -126,10 +126,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { config } from '@/lib/config'
 
 const router = useRouter()
 
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 
 const emailPhone = ref<string>('')
 const fieldError = ref<string>('')

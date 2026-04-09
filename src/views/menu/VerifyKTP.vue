@@ -114,7 +114,7 @@
     </template>
 
     <!-- Modal: Edit Account -->
-    <div v-if="showEditAccount" class="fixed inset-0 z-[100] bg-black/30 flex items-end sm:items-center justify-center">
+    <div v-if="showEditAccount" class="fixed inset-0 z-100 bg-black/30 flex items-end sm:items-center justify-center">
       <div class="bg-white w-full sm:w-[90vw] sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-semibold text-base">Edit Account</h3>
@@ -161,9 +161,10 @@
 import { ref, computed, onBeforeUnmount, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 
 /* ===== API helpers ===== */
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '')
 async function authFetch(path: string, init: RequestInit = {}) {
   const token = getToken()

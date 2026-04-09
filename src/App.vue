@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import ApiAlerts from '@/components/ApiAlerts.vue'
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useHead } from '@vueuse/head'
 import { bootstrapA2HS } from '@/composables/useA2HS'
+import { useDeviceGate } from '@/plugins/deviceGate'
+import { useAntiInspect } from '@/plugins/antiInspect'
+import { config } from '@/lib/config'
+
 bootstrapA2HS()
+
+// Device gate & anti-inspect extracted to plugins
+const { blockedByDevice } = useDeviceGate()
+useAntiInspect()
 
 const meta = ref<{
   logo: string
@@ -21,66 +29,10 @@ const defaultMeta = {
   url: 'https://oneledger.cloud',
 }
 
-// === Mobile-only + anti-inspect (best-effort) ===
-const blockedByDevice = ref(true)
-
-function isMobileLike() {
-  const ua = navigator.userAgent || ''
-  const uaMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
-  const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false
-  const maxWidth = window.matchMedia?.('(max-width: 900px)').matches ?? window.innerWidth <= 900
-  return (uaMobile || coarse) && maxWidth
-}
-
-function applyAntiInspect(enable: boolean) {
-  const onCtx = (e: MouseEvent) => e.preventDefault()
-  const onKey = (e: KeyboardEvent) => {
-    const k = e.key.toLowerCase()
-    // F12
-    if (k === 'f12') e.preventDefault()
-    // Ctrl/Cmd + U/S/P    (view-source, save, print)
-    if ((e.ctrlKey || e.metaKey) && ['u', 's', 'p'].includes(k)) e.preventDefault()
-    // Ctrl/Cmd+Shift+I/J/C (DevTools)
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i', 'j', 'c'].includes(k)) e.preventDefault()
-  }
-  const onDrag = (e: DragEvent) => e.preventDefault()
-
-  if (enable) {
-    document.addEventListener('contextmenu', onCtx, { passive: false })
-    document.addEventListener('keydown', onKey, { passive: false })
-    document.addEventListener('dragstart', onDrag, { passive: false })
-    // simpan refs ke window untuk cleanup
-    ;(window as any).__antiInspect = { onCtx, onKey, onDrag }
-  } else {
-    const h = (window as any).__antiInspect
-    if (h) {
-      document.removeEventListener('contextmenu', h.onCtx as any)
-      document.removeEventListener('keydown', h.onKey as any)
-      document.removeEventListener('dragstart', h.onDrag as any)
-      delete (window as any).__antiInspect
-    }
-  }
-}
-
-function evaluateDeviceGate() {
-  blockedByDevice.value = !isMobileLike()
-}
-
 onMounted(async () => {
-  // device gate awal + on resize/orientation
-  evaluateDeviceGate()
-  const ro = () => evaluateDeviceGate()
-  window.addEventListener('resize', ro)
-  window.addEventListener('orientationchange', ro)
-  ;(window as any).__gateHandlers = ro
-
-  // aktifkan anti-inspect
-  applyAntiInspect(true)
-
-  // fetch meta
   try {
-    const res = await fetch('https://tech.oneled.io/api/meta-web')
-    if (!res.ok) throw new Error('Gagal mengambil meta')
+    const res = await fetch(`${config.apiUrl}/meta-web`)
+    if (!res.ok) throw new Error('Failed to fetch meta')
     const data = await res.json()
     meta.value = data
   } catch {
@@ -88,17 +40,7 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(() => {
-  const ro = (window as any).__gateHandlers
-  if (ro) {
-    window.removeEventListener('resize', ro)
-    window.removeEventListener('orientationchange', ro)
-    delete (window as any).__gateHandlers
-  }
-  applyAntiInspect(false)
-})
-
-// Head (tetap reactive)
+// Head (reactive)
 const headMeta = computed(() => {
   const data = meta.value
   return {

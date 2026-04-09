@@ -1,4 +1,5 @@
 import { ref, onMounted, onUnmounted } from 'vue'
+import { config } from '@/lib/config'
 
 export interface MarketItem {
   name: string
@@ -14,7 +15,7 @@ export function useCoinWebSocket(coin: string, interval: string = '1min') {
   // Compose endpoint URL
   function getWsUrl() {
     // Aggregator terbaru: 1 endpoint (broadcast)
-    return `wss://ws.hyper-led.com`
+    return config.wsUrl
   }
 
   function connect() {

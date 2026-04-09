@@ -156,7 +156,7 @@
     <!-- Cancel Confirmation Modal -->
     <div
       v-if="showCancelModal"
-      class="fixed inset-0 z-[51] flex items-center justify-center"
+      class="fixed inset-0 z-51 flex items-center justify-center"
       aria-modal="true"
       role="dialog"
     >
@@ -164,7 +164,7 @@
       <div class="absolute inset-0 bg-black/30" @click="closeCancelModal"></div>
 
       <!-- Panel -->
-      <div class="relative z-[52] w-full max-w-sm mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
+      <div class="relative z-52 w-full max-w-sm mx-4 rounded-2xl bg-white shadow-xl" @click.stop>
         <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h3 class="text-base font-semibold">Cancel Transaction</h3>

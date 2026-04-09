@@ -20,7 +20,7 @@
     <div v-else-if="errorMsg" class="p-4 text-center text-xs text-red-500">{{ errorMsg }}</div>
 
     <!-- Main -->
-    <main v-else class="px-4 pt-6 flex-grow">
+    <main v-else class="px-4 pt-6 grow">
       <!-- Amount -->
       <section class="bg-gray-100 rounded-xl p-5 mb-6">
         <p class="text-sm font-medium text-gray-800 mb-1">Buy USDT</p>
@@ -105,6 +105,7 @@ import { Icon } from '@iconify/vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 
 const router = useRouter()
 const route = useRoute()
@@ -191,7 +192,7 @@ function clampToAvailable(usdt: number): number {
 async function fetchOffer() {
   const token = localStorage.getItem('token')
   if (!token) throw new Error('Unauthorized.')
-  const res = await fetch(`https://tech.oneled.io/api/p2p-offers/${idParam.value}`, {
+  const res = await fetch(`${config.apiUrl}/p2p-offers/${idParam.value}`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   })
   if (!res.ok) {
@@ -269,7 +270,7 @@ async function placeOrder() {
 
     submitLoading.value = true
 
-    const res = await fetch('https://tech.oneled.io/api/deposits', {
+    const res = await fetch(`${config.apiUrl}/deposits`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

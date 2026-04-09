@@ -12,7 +12,7 @@
       <div class="flex items-center space-x-3 mb-2">
         <img
           :alt="quest.logoAlt"
-          class="w-8 h-8 rounded-full flex-shrink-0"
+          class="w-8 h-8 rounded-full shrink-0"
           height="32"
           :src="quest.logo"
           width="32"

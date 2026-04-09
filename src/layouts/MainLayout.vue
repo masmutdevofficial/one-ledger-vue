@@ -3,9 +3,10 @@ import { ref, onMounted, computed, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useNotificationCounter } from '@/composables/useNotificationCounter'
+import { SYMBOL_META } from '@/lib/constants/symbols'
+import { config } from '@/lib/config'
 
 // ===== Support chat unread (internal Laravel API) =====
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://tech.oneled.io/api'
 const supportUnread = ref(0)
 const supportLabel = computed(() => (supportUnread.value > 99 ? '99+' : String(supportUnread.value)))
 let supportTimer: number | null = null
@@ -18,7 +19,7 @@ async function fetchSupportUnread() {
       return
     }
 
-    const res = await fetch(`${API_BASE}/cs/me/unread`, {
+    const res = await fetch(`${config.apiUrl}/cs/me/unread`, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
     })
     const json = (await res.json().catch(() => null)) as null | { data?: Array<{ unread?: number }> }
@@ -136,94 +137,6 @@ const teal600Filter = {
     'brightness(0) saturate(100%) invert(33%) sepia(86%) saturate(373%) hue-rotate(130deg) brightness(92%) contrast(90%)',
 }
 
-type Quote = 'USDT'
-function localLogo(symbol: string): string {
-  // pakai logo lokal; biarkan 404 kalau belum ada, list tetap muncul
-  return `/img/crypto/${symbol}.svg`
-}
-
-const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote }> = {
-  BTC: { name: 'Bitcoin', logoUrl: localLogo('btc'), quote: 'USDT' },
-  ETH: { name: 'Ethereum', logoUrl: localLogo('eth'), quote: 'USDT' },
-  BNB: { name: 'BNB (Binance Coin)', logoUrl: localLogo('bnb'), quote: 'USDT' },
-  SOL: { name: 'Solana', logoUrl: localLogo('sol'), quote: 'USDT' },
-  LTC: { name: 'Litecoin', logoUrl: localLogo('ltc'), quote: 'USDT' },
-  LINK: { name: 'Chainlink', logoUrl: localLogo('link'), quote: 'USDT' },
-  TON: { name: 'Toncoin', logoUrl: localLogo('ton'), quote: 'USDT' },
-  SUI: { name: 'Sui', logoUrl: localLogo('sui'), quote: 'USDT' },
-  XRP: { name: 'XRP', logoUrl: localLogo('xrp'), quote: 'USDT' },
-  QTUM: { name: 'Qtum', logoUrl: localLogo('qtum'), quote: 'USDT' },
-  THETA: { name: 'Theta Network', logoUrl: localLogo('theta'), quote: 'USDT' },
-  ADA: { name: 'Cardano', logoUrl: localLogo('ada'), quote: 'USDT' },
-  RAD: { name: 'Radworks (RAD)', logoUrl: localLogo('rad'), quote: 'USDT' },
-  BAND: { name: 'Band Protocol', logoUrl: localLogo('band'), quote: 'USDT' },
-  ALGO: { name: 'Algorand', logoUrl: localLogo('algo'), quote: 'USDT' },
-  POL: { name: 'Polygon Matic (POL)', logoUrl: localLogo('pol'), quote: 'USDT' },
-  DOGE: { name: 'Dogecoin', logoUrl: localLogo('doge'), quote: 'USDT' },
-  LUNA: { name: 'Terra (LUNA)', logoUrl: localLogo('luna'), quote: 'USDT' },
-  GALA: { name: 'Gala', logoUrl: localLogo('gala'), quote: 'USDT' },
-  PEPE: { name: 'Pepe', logoUrl: localLogo('pepe'), quote: 'USDT' },
-  CFX: { name: 'Conflux', logoUrl: localLogo('cfx'), quote: 'USDT' },
-  TRX: { name: 'TRON', logoUrl: localLogo('trx'), quote: 'USDT' },
-  TRUMP: { name: 'TRUMP', logoUrl: localLogo('trump'), quote: 'USDT' },
-  SHIB: { name: 'Shiba Inu', logoUrl: localLogo('shib'), quote: 'USDT' },
-  ARB: { name: 'Arbitrum', logoUrl: localLogo('arb'), quote: 'USDT' },
-  FIL: { name: 'Filecoin', logoUrl: localLogo('fil'), quote: 'USDT' },
-  API3: { name: 'API3', logoUrl: localLogo('api3'), quote: 'USDT' },
-  ENA: { name: 'Ethena', logoUrl: localLogo('ena'), quote: 'USDT' },
-  BIO: { name: 'BIO', logoUrl: localLogo('bio'), quote: 'USDT' },
-  UNI: { name: 'Uniswap', logoUrl: localLogo('uni'), quote: 'USDT' },
-  BTT: { name: 'BitTorrent', logoUrl: localLogo('btt'), quote: 'USDT' },
-  SATS: { name: 'SATS', logoUrl: localLogo('sats'), quote: 'USDT' },
-  MEME: { name: 'MEME', logoUrl: localLogo('meme'), quote: 'USDT' },
-  GT: { name: 'GateToken', logoUrl: localLogo('gt'), quote: 'USDT' },
-  OP: { name: 'Optimism', logoUrl: localLogo('op'), quote: 'USDT' },
-  AAVE: { name: 'Aave', logoUrl: localLogo('aave'), quote: 'USDT' },
-  SNAKES: { name: 'SNAKES', logoUrl: localLogo('snakes'), quote: 'USDT' },
-  TIA: { name: 'Celestia', logoUrl: localLogo('tia'), quote: 'USDT' },
-  SOON: { name: 'SOON', logoUrl: localLogo('soon'), quote: 'USDT' },
-  ONDO: { name: 'Ondo', logoUrl: localLogo('ondo'), quote: 'USDT' },
-  NEO: { name: 'NEO', logoUrl: localLogo('neo'), quote: 'USDT' },
-  SKL: { name: 'SKALE', logoUrl: localLogo('skl'), quote: 'USDT' },
-  MX: { name: 'MEXC (MX)', logoUrl: localLogo('mx'), quote: 'USDT' },
-  FARTCOIN: { name: 'Fartcoin', logoUrl: localLogo('fartcoin'), quote: 'USDT' },
-  RATS: { name: 'RATS', logoUrl: localLogo('rats'), quote: 'USDT' },
-  ETC: { name: 'Ethereum Classic', logoUrl: localLogo('etc'), quote: 'USDT' },
-  TRB: { name: 'Tellor', logoUrl: localLogo('trb'), quote: 'USDT' },
-  AVAX: { name: 'Avalanche', logoUrl: localLogo('avax'), quote: 'USDT' },
-  BCH: { name: 'Bitcoin Cash', logoUrl: localLogo('bch'), quote: 'USDT' },
-  BSV: { name: 'Bitcoin SV', logoUrl: localLogo('bsv'), quote: 'USDT' },
-  IOTA: { name: 'IOTA', logoUrl: localLogo('iota'), quote: 'USDT' },
-  CYBER: { name: 'Cyber', logoUrl: localLogo('cyber'), quote: 'USDT' },
-  WIF: { name: 'dogwifhat', logoUrl: localLogo('wif'), quote: 'USDT' },
-  CORE: { name: 'Core', logoUrl: localLogo('core'), quote: 'USDT' },
-  WLD: { name: 'Worldcoin', logoUrl: localLogo('wld'), quote: 'USDT' },
-  SEI: { name: 'Sei', logoUrl: localLogo('sei'), quote: 'USDT' },
-  VIRTUAL: { name: 'VIRTUAL', logoUrl: localLogo('virtual'), quote: 'USDT' },
-  RENDER: { name: 'Render', logoUrl: localLogo('render'), quote: 'USDT' },
-  MOODENG: { name: 'MOODENG', logoUrl: localLogo('moodeng'), quote: 'USDT' },
-  JUP: { name: 'Jupiter', logoUrl: localLogo('jup'), quote: 'USDT' },
-  PONKE: { name: 'PONKE', logoUrl: localLogo('ponke'), quote: 'USDT' },
-  MNT: { name: 'Mantle', logoUrl: localLogo('mnt'), quote: 'USDT' },
-  PNUT: { name: 'PNUT', logoUrl: localLogo('pnut'), quote: 'USDT' },
-  EIGEN: { name: 'EIGEN', logoUrl: localLogo('eigen'), quote: 'USDT' },
-  GRASS: { name: 'GRASS', logoUrl: localLogo('grass'), quote: 'USDT' },
-  RAY: { name: 'Raydium', logoUrl: localLogo('ray'), quote: 'USDT' },
-  EPIC: { name: 'EPIC', logoUrl: localLogo('epic'), quote: 'USDT' },
-  ZRO: { name: 'LayerZero (ZRO)', logoUrl: localLogo('zro'), quote: 'USDT' },
-  BERA: { name: 'Berachain', logoUrl: localLogo('bera'), quote: 'USDT' },
-  CA: { name: 'CA', logoUrl: localLogo('ca'), quote: 'USDT' },
-  IP: { name: 'IP', logoUrl: localLogo('ip'), quote: 'USDT' },
-  KAITO: { name: 'Kaito', logoUrl: localLogo('kaito'), quote: 'USDT' },
-  OMNI: { name: 'Omni Network', logoUrl: localLogo('omni'), quote: 'USDT' },
-  A8: { name: 'A8', logoUrl: localLogo('a8'), quote: 'USDT' },
-  OBOL: { name: 'Obol', logoUrl: localLogo('obol'), quote: 'USDT' },
-  SAGA: { name: 'Saga', logoUrl: localLogo('saga'), quote: 'USDT' },
-  ORCA: { name: 'Orca', logoUrl: localLogo('orca'), quote: 'USDT' },
-  SHELL: { name: 'Shell', logoUrl: localLogo('shell'), quote: 'USDT' },
-  NAKA: { name: 'Nakamoto Games', logoUrl: localLogo('naka'), quote: 'USDT' },
-}
-
 const searchQuery = ref('')
 const isFocused = ref(false)
 let blurTimer: number | null = null
@@ -280,10 +193,9 @@ function onBlur() {
 
 function chooseCoin(coin: { symbol: string }) {
   searchQuery.value = coin.symbol
-  // tetap tampilkan list & fokus input agar lanjut edit/replace
   isFocused.value = true
   nextTick(() => inputRef.value?.focus())
-  window.location.href = `/trade?symbol=${coin.symbol.toLowerCase()}usdt`
+  router.push(`/trade?symbol=${coin.symbol.toLowerCase()}usdt`)
 }
 
 onMounted(() => {
@@ -320,7 +232,7 @@ onBeforeUnmount(() => {
             <span
               v-if="notificationCount > 0"
               :class="[
-                'absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse min-w-[1rem] px-1',
+                'absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse min-w-4 px-1',
                 badgeClass,
               ]"
             >
@@ -359,7 +271,7 @@ onBeforeUnmount(() => {
           <span
             v-if="supportUnread > 0"
             :class="[
-              'absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse min-w-[1rem] px-1',
+                'absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse min-w-4 px-1',
               badgeClass,
             ]"
           >
@@ -507,7 +419,7 @@ onBeforeUnmount(() => {
               <teleport to="body">
                 <div
                   v-if="showRestrict"
-                  class="fixed inset-0 z-[1000] flex items-center justify-center"
+                  class="fixed inset-0 z-1000 flex items-center justify-center"
                   role="dialog"
                   aria-modal="true"
                 >
@@ -551,7 +463,7 @@ onBeforeUnmount(() => {
                 class="flex flex-col items-center"
                 :class="isActive('/assets') ? 'text-teal-600' : 'text-gray-400'"
               >
-                <Icon icon="tabler:wallet" class="w-4 h-4 mt-[2px]" />
+                <Icon icon="tabler:wallet" class="w-4 h-4 mt-0.5" />
                 <span class="text-xs mt-1">Assets</span>
               </RouterLink>
             </div>

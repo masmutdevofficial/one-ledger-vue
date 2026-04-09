@@ -20,7 +20,7 @@
     <div v-else-if="errorMsg" class="p-4 text-center text-xs text-red-500">{{ errorMsg }}</div>
 
     <!-- Main -->
-    <main v-else class="px-4 pt-6 flex-grow">
+    <main v-else class="px-4 pt-6 grow">
       <!-- Amount -->
       <section class="bg-gray-100 rounded-xl p-5 mb-6">
         <p class="text-sm font-medium text-gray-800 mb-1">Sell USDT</p>

@@ -247,6 +247,7 @@
 import { ref, nextTick, onUnmounted, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
+import { config } from '@/lib/config'
 
 type Sender = 'user' | 'bot'
 type MsgStatus = 'sent' | 'delivered' | 'read'
@@ -281,7 +282,7 @@ const unreadCount = ref(0)
 const conversationId = ref<number | null>(null)
 const pollTimer = ref<number | null>(null)
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 const API_ORIGIN = API_BASE.replace(/\/?api\/?$/, '')
 const CDN_BASE = (import.meta.env.VITE_CDN_URL as string | undefined) ?? 'https://cdn.one-led.io'
 

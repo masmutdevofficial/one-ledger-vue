@@ -5,7 +5,7 @@
       <button @click="router.back()" aria-label="Back" class="text-gray-700 text-lg">
         <Icon icon="tabler:arrow-left" class="w-5 h-5" />
       </button>
-      <h1 class="flex-grow text-center font-semibold text-base text-black">Send USDT</h1>
+      <h1 class="grow text-center font-semibold text-base text-black">Send USDT</h1>
       <div class="w-6"></div>
     </div>
 
@@ -42,7 +42,7 @@
 
     <!-- Network -->
     <div class="mb-4 no-ios-zoom">
-      <label for="network" class="block text-xs font-normal text-gray-600 mb-1 flex items-center">
+      <label for="network" class="text-xs font-normal text-gray-600 mb-1 flex items-center">
         Network
         <button aria-label="Info" class="ml-1 text-gray-400 text-xs">
           <Icon icon="tabler:info-circle" class="w-3.5 h-3.5" />
@@ -72,7 +72,7 @@
           type="text"
           v-model="amount"
           placeholder="Minimum 100"
-          class="flex-grow bg-transparent text-xs font-normal text-gray-400 placeholder-gray-400 outline-none"
+          class="grow bg-transparent text-xs font-normal text-gray-400 placeholder-gray-400 outline-none"
         />
         <span class="text-xs font-normal text-gray-700 mr-3 select-none">USDT</span>
         <button @click="setMax" class="text-xs font-normal text-cyan-400">Max</button>

@@ -251,11 +251,10 @@ import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 
 /** ================== Config ================== */
-const API_BASE =
-  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_API_BASE ??
-  'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 const POLL_MS = 3500
 const PAGE_STEP = 50
 const MAX_LIMIT = 200

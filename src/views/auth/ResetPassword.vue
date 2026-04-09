@@ -64,6 +64,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 import { Icon } from '@iconify/vue'
 
 const router = useRouter()
@@ -86,7 +87,7 @@ async function checkToken() {
   }
 
   try {
-    const res = await fetch('https://tech.oneled.io/api/validate-reset-token', {
+    const res = await fetch(`${config.apiUrl}/validate-reset-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -128,7 +129,7 @@ async function submitPassword() {
 
   loading.value = true
   try {
-    const res = await fetch('https://tech.oneled.io/api/reset-password', {
+    const res = await fetch(`${config.apiUrl}/reset-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

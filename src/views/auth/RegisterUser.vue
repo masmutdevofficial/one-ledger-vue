@@ -82,7 +82,7 @@
       <!-- Privacy Policy Modal -->
       <div
         v-if="showPrivacy"
-        class="fixed inset-0 z-[60] flex items-center justify-center"
+        class="fixed inset-0 z-60 flex items-center justify-center"
         role="dialog"
         aria-modal="true"
       >
@@ -272,7 +272,7 @@
       <!-- Terms of Use Modal -->
       <div
         v-if="showTerms"
-        class="fixed inset-0 z-[60] flex items-center justify-center"
+        class="fixed inset-0 z-60 flex items-center justify-center"
         role="dialog"
         aria-modal="true"
       >
@@ -448,6 +448,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 import { Icon } from '@iconify/vue'
 
 const email = ref('')
@@ -499,7 +500,7 @@ const handleRegister = async () => {
 
   loading.value = true
   try {
-    const res = await fetch('https://tech.oneled.io/api/register', {
+    const res = await fetch(`${config.apiUrl}/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

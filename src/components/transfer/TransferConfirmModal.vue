@@ -2,13 +2,13 @@
   <Teleport to="body">
     <!-- Backdrop (fade) -->
     <transition name="fade">
-      <div v-if="show" class="fixed inset-0 z-[100] bg-black/30" @click.self="close"></div>
+      <div v-if="show" class="fixed inset-0 z-100 bg-black/30" @click.self="close"></div>
     </transition>
     <!-- Modal (slide-up) -->
     <transition name="slide-up">
       <div
         v-if="show"
-        class="fixed inset-0 z-[101] flex items-end justify-end"
+        class="fixed inset-0 z-101 flex items-end justify-end"
         style="pointer-events: none"
       >
         <div

@@ -2,13 +2,13 @@
 <template>
   <Teleport to="body">
     <transition name="fade">
-      <div v-if="show" class="fixed inset-0 bg-black/30 z-[100]" @click.self="close" />
+      <div v-if="show" class="fixed inset-0 bg-black/30 z-100" @click.self="close" />
     </transition>
 
     <transition name="slide-up">
       <div
         v-if="show"
-        class="fixed inset-0 z-[101] flex items-end justify-center"
+        class="fixed inset-0 z-101 flex items-end justify-center"
         style="pointer-events: none"
       >
         <div

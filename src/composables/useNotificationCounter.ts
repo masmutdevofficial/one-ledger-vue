@@ -1,8 +1,9 @@
 // src/composables/useNotificationCounter.ts
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { config } from '@/lib/config'
 
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 
 function getToken(): string | null {
   return localStorage.getItem('token')

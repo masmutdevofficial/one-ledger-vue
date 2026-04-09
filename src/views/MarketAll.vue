@@ -1,5 +1,5 @@
 <template>
-  <main class="relative -top-6 px-4 py-4 flex-grow mb-20">
+  <main class="relative -top-6 px-4 py-4 grow mb-20">
     <!-- Filter -->
     <teleport to="body">
       <div class="fixed top-30 left-1/2 -translate-x-1/2 z-50 w-full max-w-md bg-white">
@@ -121,6 +121,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
+import { config } from '@/lib/config'
+import { isBrowser } from '@/lib/helpers'
 
 /** ==================== Types ==================== */
 interface Crypto {
@@ -137,8 +139,8 @@ type CacheShape = Record<string, CachedItem>
 /** ==================== Const ==================== */
 const LS_KEY = 'cryptoSnapshot:v1'
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 menit; set 0 kalau tak mau TTL
-const WS_BASE = 'wss://ws.hyper-led.com'
-const API_BASE = 'https://tech.oneled.io/api'
+const WS_BASE = config.wsUrl
+const API_BASE = config.apiUrl
 
 // auto-refresh daftar coin simulasi (biar admin tambah coin langsung muncul)
 const SYNTH_REFRESH_MS = 3 * 60 * 1000 // 3 menit
@@ -149,9 +151,6 @@ const BASE = import.meta.env.BASE_URL || '/'
 const ICON_FALLBACK = `${BASE}img/crypto/default.svg`
 
 /** ==================== Utils ==================== */
-function isBrowser() {
-  return typeof window !== 'undefined' && typeof localStorage !== 'undefined'
-}
 function toUpstreamId(symUI: string) {
   const override: Record<string, string> = { OP: 'opusdt' }
   return override[symUI] ?? symUI.toLowerCase() + 'usdt'

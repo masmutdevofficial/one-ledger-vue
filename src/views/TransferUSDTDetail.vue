@@ -10,7 +10,7 @@
       >
         <Icon icon="tabler:arrow-left" class="w-5 h-5" />
       </button>
-      <h1 class="flex-grow text-center text-black font-semibold text-base leading-none">
+      <h1 class="grow text-center text-black font-semibold text-base leading-none">
         Enter Amount
       </h1>
       <div class="w-6"></div>
@@ -81,6 +81,7 @@ import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
 import TransferConfirmModal from '@/components/transfer/TransferConfirmModal.vue'
+import { config } from '@/lib/config'
 
 const router = useRouter()
 const route = useRoute()
@@ -111,7 +112,7 @@ onMounted(async () => {
   try {
     const token = localStorage.getItem('token')
     if (!token) return
-    const res = await fetch('https://tech.oneled.io/api/get-saldo', {
+    const res = await fetch(`${config.apiUrl}/get-saldo`, {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
@@ -145,7 +146,7 @@ async function handleContinue() {
       confirming.value = false
       return
     }
-    const res = await fetch('https://tech.oneled.io/api/save-transfer', {
+    const res = await fetch(`${config.apiUrl}/save-transfer`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

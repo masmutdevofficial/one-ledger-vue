@@ -46,6 +46,7 @@
 import { Icon } from '@iconify/vue'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { config } from '@/lib/config'
 
 const router = useRouter()
 function goBack() {
@@ -54,7 +55,7 @@ function goBack() {
 }
 
 // --- API base + helper (plain + token) ---
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 async function authFetch(path: string, init: RequestInit = {}) {
   const token = localStorage.getItem('token')
   if (!token) throw new Error('Token not found')

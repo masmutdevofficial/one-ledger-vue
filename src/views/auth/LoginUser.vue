@@ -54,6 +54,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert' // perhatikan path stores!
+import { config } from '@/lib/config'
 import { Icon } from '@iconify/vue'
 
 const modal = useApiAlertStore()
@@ -74,7 +75,7 @@ const loading = ref(false)
 async function login() {
   loading.value = true
   try {
-    const res = await fetch('https://tech.oneled.io/api/login', {
+    const res = await fetch(`${config.apiUrl}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

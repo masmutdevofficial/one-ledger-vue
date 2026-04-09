@@ -4,6 +4,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 
 const router = useRouter()
 const route = useRoute()
@@ -94,7 +95,7 @@ async function fetchStatus() {
 
     // Pakai endpoint query-string: /withdraws/status?order_id=...
     const res = await fetch(
-      `https://tech.oneled.io/api/withdraws/status?order_id=${encodeURIComponent(orderId.value)}`,
+      `${config.apiUrl}/withdraws/status?order_id=${encodeURIComponent(orderId.value)}`,
       {
         headers: {
           Accept: 'application/json',
@@ -157,7 +158,7 @@ onBeforeUnmount(() => {
     <div v-else-if="pageError" class="p-4 text-center text-xs text-red-500">{{ pageError }}</div>
 
     <!-- Main -->
-    <main v-else class="flex-grow px-4 pt-5 pb-8">
+    <main v-else class="grow px-4 pt-5 pb-8">
       <section class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
         <!-- Status Badge -->
         <div class="flex items-center justify-between mb-4">

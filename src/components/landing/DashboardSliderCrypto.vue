@@ -102,7 +102,7 @@ onBeforeUnmount(() => {
         @touchstart="handleTouchStart"
         @touchend="handleTouchEnd"
       >
-        <div v-for="(item, index) in items" :key="index" class="min-w-full flex-shrink-0">
+        <div v-for="(item, index) in items" :key="index" class="min-w-full shrink-0">
           <div class="bg-white rounded-xl p-1 space-y-2">
             <!-- Header -->
             <div class="flex justify-between items-center">

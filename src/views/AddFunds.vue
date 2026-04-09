@@ -28,7 +28,7 @@
 
 
     <!-- Main Content -->
-    <main class="flex-grow">
+    <main class="grow">
       <!-- QR Code -->
       <div class="flex justify-center mb-6">
         <img :src="current.qr" :alt="`QR ${selectedCoin.sym}`" class="w-36 h-36 rounded-lg object-cover" width="150"

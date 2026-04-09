@@ -142,6 +142,11 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
+import { isBrowser, splitSymbol } from '@/lib/helpers'
+import type { Quote } from '@/lib/helpers'
+import { SYMBOL_META, localLogo } from '@/lib/constants/symbols'
+import { formatNumberId, moneyId, signedPercent, signedMoneyId } from '@/lib/format'
 
 const router = useRouter()
 const modal = useApiAlertStore()
@@ -186,9 +191,6 @@ function formatNumberThousandsDot(nu: number, digits = 2): string {
     maximumFractionDigits: d,
   }).format(rounded)
 }
-
-/** ===== Utils ===== */
-const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
 
 /** ===== Saldo ringkas (header) ===== */
 interface SaldoResponse {
@@ -242,10 +244,8 @@ type AssetItem = {
 }
 
 /** ===== Konstanta ===== */
-const API_BASE = 'https://tech.oneled.io/api'
-const WS_BASE = 'wss://ws.hyper-led.com'
-const BASE = import.meta.env.BASE_URL || '/'
-const localLogo = (sym: string) => `${BASE}img/crypto/${sym.toLowerCase()}.svg`
+const API_BASE = config.apiUrl
+const WS_BASE = config.wsUrl
 
 // Re-check synthetic coins periodically so deleted ones disappear from assets.
 const SYNTH_CHECK_MS = 10_000
@@ -382,88 +382,6 @@ function isSyntheticSymbol(sym: string): boolean {
   return syntheticSymbolsLower.value.has(s)
 }
 
-const SYMBOL_META: Record<string, { name: string; logoUrl: string; quote: Quote }> = {
-  BTC: { name: 'Bitcoin', logoUrl: localLogo('btc'), quote: 'USDT' },
-  ETH: { name: 'Ethereum', logoUrl: localLogo('eth'), quote: 'USDT' },
-  BNB: { name: 'BNB (Binance Coin)', logoUrl: localLogo('bnb'), quote: 'USDT' },
-  SOL: { name: 'Solana', logoUrl: localLogo('sol'), quote: 'USDT' },
-  LTC: { name: 'Litecoin', logoUrl: localLogo('ltc'), quote: 'USDT' },
-  LINK: { name: 'Chainlink', logoUrl: localLogo('link'), quote: 'USDT' },
-  TON: { name: 'Toncoin', logoUrl: localLogo('ton'), quote: 'USDT' },
-  SUI: { name: 'Sui', logoUrl: localLogo('sui'), quote: 'USDT' },
-  XRP: { name: 'XRP', logoUrl: localLogo('xrp'), quote: 'USDT' },
-  QTUM: { name: 'Qtum', logoUrl: localLogo('qtum'), quote: 'USDT' },
-  THETA: { name: 'Theta Network', logoUrl: localLogo('theta'), quote: 'USDT' },
-  ADA: { name: 'Cardano', logoUrl: localLogo('ada'), quote: 'USDT' },
-  RAD: { name: 'Radworks (RAD)', logoUrl: localLogo('rad'), quote: 'USDT' },
-  BAND: { name: 'Band Protocol', logoUrl: localLogo('band'), quote: 'USDT' },
-  ALGO: { name: 'Algorand', logoUrl: localLogo('algo'), quote: 'USDT' },
-  POL: { name: 'Polygon (POL)', logoUrl: localLogo('pol'), quote: 'USDT' },
-  DOGE: { name: 'Dogecoin', logoUrl: localLogo('doge'), quote: 'USDT' },
-  LUNA: { name: 'Terra (LUNA)', logoUrl: localLogo('luna'), quote: 'USDT' },
-  GALA: { name: 'Gala', logoUrl: localLogo('gala'), quote: 'USDT' },
-  PEPE: { name: 'Pepe', logoUrl: localLogo('pepe'), quote: 'USDT' },
-  CFX: { name: 'Conflux', logoUrl: localLogo('cfx'), quote: 'USDT' },
-  TRX: { name: 'TRON', logoUrl: localLogo('trx'), quote: 'USDT' },
-  TRUMP: { name: 'MAGA (TRUMP)', logoUrl: localLogo('trump'), quote: 'USDT' },
-  SHIB: { name: 'Shiba Inu', logoUrl: localLogo('shib'), quote: 'USDT' },
-  ARB: { name: 'Arbitrum', logoUrl: localLogo('arb'), quote: 'USDT' },
-  FIL: { name: 'Filecoin', logoUrl: localLogo('fil'), quote: 'USDT' },
-  API3: { name: 'API3', logoUrl: localLogo('api3'), quote: 'USDT' },
-  ENA: { name: 'Ethena', logoUrl: localLogo('ena'), quote: 'USDT' },
-  BIO: { name: 'BIO', logoUrl: localLogo('bio'), quote: 'USDT' },
-  UNI: { name: 'Uniswap', logoUrl: localLogo('uni'), quote: 'USDT' },
-  BTT: { name: 'BitTorrent', logoUrl: localLogo('btt'), quote: 'USDT' },
-  SATS: { name: 'SATS (Ordinals)', logoUrl: localLogo('sats'), quote: 'USDT' },
-  MEME: { name: 'Memecoin (MEME)', logoUrl: localLogo('meme'), quote: 'USDT' },
-  GT: { name: 'GateToken', logoUrl: localLogo('gt'), quote: 'USDT' },
-  OP: { name: 'Optimism', logoUrl: localLogo('op'), quote: 'USDT' },
-  AAVE: { name: 'Aave', logoUrl: localLogo('aave'), quote: 'USDT' },
-  SNAKES: { name: 'SNAKES', logoUrl: localLogo('snakes'), quote: 'USDT' },
-  TIA: { name: 'Celestia', logoUrl: localLogo('tia'), quote: 'USDT' },
-  SOON: { name: 'SOON', logoUrl: localLogo('soon'), quote: 'USDT' },
-  ONDO: { name: 'Ondo Finance', logoUrl: localLogo('ondo'), quote: 'USDT' },
-  NEO: { name: 'NEO', logoUrl: localLogo('neo'), quote: 'USDT' },
-  SKL: { name: 'SKALE', logoUrl: localLogo('skl'), quote: 'USDT' },
-  MX: { name: 'MX Token', logoUrl: localLogo('mx'), quote: 'USDT' },
-  FARTCOIN: { name: 'Fartcoin', logoUrl: localLogo('fartcoin'), quote: 'USDT' },
-  RATS: { name: 'RATS', logoUrl: localLogo('rats'), quote: 'USDT' },
-  ETC: { name: 'Ethereum Classic', logoUrl: localLogo('etc'), quote: 'USDT' },
-  TRB: { name: 'Tellor (TRB)', logoUrl: localLogo('trb'), quote: 'USDT' },
-  AVAX: { name: 'Avalanche', logoUrl: localLogo('avax'), quote: 'USDT' },
-  BCH: { name: 'Bitcoin Cash', logoUrl: localLogo('bch'), quote: 'USDT' },
-  BSV: { name: 'Bitcoin SV', logoUrl: localLogo('bsv'), quote: 'USDT' },
-  IOTA: { name: 'IOTA', logoUrl: localLogo('iota'), quote: 'USDT' },
-  CYBER: { name: 'Cyber', logoUrl: localLogo('cyber'), quote: 'USDT' },
-  WIF: { name: 'dogwifhat', logoUrl: localLogo('wif'), quote: 'USDT' },
-  CORE: { name: 'Core', logoUrl: localLogo('core'), quote: 'USDT' },
-  WLD: { name: 'Worldcoin', logoUrl: localLogo('wld'), quote: 'USDT' },
-  SEI: { name: 'Sei', logoUrl: localLogo('sei'), quote: 'USDT' },
-  VIRTUAL: { name: 'Virtuals', logoUrl: localLogo('virtual'), quote: 'USDT' },
-  RENDER: { name: 'Render', logoUrl: localLogo('render'), quote: 'USDT' },
-  MOODENG: { name: 'Moodeng', logoUrl: localLogo('moodeng'), quote: 'USDT' },
-  JUP: { name: 'Jupiter', logoUrl: localLogo('jup'), quote: 'USDT' },
-  PONKE: { name: 'PONKE', logoUrl: localLogo('ponke'), quote: 'USDT' },
-  MNT: { name: 'Mantle', logoUrl: localLogo('mnt'), quote: 'USDT' },
-  PNUT: { name: 'Peanut', logoUrl: localLogo('pnut'), quote: 'USDT' },
-  EIGEN: { name: 'Eigen', logoUrl: localLogo('eigen'), quote: 'USDT' },
-  GRASS: { name: 'Grass', logoUrl: localLogo('grass'), quote: 'USDT' },
-  RAY: { name: 'Raydium', logoUrl: localLogo('ray'), quote: 'USDT' },
-  EPIC: { name: 'EPIC', logoUrl: localLogo('epic'), quote: 'USDT' },
-  ZRO: { name: 'LayerZero', logoUrl: localLogo('zro'), quote: 'USDT' },
-  BERA: { name: 'Berachain', logoUrl: localLogo('bera'), quote: 'USDT' },
-  CA: { name: 'CA', logoUrl: localLogo('ca'), quote: 'USDT' },
-  IP: { name: 'IP', logoUrl: localLogo('ip'), quote: 'USDT' },
-  KAITO: { name: 'Kaito AI', logoUrl: localLogo('kaito'), quote: 'USDT' },
-  OMNI: { name: 'Omni Network', logoUrl: localLogo('omni'), quote: 'USDT' },
-  A8: { name: 'A8', logoUrl: localLogo('a8'), quote: 'USDT' },
-  OBOL: { name: 'Obol Network', logoUrl: localLogo('obol'), quote: 'USDT' },
-  SAGA: { name: 'Saga', logoUrl: localLogo('saga'), quote: 'USDT' },
-  ORCA: { name: 'Orca', logoUrl: localLogo('orca'), quote: 'USDT' },
-  SHELL: { name: 'Shell', logoUrl: localLogo('shell'), quote: 'USDT' },
-  NAKA: { name: 'Nakamoto Games', logoUrl: localLogo('naka'), quote: 'USDT' },
-}
-
 /** ===== Cache: saldo + positions + last prices ===== */
 type PriceCacheEntry = { p: number; ts: number }
 type PositionsCacheItem = { symbol: string; qty: number; avgCost: number; lastPrice?: number }
@@ -577,32 +495,7 @@ function rebuildAssetMap() {
   for (const a of assets.value) assetMap.set(a.symbol.toUpperCase(), a)
 }
 
-/** ===== Formatters ===== */
-const nfCache = new Map<string, Intl.NumberFormat>()
-const nfId = (min: number, max: number) => {
-  const k = `${min}-${max}`
-  if (!nfCache.has(k))
-    nfCache.set(
-      k,
-      new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: max }),
-    )
-  return nfCache.get(k)!
-}
-const formatNumberId = (nu: number, digits = 2) =>
-  Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0'
-const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
-const signedPercent = (pct: number) =>
-  (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
-const signedMoneyId = (nu: number, digits = 2) =>
-  (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
 /** ===== Helpers ===== */
-function splitSymbol(sym: string): { base: string; quote: Quote } {
-  const s = sym.toUpperCase()
-  if (s.endsWith('USDT')) return { base: s.slice(0, -4), quote: 'USDT' }
-  if (s.endsWith('USDC')) return { base: s.slice(0, -4), quote: 'USDC' }
-  if (s.endsWith('USD')) return { base: s.slice(0, -3), quote: 'USD' }
-  return { base: s, quote: 'USDT' }
-}
 function normalizeNum(v: string | number | null | undefined): number {
   if (v === null || v === undefined) return 0
   return typeof v === 'number' ? v : Number(v) || 0

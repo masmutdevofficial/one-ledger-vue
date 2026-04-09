@@ -584,7 +584,7 @@
 
       <div
         v-if="showRestrict"
-        class="fixed inset-0 z-[1000] flex items-center justify-center"
+        class="fixed inset-0 z-1000 flex items-center justify-center"
         role="dialog"
         aria-modal="true"
       >
@@ -628,6 +628,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { ref, computed, watch, onMounted, onUnmounted, defineComponent, h } from 'vue'
+import { config } from '@/lib/config'
 import { useRoute, useRouter } from 'vue-router'
 
 /** =========================
@@ -890,7 +891,7 @@ function connectAggregatorWS() {
   try {
     aggWS.value?.close()
   } catch {}
-  aggWS.value = new WebSocket('wss://ws.hyper-led.com')
+  aggWS.value = new WebSocket(config.wsUrl)
 
   aggWS.value.onopen = () => {
     subscribedSym = null

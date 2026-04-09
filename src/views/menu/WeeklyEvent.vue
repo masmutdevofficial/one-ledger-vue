@@ -243,9 +243,10 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 
 /** ===== Constants ===== */
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 const getToken = (): string =>
   typeof window !== 'undefined' ? localStorage.getItem('token') || '' : ''
 

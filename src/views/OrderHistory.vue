@@ -7,7 +7,7 @@
     </div>
 
     <div v-else class="space-y-6">
-      <main v-for="it in items" :key="it.id" class="bg-[#F9FAFB] rounded-3xl p-6 flex-grow">
+      <main v-for="it in items" :key="it.id" class="bg-[#F9FAFB] rounded-3xl p-6 grow">
         <h1 class="text-center font-extrabold text-lg mb-3">
           {{ it.base }}/{{ it.quote || 'USDT' }}
         </h1>
@@ -106,6 +106,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { ref, onMounted } from 'vue'
+import { config } from '@/lib/config'
 
 type Item = {
   id: number
@@ -126,7 +127,7 @@ type Item = {
   executed_at: string
 }
 
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 
 const loading = ref(true)
 const errorMsg = ref<string | null>(null)

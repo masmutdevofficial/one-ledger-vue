@@ -49,6 +49,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 import { Icon } from '@iconify/vue'
 
 const email = ref('')
@@ -64,7 +65,7 @@ async function submitEmail() {
 
   loading.value = true
   try {
-    const res = await fetch('https://tech.oneled.io/api/forgot-password', {
+    const res = await fetch(`${config.apiUrl}/forgot-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

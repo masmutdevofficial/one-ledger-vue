@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 pb-20 flex-grow">
+  <div class="px-4 pb-20 grow">
     <button aria-label="Go back" class="text-black text-xl" @click="goBack">
       <Icon icon="tabler:arrow-left" width="24" height="24" />
     </button>
@@ -113,6 +113,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 
 const modal = useApiAlertStore()
 const router = useRouter()
@@ -156,7 +157,7 @@ async function handleSubmit() {
   }
 
   try {
-    const res = await fetch('https://tech.oneled.io/api/change-password', {
+    const res = await fetch(`${config.apiUrl}/change-password`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',

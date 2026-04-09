@@ -11,7 +11,7 @@
     >
       <div
         v-if="showA2HSBanner"
-        class="transform fixed top-0 left-0 right-0 z-[200] pt-[env(safe-area-inset-top)]"
+        class="transform fixed top-0 left-0 right-0 z-200 pt-[env(safe-area-inset-top)]"
       >
         <div
           class="mx-auto mt-2 w-[92%] max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5"
@@ -62,7 +62,7 @@
     >
       <div
         v-if="showIOSBanner"
-        class="transform fixed top-0 left-0 right-0 z-[200] pt-[env(safe-area-inset-top)]"
+        class="transform fixed top-0 left-0 right-0 z-200 pt-[env(safe-area-inset-top)]"
       >
         <div
           class="mx-auto mt-2 w-[92%] max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5"
@@ -453,13 +453,14 @@ import SliderDashboard from '@/components/dashboard/SliderDashboard.vue'
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
+import { config } from '@/lib/config'
+import { isBrowser } from '@/lib/helpers'
+import { ICON_FALLBACK, iconPath } from '@/lib/constants/symbols'
+import { signedPercent, signedMoneyId, formatPrice } from '@/lib/format'
 
 /** ===== Konstanta ===== */
-const API_BASE = 'https://tech.oneled.io/api'
-const WS_BASE = 'wss://ws.hyper-led.com'
-const ICON_FALLBACK = '/img/crypto/_default.svg'
-const iconPath = (s: string) => `/img/crypto/${s.toLowerCase()}.svg`
-const isBrowser = () => typeof window !== 'undefined' && typeof localStorage !== 'undefined'
+const API_BASE = config.apiUrl
+const WS_BASE = config.wsUrl
 const getToken = () => (isBrowser() ? localStorage.getItem('token') || '' : '')
 
 /** ===== A2HS (Install PWA) ===== */
@@ -470,7 +471,7 @@ const isIos = isBrowser() && /iphone|ipad|ipod/i.test(navigator.userAgent)
 const isStandalone =
   isBrowser() &&
   (window.matchMedia('(display-mode: standalone)').matches ||
-    (navigator as any).standalone === true)
+    (navigator as unknown as { standalone?: boolean }).standalone === true)
 
 /* ---- Non-iOS state ---- */
 const A2HS_DISMISS_KEY = 'a2hsDismissed:v1'
@@ -491,7 +492,7 @@ function latchBanner() {
 }
 watch(
   eligibleA2HS,
-  (ok) => {
+  (ok: boolean) => {
     if (ok && !a2hsLatched.value) {
       latchBanner()
       nextTick(() => (showA2HSBanner.value = true))
@@ -499,7 +500,7 @@ watch(
   },
   { immediate: true },
 )
-watch(isInstalled, (v) => {
+watch(isInstalled, (v: boolean) => {
   if (v) {
     showA2HSBanner.value = false
     a2hsDismissed.value = true
@@ -536,7 +537,7 @@ function latchIOS() {
 }
 watch(
   eligibleIOSA2HS,
-  (ok) => {
+  (ok: boolean) => {
     if (ok && !iosLatched.value) {
       latchIOS()
       nextTick(() => (showIOSBanner.value = true))
@@ -589,7 +590,7 @@ function toggleTotalHidden() {
 onMounted(() => {
   if (isBrowser()) isTotalHidden.value = localStorage.getItem(TV_HIDE_KEY) === '1'
 })
-watch(isTotalHidden, (v) => {
+watch(isTotalHidden, (v: boolean) => {
   if (isBrowser()) localStorage.setItem(TV_HIDE_KEY, v ? '1' : '0')
 })
 
@@ -686,7 +687,7 @@ function hydrateFromCache() {
       const openRec = dcache.dayOpen[lower]
       const last = priceMap[lower.toUpperCase()]
       if (openRec && now - openRec.ts <= OPEN_TTL && Number.isFinite(last)) {
-        const row = marketData.value.find((x) => x.name === coin)
+        const row = marketData.value.find((x: MarketItem) => x.name === coin)
         if (row) {
           row.price = last
           row.change = openRec.o ? ((last - openRec.o) / openRec.o) * 100 : null
@@ -776,7 +777,7 @@ async function loadSyntheticSymbols() {
     const res = await fetch(`${API_BASE}/sim/market/symbols`, { method: 'GET' })
     if (!res.ok) return
     const json = await res.json().catch(() => null)
-    const rows = Array.isArray((json as any)?.symbols) ? ((json as any).symbols as any[]) : []
+    const rows = Array.isArray((json as Record<string, unknown>)?.symbols) ? ((json as Record<string, unknown>).symbols as Record<string, unknown>[]) : []
     const synth = new Set<string>()
     for (const r of rows) {
       const pair = String(r?.symbol_pair || '').toUpperCase()
@@ -795,7 +796,7 @@ async function loadSyntheticPairs() {
     const res = await fetch(`${API_BASE}/sim/market/pairs`, { method: 'GET' })
     if (!res.ok) return
     const json = await res.json().catch(() => null)
-    const pairs = Array.isArray((json as any)?.pairs) ? ((json as any).pairs as unknown[]) : []
+    const pairs = Array.isArray((json as Record<string, unknown>)?.pairs) ? ((json as Record<string, unknown>).pairs as unknown[]) : []
     const keys = pairs.map(pairToLowerKey).filter(Boolean)
     syntheticPairsLower.value = new Set(keys)
     syntheticPairsLoaded.value = true
@@ -824,10 +825,10 @@ function isDeletedSyntheticSymbol(sym: unknown): boolean {
 function purgeDeletedSyntheticPositions() {
   const before = positions.value.length
   if (!before) return
-  const filtered = positions.value.filter((p) => !isDeletedSyntheticSymbol(p.symbol))
+  const filtered = positions.value.filter((p: PositionRow) => !isDeletedSyntheticSymbol(p.symbol))
   if (filtered.length === before) return
   positions.value = filtered
-  const mini: PosMini[] = filtered.map((r) => ({
+  const mini: PosMini[] = filtered.map((r: PositionRow) => ({
     symbol: String(r.symbol).toUpperCase(),
     qty: n(r.qty, 0),
     avgCost: n(r.avg_cost, 0),
@@ -862,18 +863,18 @@ function stopSyntheticTicker() {
 
 async function pollSyntheticTickersOnce() {
   const synthPos = positions.value.filter(
-    (p) => isSyntheticSymbol(p.symbol) && !isDeletedSyntheticSymbol(p.symbol),
+    (p: PositionRow) => isSyntheticSymbol(p.symbol) && !isDeletedSyntheticSymbol(p.symbol),
   )
   if (!synthPos.length) return
 
   try {
-    const reqs = synthPos.map(async (p) => {
+    const reqs = synthPos.map(async (p: PositionRow) => {
       const symLower = String(p.symbol || '').toLowerCase()
       if (!symLower) return
       const res = await fetch(`${API_BASE}/sim/market/ticker?symbol=${encodeURIComponent(symLower)}`)
       if (!res.ok) return
       const j = await res.json().catch(() => null)
-      const last = Number((j as any)?.lastPrice)
+      const last = Number((j as Record<string, unknown>)?.lastPrice)
       if (!Number.isFinite(last) || last <= 0) return
 
       const symUp = symLower.toUpperCase()
@@ -917,32 +918,9 @@ const marketData = ref<MarketItem[]>(
 )
 
 /** ===== Helpers ===== */
-const nfIdCache = new Map<string, Intl.NumberFormat>()
-const nfId = (min: number, max: number) => {
-  const key = `${min}-${max}`
-  if (!nfIdCache.has(key))
-    nfIdCache.set(
-      key,
-      new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: max }),
-    )
-  return nfIdCache.get(key)!
-}
 const n = (v: unknown, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d)
-const formatNumberId = (nu: number, digits = 2) =>
-  Number.isFinite(nu) ? nfId(digits, digits).format(nu) : '0'
-const moneyId = (nu: number, digits = 2) => `$${formatNumberId(nu, digits)}`
-const signedPercent = (pct: number) =>
-  (pct >= 0 ? '+' : '') + (Number.isFinite(pct) ? pct.toFixed(2) : '0.00') + '%'
-const signedMoneyId = (nu: number, digits = 2) =>
-  (nu >= 0 ? '+' : '-') + moneyId(Math.abs(nu), digits)
 const truncate = (text: string, limit: number): string =>
   text.length > limit ? text.substring(0, limit) + '...' : text
-
-function formatPrice(nu: number): string {
-  if (!Number.isFinite(nu)) return '0.00'
-  const digits = nu >= 1 ? 2 : 6
-  return nu.toFixed(digits)
-}
 
 /** ===== Totals ===== */
 let totalsScheduled = false
@@ -1124,7 +1102,7 @@ function handleKline1d(symLower: string, open: number, close: number) {
   upsertPriceCache(symLower, close)
   const coin = displayedCoins.find((c) => symbolMap[c] + 'usdt' === symLower)
   if (coin && open) {
-    const row = marketData.value.find((x) => x.name === coin)
+    const row = marketData.value.find((x: MarketItem) => x.name === coin)
     if (row) {
       row.price = close
       row.change = ((close - open) / open) * 100
@@ -1141,7 +1119,7 @@ function handleTicker(symLower: string, last: number) {
 const KLINE_PERIODS = ['1day'] as const
 let subscribedLower = new Set<string>()
 let resubTimer: ReturnType<typeof setTimeout> | null = null
-function wsSend(obj: any) {
+function wsSend(obj: Record<string, unknown>) {
   if (wsAgg && wsAgg.readyState === WebSocket.OPEN) {
     try {
       wsAgg.send(JSON.stringify(obj))
@@ -1269,7 +1247,7 @@ const modal = useApiAlertStore()
 const filteredMarketData = computed(
   () =>
     displayedCoins
-      .map((coin) => marketData.value.find((item) => item.name === coin))
+      .map((coin) => marketData.value.find((item: MarketItem) => item.name === coin))
       .filter(Boolean) as MarketItem[],
 )
 
@@ -1330,7 +1308,7 @@ onMounted(async () => {
       } else {
         modal.open('Error', (data as { message?: string })?.message || 'Failed to load news.')
       }
-    } catch (e: unknown) {
+    } catch {
       modal.open(
         'Error',
         `The system is temporarily unavailable due to maintenance`,

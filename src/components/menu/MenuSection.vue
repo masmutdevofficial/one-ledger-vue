@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import { config } from '@/lib/config'
 
 interface MenuItem {
   title: string
@@ -11,7 +12,7 @@ interface MenuItem {
 }
 
 const router = useRouter()
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 
 const showLanguageSelector = ref(false)
 const showLogoutModal = ref(false)
@@ -116,14 +117,14 @@ const logout = async () => {
         :selectedLang="selectedLang"
         @close="showLanguageSelector = false"
         @update="updateLanguage"
-        class="fixed bottom-0 left-0 right-0 z-[100]"
+        class="fixed bottom-0 left-0 right-0 z-100"
       />
     </transition> -->
 
     <!-- Modal Confirm Logout -->
     <div
       v-if="showLogoutModal"
-      class="fixed inset-0 bg-black/30 z-[100] flex items-center justify-center"
+      class="fixed inset-0 bg-black/30 z-100 flex items-center justify-center"
     >
       <div class="bg-white p-6 rounded-xl w-[90vw] max-w-xs mx-auto shadow-lg text-center relative">
         <button

@@ -18,7 +18,7 @@
       <div class="flex items-center space-x-3 mb-2">
         <img
           :alt="airdrop.logoAlt"
-          class="w-8 h-8 flex-shrink-0 rounded-full"
+          class="w-8 h-8 shrink-0 rounded-full"
           height="32"
           :src="airdrop.logo"
           width="32"

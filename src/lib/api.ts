@@ -1,24 +1,36 @@
 import axios from 'axios'
-
-function normalizeBaseUrl(url: string): string {
-  return url.replace(/\/$/, '')
-}
-
-const base = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
+import { config as appConfig } from '@/lib/config'
 
 export const api = axios.create({
-  baseURL: `${base}/api`,
+  baseURL: `${appConfig.apiBase}/api`,
   withCredentials: true,
   headers: {
     Accept: 'application/json',
   },
 })
 
-api.interceptors.request.use((config) => {
+// Automatically attach auth token to every request
+api.interceptors.request.use((cfg) => {
   const token = localStorage.getItem('token')
   if (token) {
-    config.headers = config.headers ?? {}
-    config.headers.Authorization = `Bearer ${token}`
+    cfg.headers = cfg.headers ?? {}
+    cfg.headers.Authorization = `Bearer ${token}`
   }
-  return config
+  return cfg
 })
+
+// Handle 401 responses globally — redirect to login
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err?.response?.status === 401) {
+      localStorage.removeItem('token')
+      // Only redirect if we're not already on a public page
+      const publicPaths = ['/', '/login', '/register', '/verification', '/forgot-password', '/reset-password']
+      if (!publicPaths.includes(window.location.pathname)) {
+        window.location.href = '/login?reason=unauthorized'
+      }
+    }
+    return Promise.reject(err)
+  },
+)

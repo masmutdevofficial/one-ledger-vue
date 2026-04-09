@@ -2,7 +2,7 @@
   <div class="max-w-md mx-auto p-4">
     <!-- Header -->
     <header class="flex items-center mb-6">
-      <h1 class="flex-grow text-center font-semibold text-lg leading-6">Account Info</h1>
+      <h1 class="grow text-center font-semibold text-lg leading-6">Account Info</h1>
       <div class="w-6"></div>
     </header>
 
@@ -92,7 +92,7 @@
     <!-- Modal Edit Profile -->
     <div
       v-if="showEditModal"
-      class="fixed inset-0 bg-black/30 z-[51] flex items-center justify-center"
+      class="fixed inset-0 bg-black/30 z-51 flex items-center justify-center"
     >
       <div class="bg-white p-6 rounded-xl w-[90vw] max-w-sm mx-auto shadow-lg relative">
         <button class="absolute right-3 top-3 text-gray-400 hover:text-gray-600" @click="closeEdit">
@@ -192,9 +192,10 @@ import { ref, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import MenuSection from '@/components/menu/MenuSection.vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { config } from '@/lib/config'
 
 // ====== Config API ======
-const API_BASE = 'https://tech.oneled.io/api'
+const API_BASE = config.apiUrl
 function getToken(): string | null {
   return localStorage.getItem('token')
 }

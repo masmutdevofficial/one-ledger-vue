@@ -76,7 +76,7 @@
     <div
       v-if="showModalTerm"
       id="modal-terms"
-      class="fixed inset-0 z-[51] flex items-center justify-center"
+      class="fixed inset-0 z-51 flex items-center justify-center"
       aria-modal="true"
       role="dialog"
     >
@@ -385,7 +385,7 @@
   <!-- ALERT (lokal) -->
   <div
     v-if="alert.open"
-    class="fixed z-[60] top-4 left-1/2 -translate-x-1/2 max-w-md mx-4"
+    class="fixed z-60 top-4 left-1/2 -translate-x-1/2 max-w-md mx-4"
     role="alert"
     aria-live="assertive"
   >
