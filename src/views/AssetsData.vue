@@ -219,7 +219,6 @@ const smartArbText = computed(() =>
 )
 
 /** ===== Types Portfolio ===== */
-type Quote = 'USDT' | 'USDC' | 'USD'
 type PositionRow = {
   id: number
   id_users: number
