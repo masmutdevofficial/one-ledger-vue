@@ -29,7 +29,7 @@
             <span class="shrink-0 font-medium" :style="{ color: userColor(m.user) }">
               {{ m.user }}:
             </span>
-            <p class="whitespace-pre-wrap break-all">
+            <p class="whitespace-pre-wrap break-words">
               {{ m.text }}
               <span
                 v-if="m.streaming"
