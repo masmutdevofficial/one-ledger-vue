@@ -54,10 +54,12 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApiAlertStore } from '@/stores/apiAlert' // perhatikan path stores!
+import { useAuthStore } from '@/stores/auth'
 import { config } from '@/lib/config'
 import { Icon } from '@iconify/vue'
 
 const modal = useApiAlertStore()
+const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -109,7 +111,7 @@ async function login() {
       localStorage.setItem('id', String(data.user.id))
     }
 
-    localStorage.setItem('token', data.token)
+    auth.setToken(data.token)
     router.push('/dashboard')
   } catch (error: unknown) {
     let msg = 'The system is temporarily unavailable due to maintenance.'

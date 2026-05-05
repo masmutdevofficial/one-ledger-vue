@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { config } from '@/lib/config'
+import { useAuthStore } from '@/stores/auth'
 
 interface MenuItem {
   title: string
@@ -12,6 +13,7 @@ interface MenuItem {
 }
 
 const router = useRouter()
+const auth = useAuthStore()
 const API_BASE = config.apiUrl
 
 const showLanguageSelector = ref(false)
@@ -41,7 +43,7 @@ const logout = async () => {
   } catch (_) {
     // ignore
   } finally {
-    localStorage.removeItem('token')
+    auth.clearToken()
     localStorage.removeItem('id')
     showLogoutModal.value = false
     router.replace('/login')

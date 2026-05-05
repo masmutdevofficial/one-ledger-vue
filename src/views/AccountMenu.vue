@@ -123,11 +123,13 @@
 import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useApiAlertStore } from '@/stores/apiAlert'
+import { useAuthStore } from '@/stores/auth'
 import { config } from '@/lib/config'
 import { useRouter } from 'vue-router'
 import LanguageSelector from '@/components/menu/LanguageSelector.vue'
 
 const router = useRouter()
+const auth = useAuthStore()
 
 interface MenuItem {
   title: string
@@ -163,7 +165,7 @@ const username = ref('-')
 const modal = useApiAlertStore()
 
 const logout = () => {
-  localStorage.removeItem('token')
+  auth.clearToken()
   localStorage.removeItem('id')
   showLogoutModal.value = false
   router.replace('/login')
